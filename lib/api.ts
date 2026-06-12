@@ -43,6 +43,14 @@ export const customersApi = {
   create: (data: Record<string, unknown>) => api.post('/customers', data),
   update: (id: number, data: Record<string, unknown>) => api.put(`/customers/${id}`, data),
   remove: (id: number) => api.delete(`/customers/${id}`),
+  bulkDelete: (ids: number[]) => api.post('/customers/bulk-delete', { ids }),
+  import: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/customers/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // Drivers
@@ -69,6 +77,25 @@ export const ordersApi = {
     api.post(`/orders/${id}/status`, { status, notes }),
   history: (id: number) => api.get(`/orders/${id}/history`),
   geocode: (address: string) => api.post('/geocode/address', { address }),
+  productSuggestions: (q?: string) => api.get('/orders/product-suggestions', { params: { q } }),
+  klotters: (date?: string) => api.get('/orders/klotters', { params: { date } }),
+};
+
+// Settings
+export const settingsApi = {
+  get: () => api.get('/settings'),
+  update: (data: Record<string, unknown>) => api.patch('/settings', data),
+};
+
+// Users (developer / super_admin / merchant_owner)
+export const usersApi = {
+  list: (params?: Record<string, unknown>) => api.get('/users', { params }),
+  get: (id: number) => api.get(`/users/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/users', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
+  remove: (id: number) => api.delete(`/users/${id}`),
+  resetPassword: (id: number, password?: string) =>
+    api.post(`/users/${id}/reset-password`, { password }),
 };
 
 // Routes

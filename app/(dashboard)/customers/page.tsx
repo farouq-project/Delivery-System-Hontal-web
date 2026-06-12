@@ -8,15 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { VIP_COLORS } from '@/lib/utils';
-import { Plus, Search, Edit, Trash2, MapPin } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MapPin, Upload } from 'lucide-react';
 import CustomerForm from './customer-form';
+import CustomerImportDialog from './customer-import';
 
 export default function CustomersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const { data, isLoading } = useQuery({
     queryKey: ['customers', page, search],
@@ -26,6 +29,14 @@ export default function CustomersPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => customersApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => customersApi.bulkDelete(ids),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] });
+      setSelectedIds(new Set());
+    },
   });
 
   const customers: Customer[] = data?.data?.data ?? [];
@@ -40,6 +51,32 @@ export default function CustomersPage() {
   const handleNew  = () => { setEditing(null); setShowForm(true); };
   const handleClose = () => { setShowForm(false); setEditing(null); };
 
+  const allSelected = customers.length > 0 && customers.every((c) => selectedIds.has(c.id));
+
+  const toggleAll = () => {
+    setSelectedIds((prev) => {
+      if (allSelected) return new Set();
+      const next = new Set(prev);
+      customers.forEach((c) => next.add(c.id));
+      return next;
+    });
+  };
+
+  const toggleOne = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`Delete ${selectedIds.size} selected customer(s)?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedIds));
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -47,10 +84,13 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold">Customers</h1>
           <p className="text-gray-500 text-sm">{meta?.total ?? 0} total customers</p>
         </div>
-        <Button onClick={handleNew}><Plus className="h-4 w-4" /> Add Customer</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowImport(true)}><Upload className="h-4 w-4" /> Import</Button>
+          <Button onClick={handleNew}><Plus className="h-4 w-4" /> Add Customer</Button>
+        </div>
       </div>
 
-      <div className="flex gap-3 mb-4">
+      <div className="flex gap-3 mb-4 items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
           <Input
@@ -60,12 +100,25 @@ export default function CustomersPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
+        {selectedIds.size > 0 && (
+          <Button
+            variant="outline"
+            className="text-red-500 hover:text-red-700"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            <Trash2 className="h-4 w-4" /> Delete {selectedIds.size} selected
+          </Button>
+        )}
       </div>
 
       <div className="bg-white rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
+              <th className="px-4 py-3 w-8">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+              </th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Address</th>
@@ -76,11 +129,14 @@ export default function CustomersPage() {
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
-              <tr><td colSpan={6} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : customers.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-gray-400">No customers found</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-gray-400">No customers found</td></tr>
             ) : customers.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleOne(c.id)} />
+                </td>
                 <td className="px-4 py-3 font-medium">{c.customer_name}</td>
                 <td className="px-4 py-3 text-gray-600">{c.phone}</td>
                 <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{c.default_address}</td>
@@ -134,6 +190,10 @@ export default function CustomersPage() {
 
       {showForm && (
         <CustomerForm customer={editing} onClose={handleClose} />
+      )}
+
+      {showImport && (
+        <CustomerImportDialog onClose={() => setShowImport(false)} />
       )}
     </div>
   );

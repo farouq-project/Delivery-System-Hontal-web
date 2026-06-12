@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Truck, PackageOpen,
-  Map, Route, LogOut, Menu
+  Map, Route, LogOut, Menu, Layers, UserCog
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -17,7 +17,12 @@ const navItems = [
   { href: '/drivers',    label: 'Drivers',     icon: Truck },
   { href: '/orders',     label: 'Orders',      icon: PackageOpen },
   { href: '/dispatch',   label: 'Dispatch',    icon: Route },
+  { href: '/klotter',    label: 'Klotter',     icon: Layers },
   { href: '/live',       label: 'Live Map',    icon: Map },
+];
+
+const adminNavItems = [
+  { href: '/users', label: 'Users', icon: UserCog },
 ];
 
 export function Sidebar() {
@@ -25,6 +30,9 @@ export function Sidebar() {
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
+
+  const canManageUsers = ['super_admin', 'developer', 'merchant_owner'].includes(user?.role ?? '');
+  const items = canManageUsers ? [...navItems, ...adminNavItems] : navItems;
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch {}
@@ -47,7 +55,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 p-2 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => (
+        {items.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}

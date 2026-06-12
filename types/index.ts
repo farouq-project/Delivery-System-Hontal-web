@@ -1,10 +1,15 @@
+export type UserRole = 'super_admin' | 'developer' | 'merchant_owner' | 'dispatcher' | 'driver';
+
 export interface User {
   id: number;
   ulid: string;
+  merchant_id?: number | null;
   name: string;
   email: string;
-  role: 'super_admin' | 'merchant_owner' | 'dispatcher' | 'driver';
+  phone?: string | null;
+  role: UserRole;
   is_active: boolean;
+  last_login_at?: string | null;
   merchant?: Merchant;
 }
 
@@ -25,6 +30,7 @@ export interface MerchantSetting {
   depot_latitude: number;
   depot_longitude: number;
   max_stops_per_driver: number;
+  klotter_size: number;
   working_hours_start: string;
   working_hours_end: string;
   routing_algorithm: string;
@@ -60,6 +66,12 @@ export interface Driver {
 
 export type OrderStatus = 'pending' | 'assigned' | 'in_transit' | 'delivered' | 'failed' | 'cancelled';
 
+export interface OrderItem {
+  name: string;
+  quantity?: number | null;
+  notes?: string | null;
+}
+
 export interface DeliveryOrder {
   id: number;
   ulid: string;
@@ -68,6 +80,7 @@ export interface DeliveryOrder {
   customer_name: string;
   customer_phone: string;
   product_name: string;
+  items?: OrderItem[] | null;
   order_value: number;
   delivery_address: string;
   delivery_latitude: number | null;
@@ -82,6 +95,7 @@ export interface DeliveryOrder {
   picked_up_at: string | null;
   delivered_at: string | null;
   failed_at: string | null;
+  driver?: Driver | null;
   customer?: Customer;
 }
 

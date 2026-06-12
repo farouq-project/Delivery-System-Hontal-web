@@ -12,11 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AddressAutocomplete } from '@/components/address-autocomplete';
 
 const schema = z.object({
   customer_name: z.string().min(2),
-  phone:         z.string().min(8),
-  default_address: z.string().min(5),
+  phone:         z.string().optional(),
+  default_address: z.string().optional(),
   vip_level:     z.enum(['standard', 'silver', 'gold', 'platinum']),
   notes:         z.string().optional(),
 });
@@ -35,8 +36,8 @@ export default function CustomerForm({ customer, onClose }: Props) {
     resolver: zodResolver(schema),
     defaultValues: customer ? {
       customer_name: customer.customer_name,
-      phone: customer.phone,
-      default_address: customer.default_address,
+      phone: customer.phone ?? '',
+      default_address: customer.default_address ?? '',
       vip_level: customer.vip_level,
       notes: customer.notes ?? '',
     } : { vip_level: 'standard' },
@@ -88,7 +89,17 @@ export default function CustomerForm({ customer, onClose }: Props) {
           <div className="space-y-2">
             <Label>Address</Label>
             <div className="flex gap-2">
-              <Input {...register('default_address')} placeholder="Jl. Dago No. 1, Bandung" className="flex-1" />
+              <div className="flex-1">
+                <AddressAutocomplete
+                  value={address ?? ''}
+                  onChange={(v) => setValue('default_address', v)}
+                  onSelect={({ address: addr, lat, lng }) => {
+                    setValue('default_address', addr);
+                    setCoords({ lat, lng });
+                  }}
+                  placeholder="Jl. Dago No. 1, Bandung"
+                />
+              </div>
               <Button type="button" variant="outline" size="sm" onClick={handleGeocode} disabled={geocoding}>
                 {geocoding ? '...' : 'Geocode'}
               </Button>

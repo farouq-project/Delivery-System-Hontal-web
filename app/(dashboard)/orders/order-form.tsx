@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,11 +11,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/address-autocomplete';
+import { ProductSuggestInput } from '@/components/product-suggest-input';
+import { Search, Plus, Trash2 } from 'lucide-react';
+
+const itemSchema = z.object({
+  name:     z.string().min(1, 'Required'),
+  quantity: z.number().min(0).optional().nullable(),
+  notes:    z.string().optional(),
+});
 
 const schema = z.object({
   customer_id:              z.number({ message: 'Select a customer' }),
-  product_name:             z.string().min(2),
+  items:                    z.array(itemSchema).min(1, 'Add at least one item'),
   order_value:              z.number().min(0),
   delivery_address:         z.string().min(5),
   requested_delivery_date:  z.string().min(1, 'Required'),
@@ -24,6 +32,11 @@ const schema = z.object({
   notes:                    z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
+
+function nowTime() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function OrderForm({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -34,10 +47,16 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
   const [geocoding, setGeocoding] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
+  const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { requested_delivery_date: new Date().toISOString().split('T')[0] },
+    defaultValues: {
+      requested_delivery_date: new Date().toISOString().split('T')[0],
+      requested_delivery_start: nowTime(),
+      items: [{ name: '', quantity: undefined, notes: '' }],
+    },
   });
+
+  const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   useEffect(() => {
     if (query.length < 2) { setResults([]); return; }
@@ -74,7 +93,13 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
-      ordersApi.create({ ...data, delivery_latitude: coords?.lat, delivery_longitude: coords?.lng }),
+      ordersApi.create({
+        ...data,
+        customer_name: selected?.customer_name,
+        customer_phone: selected?.phone,
+        delivery_latitude: coords?.lat,
+        delivery_longitude: coords?.lng,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] });
       onClose();
@@ -106,7 +131,7 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
                       onClick={() => selectCustomer(c)}
                     >
                       <div className="font-medium">{c.customer_name}</div>
-                      <div className="text-xs text-gray-400">{c.phone} · {c.default_address.substring(0, 40)}...</div>
+                      <div className="text-xs text-gray-400">{c.phone} · {c.default_address?.substring(0, 40)}...</div>
                     </button>
                   ))}
                 </div>
@@ -115,10 +140,49 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
             {errors.customer_id && <p className="text-xs text-red-500">Please select a customer</p>}
           </div>
 
+          {/* Items */}
           <div className="space-y-2">
-            <Label>Product / Item Description</Label>
-            <Input {...register('product_name')} placeholder="Susu Segar 5L x10" />
-            {errors.product_name && <p className="text-xs text-red-500">{errors.product_name.message}</p>}
+            <div className="flex items-center justify-between">
+              <Label>Product / Item Description</Label>
+              <Button
+                type="button" variant="outline" size="sm"
+                onClick={() => append({ name: '', quantity: undefined, notes: '' })}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Item
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex gap-2 items-start border rounded-md p-2">
+                  <div className="flex-1 space-y-2">
+                    <ProductSuggestInput
+                      value={watch(`items.${index}.name`) ?? ''}
+                      onChange={(v) => setValue(`items.${index}.name`, v, { shouldValidate: true })}
+                      placeholder="Susu Segar 5L"
+                    />
+                    {errors.items?.[index]?.name && (
+                      <p className="text-xs text-red-500">{errors.items[index]?.name?.message}</p>
+                    )}
+                  </div>
+                  <Input
+                    type="number"
+                    className="w-20"
+                    placeholder="Qty"
+                    {...register(`items.${index}.quantity`, {
+                      setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
+                    })}
+                  />
+                  {fields.length > 1 && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => remove(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {errors.items && !Array.isArray(errors.items) && (
+              <p className="text-xs text-red-500">{errors.items.message as string}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -134,7 +198,17 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
           <div className="space-y-2">
             <Label>Delivery Address</Label>
             <div className="flex gap-2">
-              <Input {...register('delivery_address')} className="flex-1" placeholder="Address..." />
+              <div className="flex-1">
+                <AddressAutocomplete
+                  value={watch('delivery_address') ?? ''}
+                  onChange={(v) => setValue('delivery_address', v, { shouldValidate: true })}
+                  onSelect={({ address, lat, lng }) => {
+                    setValue('delivery_address', address, { shouldValidate: true });
+                    setCoords({ lat, lng });
+                  }}
+                  placeholder="Address..."
+                />
+              </div>
               <Button type="button" variant="outline" size="sm" onClick={handleGeocode} disabled={geocoding}>
                 {geocoding ? '...' : 'Pin'}
               </Button>
@@ -151,7 +225,7 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Window Start (optional)</Label>
+              <Label>Window Start (optional, defaults to now)</Label>
               <Input type="time" {...register('requested_delivery_start')} />
             </div>
             <div className="space-y-2">
