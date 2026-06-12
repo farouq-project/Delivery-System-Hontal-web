@@ -66,6 +66,10 @@ export interface Driver {
 
 export type OrderStatus = 'pending' | 'assigned' | 'in_transit' | 'delivered' | 'failed' | 'cancelled';
 
+export type CashierName = 'Mian' | 'Sela' | 'Epa' | 'Tira';
+
+export type PaymentMethod = 'cash' | 'transfer' | 'qris';
+
 export interface OrderItem {
   name: string;
   quantity?: number | null;
@@ -90,6 +94,8 @@ export interface DeliveryOrder {
   requested_delivery_end: string | null;
   status: OrderStatus;
   notes: string | null;
+  cashier_name: CashierName | null;
+  payment_method: PaymentMethod | null;
   order_created_at: string;
   assigned_at: string | null;
   picked_up_at: string | null;

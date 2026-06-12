@@ -30,9 +30,9 @@ export default function LivePage() {
   const todayRoute = routes[0] ?? null;
 
   return (
-    <div className="flex h-full">
+    <div className="flex flex-col md:flex-row h-full">
       {/* Sidebar */}
-      <div className="w-72 bg-white border-r overflow-y-auto flex-shrink-0">
+      <div className="w-full md:w-72 max-h-56 md:max-h-none bg-white border-b md:border-b-0 md:border-r overflow-y-auto flex-shrink-0">
         <div className="p-4 border-b">
           <h2 className="font-semibold text-lg">Live Tracking</h2>
           <p className="text-xs text-gray-400">Auto-refreshes every 15s</p>

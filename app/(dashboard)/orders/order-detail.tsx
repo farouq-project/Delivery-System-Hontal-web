@@ -42,6 +42,14 @@ export default function OrderDetail({ order, onClose }: Props) {
               <p className="text-gray-400 text-xs">Value</p>
               <p className="font-medium">{formatCurrency(order.order_value)}</p>
             </div>
+            <div>
+              <p className="text-gray-400 text-xs">Cashier</p>
+              <p className="font-medium">{order.cashier_name ?? '-'}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs">Payment Method</p>
+              <p className="font-medium capitalize">{order.payment_method ?? '-'}</p>
+            </div>
             <div className="col-span-2">
               <p className="text-gray-400 text-xs">Product</p>
               <p className="font-medium">{order.product_name}</p>

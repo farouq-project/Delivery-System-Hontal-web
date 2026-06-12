@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, formatCurrency, formatDate, formatTime } from '@/lib/utils';
-import { Plus, Search, Eye, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Truck } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
+import AssignDriverDialog from './assign-driver-dialog';
 
 export default function OrdersPage() {
   const qc = useQueryClient();
@@ -19,6 +20,8 @@ export default function OrdersPage() {
   const [page, setPage]         = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [viewing, setViewing]   = useState<DeliveryOrder | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [assigningIds, setAssigningIds] = useState<number[] | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders', page, search, status],
@@ -37,9 +40,28 @@ export default function OrdersPage() {
     last_page: data.data.last_page,
   } : null;
 
+  const allSelected = orders.length > 0 && orders.every((o) => selectedIds.has(o.id));
+
+  const toggleAll = () => {
+    setSelectedIds((prev) => {
+      if (allSelected) return new Set();
+      const next = new Set(prev);
+      orders.forEach((o) => next.add(o.id));
+      return next;
+    });
+  };
+
+  const toggleOne = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Delivery Orders</h1>
           <p className="text-gray-500 text-sm">{meta?.total ?? 0} total orders</p>
@@ -68,28 +90,99 @@ export default function OrdersPage() {
             <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
+        {selectedIds.size > 0 && (
+          <Button variant="outline" onClick={() => setAssigningIds(Array.from(selectedIds))}>
+            <Truck className="h-4 w-4" /> Assign {selectedIds.size} to Driver
+          </Button>
+        )}
       </div>
 
-      <div className="bg-white rounded-lg border overflow-hidden">
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-400">Loading...</div>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">No orders found</div>
+        ) : orders.map((o) => (
+          <div key={o.id} className="bg-white rounded-lg border p-4">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex items-start gap-2 min-w-0">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={selectedIds.has(o.id)}
+                  onChange={() => toggleOne(o.id)}
+                />
+                <div className="min-w-0">
+                  <p className="font-mono text-xs font-medium text-gray-500">{o.order_number}</p>
+                  <p className="font-medium">{o.customer_name}</p>
+                  <p className="text-xs text-gray-400">{o.customer_phone}</p>
+                </div>
+              </div>
+              <span className={`shrink-0 text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[o.status]}`}>
+                {o.status.replace('_', ' ')}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 truncate mb-1">{o.product_name}</p>
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="font-medium text-gray-700">{formatCurrency(o.order_value)}</span>
+              <span className="text-xs text-gray-500">
+                {o.requested_delivery_start
+                  ? `${formatTime(o.requested_delivery_start)} - ${formatTime(o.requested_delivery_end)}`
+                  : 'Anytime'}
+              </span>
+            </div>
+            {o.driver && (
+              <p className="text-xs text-blue-600 mb-2">Driver: {o.driver.driver_name}</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setAssigningIds([o.id])}>
+                <Truck className="h-4 w-4" />
+              </Button>
+              {o.status === 'pending' && (
+                <Button
+                  size="sm" variant="ghost"
+                  className="text-red-500 hover:text-red-700"
+                  onClick={() => { if (confirm('Cancel this order?')) deleteMutation.mutate(o.id); }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block bg-white rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
+              <th className="px-4 py-3 w-8">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+              </th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Order #</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Customer</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Product</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Value</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Window</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Driver</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={9} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">No orders found</td></tr>
+              <tr><td colSpan={9} className="text-center py-8 text-gray-400">No orders found</td></tr>
             ) : orders.map((o) => (
               <tr key={o.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <input type="checkbox" checked={selectedIds.has(o.id)} onChange={() => toggleOne(o.id)} />
+                </td>
                 <td className="px-4 py-3 font-mono text-xs font-medium">{o.order_number}</td>
                 <td className="px-4 py-3">
                   <div className="font-medium">{o.customer_name}</div>
@@ -102,6 +195,7 @@ export default function OrdersPage() {
                     ? `${formatTime(o.requested_delivery_start)} - ${formatTime(o.requested_delivery_end)}`
                     : 'Anytime'}
                 </td>
+                <td className="px-4 py-3 text-xs text-gray-600">{o.driver?.driver_name ?? '-'}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[o.status]}`}>
                     {o.status.replace('_', ' ')}
@@ -111,6 +205,9 @@ export default function OrdersPage() {
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" title="Assign driver" onClick={() => setAssigningIds([o.id])}>
+                      <Truck className="h-4 w-4" />
                     </Button>
                     {o.status === 'pending' && (
                       <Button
@@ -141,6 +238,12 @@ export default function OrdersPage() {
 
       {showForm  && <OrderForm onClose={() => setShowForm(false)} />}
       {viewing   && <OrderDetail order={viewing} onClose={() => setViewing(null)} />}
+      {assigningIds && (
+        <AssignDriverDialog
+          orderIds={assigningIds}
+          onClose={() => { setAssigningIds(null); setSelectedIds(new Set()); }}
+        />
+      )}
     </div>
   );
 }

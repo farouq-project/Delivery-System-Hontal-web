@@ -68,14 +68,14 @@ export default function DispatchPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b bg-white">
         <div>
           <h1 className="text-xl font-bold">Dispatch Board</h1>
           <p className="text-sm text-gray-500">
             {pendingOrders.length} pending orders · {drivers.length} available drivers
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {todayRoute ? (
             <>
               {todayRoute.status !== 'completed' && todayRoute.status !== 'cancelled' && !todayRoute.locked_at ? (

@@ -56,8 +56,8 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Users</h1>
           <p className="text-gray-500 text-sm">{meta?.total ?? 0} total users</p>
@@ -77,7 +77,50 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border overflow-hidden">
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-400">Loading...</div>
+        ) : users.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">No users found</div>
+        ) : users.map((u) => (
+          <div key={u.id} className="bg-white rounded-lg border p-4">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{u.name}</p>
+                <p className="text-sm text-gray-500 truncate">{u.email}</p>
+              </div>
+              {u.is_active ? (
+                <span className="shrink-0 text-green-600 text-xs">Active</span>
+              ) : (
+                <span className="shrink-0 text-gray-400 text-xs">Inactive</span>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                {ROLE_LABELS[u.role] ?? u.role}
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" title="Reset password" onClick={() => handleResetPassword(u)}>
+                  <KeyRound className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => handleEdit(u)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm" variant="ghost"
+                  className="text-red-500 hover:text-red-700"
+                  onClick={() => { if (confirm(`Delete user ${u.name}?`)) deleteMutation.mutate(u.id); }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block bg-white rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>

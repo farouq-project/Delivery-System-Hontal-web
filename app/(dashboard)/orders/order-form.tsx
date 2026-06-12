@@ -11,15 +11,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { ProductSuggestInput } from '@/components/product-suggest-input';
 import { Search, Plus, Trash2 } from 'lucide-react';
+import { CashierName, PaymentMethod } from '@/types';
 
 const itemSchema = z.object({
   name:     z.string().min(1, 'Required'),
   quantity: z.number().min(0).optional().nullable(),
   notes:    z.string().optional(),
 });
+
+const CASHIER_NAMES: CashierName[] = ['Mian', 'Sela', 'Epa', 'Tira'];
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'transfer', label: 'Transfer' },
+  { value: 'qris', label: 'QRIS' },
+];
+const CASHIER_STORAGE_KEY = 'hontal_active_cashier';
 
 const schema = z.object({
   customer_id:              z.number({ message: 'Select a customer' }),
@@ -30,12 +40,20 @@ const schema = z.object({
   requested_delivery_start: z.string().optional(),
   requested_delivery_end:   z.string().optional(),
   notes:                    z.string().optional(),
+  cashier_name:             z.enum(['Mian', 'Sela', 'Epa', 'Tira']),
+  payment_method:           z.enum(['cash', 'transfer', 'qris']),
 });
 type FormData = z.infer<typeof schema>;
 
 function nowTime() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function getActiveCashier(): CashierName {
+  if (typeof window === 'undefined') return 'Mian';
+  const stored = window.localStorage.getItem(CASHIER_STORAGE_KEY);
+  return (CASHIER_NAMES as string[]).includes(stored ?? '') ? (stored as CashierName) : 'Mian';
 }
 
 export default function OrderForm({ onClose }: { onClose: () => void }) {
@@ -53,6 +71,8 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
       requested_delivery_date: new Date().toISOString().split('T')[0],
       requested_delivery_start: nowTime(),
       items: [{ name: '', quantity: undefined, notes: '' }],
+      cashier_name: getActiveCashier(),
+      payment_method: 'cash',
     },
   });
 
@@ -100,11 +120,17 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
         delivery_latitude: coords?.lat,
         delivery_longitude: coords?.lng,
       }),
-    onSuccess: () => {
+    onSuccess: (_res, variables) => {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(CASHIER_STORAGE_KEY, variables.cashier_name);
+      }
       qc.invalidateQueries({ queryKey: ['orders'] });
       onClose();
     },
   });
+
+  const cashierName = watch('cashier_name');
+  const paymentMethod = watch('payment_method');
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -193,6 +219,31 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
               placeholder="150000"
             />
             {errors.order_value && <p className="text-xs text-red-500">{errors.order_value.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Cashier</Label>
+              <Select value={cashierName} onValueChange={(v) => setValue('cashier_name', v as CashierName)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CASHIER_NAMES.map((name) => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setValue('payment_method', v as PaymentMethod)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">

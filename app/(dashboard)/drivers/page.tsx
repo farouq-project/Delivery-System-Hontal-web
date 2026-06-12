@@ -30,8 +30,8 @@ export default function DriversPage() {
   const drivers: Driver[] = data?.data?.data ?? [];
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Drivers</h1>
           <p className="text-gray-500 text-sm">{drivers.length} drivers registered</p>

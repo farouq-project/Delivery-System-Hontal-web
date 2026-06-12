@@ -73,12 +73,19 @@ export const ordersApi = {
   update: (id: number, data: Record<string, unknown>) => api.put(`/orders/${id}`, data),
   remove: (id: number) => api.delete(`/orders/${id}`),
   assign: (id: number, driverId: number) => api.post(`/orders/${id}/assign`, { driver_id: driverId }),
+  bulkAssign: (orderIds: number[], driverId: number) =>
+    api.post('/orders/bulk-assign', { order_ids: orderIds, driver_id: driverId }),
   updateStatus: (id: number, status: string, notes?: string) =>
     api.post(`/orders/${id}/status`, { status, notes }),
   history: (id: number) => api.get(`/orders/${id}/history`),
   geocode: (address: string) => api.post('/geocode/address', { address }),
   productSuggestions: (q?: string) => api.get('/orders/product-suggestions', { params: { q } }),
   klotters: (date?: string) => api.get('/orders/klotters', { params: { date } }),
+};
+
+// Reports
+export const reportsApi = {
+  cashierSummary: (params?: Record<string, unknown>) => api.get('/reports/cashier-summary', { params }),
 };
 
 // Settings
