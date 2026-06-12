@@ -32,7 +32,9 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 const CASHIER_STORAGE_KEY = 'hontal_active_cashier';
 
 const schema = z.object({
-  customer_id:              z.number({ message: 'Select a customer' }),
+  customer_id:              z.number().optional(),
+  customer_name:            z.string().min(2, 'Customer name is required'),
+  customer_phone:           z.string().optional(),
   items:                    z.array(itemSchema).min(1, 'Add at least one item'),
   order_value:              z.number().min(0),
   delivery_address:         z.string().min(5),
@@ -54,6 +56,12 @@ function getActiveCashier(): CashierName {
   if (typeof window === 'undefined') return 'Mian';
   const stored = window.localStorage.getItem(CASHIER_STORAGE_KEY);
   return (CASHIER_NAMES as string[]).includes(stored ?? '') ? (stored as CashierName) : 'Mian';
+}
+
+function formatThousands(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 export default function OrderForm({ onClose }: { onClose: () => void }) {
@@ -94,9 +102,20 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
     setResults([]);
     setQuery(c.customer_name);
     setValue('customer_id', c.id);
+    setValue('customer_name', c.customer_name);
+    setValue('customer_phone', c.phone ?? '');
     setValue('delivery_address', c.default_address);
     if (c.default_latitude) {
       setCoords({ lat: c.default_latitude, lng: c.default_longitude! });
+    }
+  };
+
+  const handleCustomerNameChange = (value: string) => {
+    setQuery(value);
+    setValue('customer_name', value);
+    if (selected && value !== selected.customer_name) {
+      setSelected(null);
+      setValue('customer_id', undefined);
     }
   };
 
@@ -112,14 +131,29 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
   };
 
   const mutation = useMutation({
-    mutationFn: (data: FormData) =>
-      ordersApi.create({
+    mutationFn: async (data: FormData) => {
+      let customerId = data.customer_id;
+
+      // If the typed name doesn't match a selected existing customer, register it as a new customer
+      if (!customerId || !selected || selected.customer_name !== data.customer_name) {
+        const created = await customersApi.create({
+          customer_name: data.customer_name,
+          phone: data.customer_phone || undefined,
+          default_address: data.delivery_address,
+          default_latitude: coords?.lat,
+          default_longitude: coords?.lng,
+          vip_level: 'standard',
+        });
+        customerId = created.data.data.id;
+      }
+
+      return ordersApi.create({
         ...data,
-        customer_name: selected?.customer_name,
-        customer_phone: selected?.phone,
+        customer_id: customerId,
         delivery_latitude: coords?.lat,
         delivery_longitude: coords?.lng,
-      }),
+      });
+    },
     onSuccess: (_res, variables) => {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(CASHIER_STORAGE_KEY, variables.cashier_name);
@@ -134,7 +168,11 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader><DialogTitle>New Delivery Order</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
           {/* Customer autocomplete */}
@@ -144,9 +182,9 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               <Input
                 className="pl-9"
-                placeholder="Type to search customers..."
+                placeholder="Type customer name (existing or new)..."
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => handleCustomerNameChange(e.target.value)}
               />
               {results.length > 0 && (
                 <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
@@ -163,7 +201,15 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
                 </div>
               )}
             </div>
-            {errors.customer_id && <p className="text-xs text-red-500">Please select a customer</p>}
+            {errors.customer_name && <p className="text-xs text-red-500">{errors.customer_name.message}</p>}
+            {!selected && query.length >= 2 && (
+              <p className="text-xs text-amber-600">New customer — will be saved as &quot;{query}&quot; (VIP: Standard)</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Customer Phone {selected ? '' : '(optional)'}</Label>
+            <Input {...register('customer_phone')} placeholder="0812-3456-7890" />
           </div>
 
           {/* Items */}
@@ -214,9 +260,14 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
           <div className="space-y-2">
             <Label>Order Value (Rp)</Label>
             <Input
-              type="number"
-              {...register('order_value', { valueAsNumber: true })}
-              placeholder="150000"
+              type="text"
+              inputMode="numeric"
+              value={formatThousands(String(watch('order_value') ?? ''))}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '');
+                setValue('order_value', digits ? Number(digits) : 0, { shouldValidate: true });
+              }}
+              placeholder="150.000"
             />
             {errors.order_value && <p className="text-xs text-red-500">{errors.order_value.message}</p>}
           </div>

@@ -75,6 +75,8 @@ export const ordersApi = {
   assign: (id: number, driverId: number) => api.post(`/orders/${id}/assign`, { driver_id: driverId }),
   bulkAssign: (orderIds: number[], driverId: number) =>
     api.post('/orders/bulk-assign', { order_ids: orderIds, driver_id: driverId }),
+  bulkDelete: (orderIds: number[]) =>
+    api.post('/orders/bulk-delete', { order_ids: orderIds }),
   updateStatus: (id: number, status: string, notes?: string) =>
     api.post(`/orders/${id}/status`, { status, notes }),
   history: (id: number) => api.get(`/orders/${id}/history`),

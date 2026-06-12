@@ -17,29 +17,26 @@ const schema = z.object({
   phone:         z.string().min(8),
   vehicle_type:  z.enum(['motorcycle', 'car', 'van']),
   vehicle_plate: z.string().min(3),
-  email:         z.string().email().optional().or(z.literal('')),
-  password:      z.string().min(6).optional().or(z.literal('')),
 });
 type FormData = z.infer<typeof schema>;
 
-interface Props { driver: Driver | null; onClose: () => void; }
+interface Props { driver: Driver; onClose: () => void; }
 
 export default function DriverForm({ driver, onClose }: Props) {
   const qc = useQueryClient();
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: driver ? {
+    defaultValues: {
       driver_name: driver.driver_name,
       phone: driver.phone,
       vehicle_type: driver.vehicle_type,
       vehicle_plate: driver.vehicle_plate,
-    } : { vehicle_type: 'motorcycle' },
+    },
   });
 
   const mutation = useMutation({
-    mutationFn: (data: FormData) =>
-      driver ? driversApi.update(driver.id, data) : driversApi.create(data),
+    mutationFn: (data: FormData) => driversApi.update(driver.id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['drivers'] });
       onClose();
@@ -50,7 +47,7 @@ export default function DriverForm({ driver, onClose }: Props) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{driver ? 'Edit Driver' : 'Add Driver'}</DialogTitle>
+          <DialogTitle>Edit Driver</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
           <div className="space-y-2">
@@ -81,20 +78,6 @@ export default function DriverForm({ driver, onClose }: Props) {
               {errors.vehicle_plate && <p className="text-xs text-red-500">{errors.vehicle_plate.message}</p>}
             </div>
           </div>
-          {!driver && (
-            <>
-              <div className="space-y-2">
-                <Label>Login Email</Label>
-                <Input {...register('email')} type="email" placeholder="driver@segar.id" />
-                {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Password</Label>
-                <Input {...register('password')} type="password" placeholder="min 6 characters" />
-                {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
-              </div>
-            </>
-          )}
           {mutation.isError && <p className="text-xs text-red-500">Save failed. Please try again.</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

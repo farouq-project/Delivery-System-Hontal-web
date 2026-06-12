@@ -33,6 +33,14 @@ export default function OrdersPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => ordersApi.bulkDelete(ids),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      setSelectedIds(new Set());
+    },
+  });
+
   const orders: DeliveryOrder[] = data?.data?.data ?? [];
   const meta = data?.data ? {
     total: data.data.total,
@@ -91,9 +99,22 @@ export default function OrdersPage() {
           </SelectContent>
         </Select>
         {selectedIds.size > 0 && (
-          <Button variant="outline" onClick={() => setAssigningIds(Array.from(selectedIds))}>
-            <Truck className="h-4 w-4" /> Assign {selectedIds.size} to Driver
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setAssigningIds(Array.from(selectedIds))}>
+              <Truck className="h-4 w-4" /> Assign {selectedIds.size} to Driver
+            </Button>
+            <Button
+              variant="outline"
+              className="text-red-500 hover:text-red-700"
+              onClick={() => {
+                if (confirm(`Delete ${selectedIds.size} order(s)? Only pending/cancelled orders will be removed.`)) {
+                  bulkDeleteMutation.mutate(Array.from(selectedIds));
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" /> Delete {selectedIds.size}
+            </Button>
+          </>
         )}
       </div>
 
