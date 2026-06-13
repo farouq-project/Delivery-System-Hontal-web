@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { routesApi, driversApi, ordersApi } from '@/lib/api';
 import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, formatTime } from '@/lib/utils';
 import { Play, Lock, Unlock, RotateCcw, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -27,6 +28,11 @@ export default function DispatchPage() {
     queryFn: () => driversApi.list({ status: 'available' }),
   });
 
+  const { data: allDriversData } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => driversApi.list(),
+  });
+
   const { data: ordersData } = useQuery({
     queryKey: ['orders', 'pending'],
     queryFn: () => ordersApi.list({ status: 'pending', per_page: 200 }),
@@ -34,6 +40,7 @@ export default function DispatchPage() {
 
   const routes: Route[] = routesData?.data?.data ?? [];
   const drivers: Driver[] = driversData?.data?.data ?? [];
+  const allDrivers: Driver[] = allDriversData?.data?.data ?? [];
   const pendingOrders: DeliveryOrder[] = ordersData?.data?.data ?? [];
   const todayRouteId = routes[0]?.id ?? null;
 
@@ -65,6 +72,14 @@ export default function DispatchPage() {
 
   const lockMutation   = useMutation({ mutationFn: (id: number) => routesApi.lock(id),   onSuccess: () => qc.invalidateQueries({ queryKey: ['routes'] }) });
   const unlockMutation = useMutation({ mutationFn: (id: number) => routesApi.unlock(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['routes'] }) });
+
+  const assignOrderMutation = useMutation({
+    mutationFn: (vars: { order_id: number; driver_id: number }) => routesApi.assignOrder(vars),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['routes'] });
+      qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -128,6 +143,43 @@ export default function DispatchPage() {
         )}
         </div>
       </div>
+
+      {/* Unassigned orders — manual driver assignment */}
+      {pendingOrders.length > 0 && (
+        <div className="border-b bg-white px-4 sm:px-6 py-3">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Unassigned Orders ({pendingOrders.length})</h2>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {pendingOrders.map((o) => (
+              <div key={o.id} className="shrink-0 w-64 border rounded-md p-2.5 bg-gray-50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-xs font-medium text-gray-500">{o.order_number}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>
+                    {o.status.replace('_', ' ')}
+                  </span>
+                </div>
+                <p className="text-sm font-medium truncate">{o.customer_name}</p>
+                <p className="text-xs text-gray-400 truncate mb-2">{o.delivery_address}</p>
+                <Select
+                  value=""
+                  onValueChange={(v) => assignOrderMutation.mutate({ order_id: o.id, driver_id: Number(v) })}
+                >
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Assign driver..." /></SelectTrigger>
+                  <SelectContent>
+                    {allDrivers.map((d) => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+          {assignOrderMutation.isError && (
+            <p className="text-xs text-red-500 mt-2">
+              {getErrorMessage(assignOrderMutation.error) || 'Failed to assign order. Please try again.'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Board */}
       {routesLoading ? (

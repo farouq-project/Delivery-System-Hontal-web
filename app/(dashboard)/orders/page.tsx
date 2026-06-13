@@ -2,16 +2,15 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi, driversApi } from '@/lib/api';
-import { DeliveryOrder, Driver } from '@/types';
+import { ordersApi } from '@/lib/api';
+import { DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, formatCurrency, formatDate, formatTime } from '@/lib/utils';
-import { Plus, Search, Eye, Trash2, Truck } from 'lucide-react';
+import { Plus, Search, Eye, Trash2 } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
-import AssignDriverDialog from './assign-driver-dialog';
 import { useCashierStore, CASHIER_NAMES } from '@/store/cashier';
 import { CashierName } from '@/types';
 
@@ -25,31 +24,14 @@ export default function OrdersPage() {
   const [showForm, setShowForm] = useState(false);
   const [viewing, setViewing]   = useState<DeliveryOrder | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [assigningIds, setAssigningIds] = useState<number[] | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders', page, search, status],
     queryFn: () => ordersApi.list({ page, per_page: 20, search, status: status === 'all' ? undefined : status }),
   });
 
-  const { data: driversData } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => driversApi.list(),
-  });
-  const drivers: Driver[] = driversData?.data?.data ?? [];
-
   const deleteMutation = useMutation({
     mutationFn: (id: number) => ordersApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: ({ id, driverId }: { id: number; driverId: number }) => ordersApi.assign(id, driverId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
-  });
-
-  const unassignMutation = useMutation({
-    mutationFn: (id: number) => ordersApi.unassign(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 
@@ -132,22 +114,17 @@ export default function OrdersPage() {
           </SelectContent>
         </Select>
         {selectedIds.size > 0 && (
-          <>
-            <Button variant="outline" onClick={() => setAssigningIds(Array.from(selectedIds))}>
-              <Truck className="h-4 w-4" /> Assign {selectedIds.size} to Driver
-            </Button>
-            <Button
-              variant="outline"
-              className="text-red-500 hover:text-red-700"
-              onClick={() => {
-                if (confirm(`Delete ${selectedIds.size} order(s)? Only pending, assigned, or cancelled orders will be removed.`)) {
-                  bulkDeleteMutation.mutate(Array.from(selectedIds));
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4" /> Delete {selectedIds.size}
-            </Button>
-          </>
+          <Button
+            variant="outline"
+            className="text-red-500 hover:text-red-700"
+            onClick={() => {
+              if (confirm(`Delete ${selectedIds.size} order(s)? Only pending, assigned, or cancelled orders will be removed.`)) {
+                bulkDeleteMutation.mutate(Array.from(selectedIds));
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" /> Delete {selectedIds.size}
+          </Button>
         )}
       </div>
 
@@ -186,26 +163,6 @@ export default function OrdersPage() {
                   : 'Anytime'}
               </span>
             </div>
-            <div className="mb-2">
-              <Select
-                value={o.driver_id ? String(o.driver_id) : 'unassigned'}
-                onValueChange={(v) => {
-                  if (v === 'unassigned') {
-                    if (o.driver_id) unassignMutation.mutate(o.id);
-                    return;
-                  }
-                  assignMutation.mutate({ id: o.id, driverId: Number(v) });
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {drivers.map((d) => (
-                    <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="flex justify-end gap-2">
               <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                 <Eye className="h-4 w-4" />
@@ -236,16 +193,15 @@ export default function OrdersPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-600">Product</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Value</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Window</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Driver</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
-              <tr><td colSpan={9} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-8 text-gray-400">No orders found</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-gray-400">No orders found</td></tr>
             ) : orders.map((o) => (
               <tr key={o.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
@@ -264,26 +220,6 @@ export default function OrdersPage() {
                     : 'Anytime'}
                 </td>
                 <td className="px-4 py-3">
-                  <Select
-                    value={o.driver_id ? String(o.driver_id) : 'unassigned'}
-                    onValueChange={(v) => {
-                      if (v === 'unassigned') {
-                        if (o.driver_id) unassignMutation.mutate(o.id);
-                        return;
-                      }
-                      assignMutation.mutate({ id: o.id, driverId: Number(v) });
-                    }}
-                  >
-                    <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {drivers.map((d) => (
-                        <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[o.status]}`}>
                     {o.status.replace('_', ' ')}
                   </span>
@@ -293,11 +229,11 @@ export default function OrdersPage() {
                     <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {o.status === 'pending' && (
+                    {['pending', 'assigned', 'cancelled'].includes(o.status) && (
                       <Button
                         size="sm" variant="ghost"
                         className="text-red-500 hover:text-red-700"
-                        onClick={() => { if (confirm('Cancel this order?')) deleteMutation.mutate(o.id); }}
+                        onClick={() => { if (confirm('Delete this order?')) deleteMutation.mutate(o.id); }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -322,12 +258,6 @@ export default function OrdersPage() {
 
       {showForm  && <OrderForm onClose={() => setShowForm(false)} />}
       {viewing   && <OrderDetail order={viewing} onClose={() => setViewing(null)} />}
-      {assigningIds && (
-        <AssignDriverDialog
-          orderIds={assigningIds}
-          onClose={() => { setAssigningIds(null); setSelectedIds(new Set()); }}
-        />
-      )}
     </div>
   );
 }

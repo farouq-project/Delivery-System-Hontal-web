@@ -114,6 +114,8 @@ export const routesApi = {
   get: (id: number) => api.get(`/routes/${id}`),
   generate: (data: { driver_ids: number[]; order_ids: number[]; route_date: string }) =>
     api.post('/routes/generate', data),
+  assignOrder: (data: { order_id: number; driver_id: number }) =>
+    api.post('/routes/assign-order', data),
   lock: (id: number) => api.post(`/routes/${id}/lock`),
   unlock: (id: number) => api.post(`/routes/${id}/unlock`),
   reoptimize: (id: number, orderIds: number[]) =>

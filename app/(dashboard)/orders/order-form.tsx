@@ -200,6 +200,28 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="space-y-2">
+            <Label>Delivery Address</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <AddressAutocomplete
+                  value={watch('delivery_address') ?? ''}
+                  onChange={(v) => setValue('delivery_address', v, { shouldValidate: true })}
+                  onSelect={({ address, lat, lng }) => {
+                    setValue('delivery_address', address, { shouldValidate: true });
+                    setCoords({ lat, lng });
+                  }}
+                  placeholder="Address..."
+                />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={handleGeocode} disabled={geocoding}>
+                {geocoding ? '...' : 'Pin'}
+              </Button>
+            </div>
+            {coords && <p className="text-xs text-green-600">Pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>}
+            {errors.delivery_address && <p className="text-xs text-red-500">{errors.delivery_address.message}</p>}
+          </div>
+
+          <div className="space-y-2">
             <Label>Customer Phone {selected ? '' : '(optional)'}</Label>
             <Input {...register('customer_phone')} placeholder="0812-3456-7890" />
           </div>
@@ -274,28 +296,6 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Delivery Address</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <AddressAutocomplete
-                  value={watch('delivery_address') ?? ''}
-                  onChange={(v) => setValue('delivery_address', v, { shouldValidate: true })}
-                  onSelect={({ address, lat, lng }) => {
-                    setValue('delivery_address', address, { shouldValidate: true });
-                    setCoords({ lat, lng });
-                  }}
-                  placeholder="Address..."
-                />
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleGeocode} disabled={geocoding}>
-                {geocoding ? '...' : 'Pin'}
-              </Button>
-            </div>
-            {coords && <p className="text-xs text-green-600">Pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>}
-            {errors.delivery_address && <p className="text-xs text-red-500">{errors.delivery_address.message}</p>}
           </div>
 
           <div className="space-y-2">
