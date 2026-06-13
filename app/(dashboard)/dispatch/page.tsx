@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { STATUS_COLORS, formatTime } from '@/lib/utils';
 import { Play, Lock, Unlock, RotateCcw, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { getErrorMessage } from '@/lib/utils';
 
 const DispatchBoard = dynamic(() => import('./dispatch-board'), { ssr: false });
 
@@ -75,6 +76,7 @@ export default function DispatchPage() {
             {pendingOrders.length} pending orders · {drivers.length} available drivers
           </p>
         </div>
+        <div className="flex flex-col items-end gap-2">
         <div className="flex flex-wrap gap-3">
           {todayRoute ? (
             <>
@@ -118,6 +120,12 @@ export default function DispatchPage() {
               )}
             </Button>
           )}
+        </div>
+        {generateMutation.isError && (
+          <p className="text-xs text-red-500">
+            {getErrorMessage(generateMutation.error) || 'Failed to generate route. Please try again.'}
+          </p>
+        )}
         </div>
       </div>
 

@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { ProductSuggestInput } from '@/components/product-suggest-input';
 import { Search, Plus, Trash2 } from 'lucide-react';
-import { CashierName, PaymentMethod } from '@/types';
+import { PaymentMethod } from '@/types';
+import { useCashierStore } from '@/store/cashier';
 
 const itemSchema = z.object({
   name:     z.string().min(1, 'Required'),
@@ -23,13 +24,11 @@ const itemSchema = z.object({
   notes:    z.string().optional(),
 });
 
-const CASHIER_NAMES: CashierName[] = ['Mian', 'Sela', 'Epa', 'Tira'];
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'cash', label: 'Cash' },
   { value: 'transfer', label: 'Transfer' },
   { value: 'qris', label: 'QRIS' },
 ];
-const CASHIER_STORAGE_KEY = 'hontal_active_cashier';
 
 const schema = z.object({
   customer_id:              z.number().optional(),
@@ -52,12 +51,6 @@ function nowTime() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function getActiveCashier(): CashierName {
-  if (typeof window === 'undefined') return 'Mian';
-  const stored = window.localStorage.getItem(CASHIER_STORAGE_KEY);
-  return (CASHIER_NAMES as string[]).includes(stored ?? '') ? (stored as CashierName) : 'Mian';
-}
-
 function formatThousands(value: string): string {
   const digits = value.replace(/\D/g, '');
   if (!digits) return '';
@@ -73,13 +66,15 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
   const [geocoding, setGeocoding] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  const cashierName = useCashierStore((s) => s.cashierName);
+
   const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       requested_delivery_date: new Date().toISOString().split('T')[0],
       requested_delivery_start: nowTime(),
       items: [{ name: '', quantity: undefined, notes: '' }],
-      cashier_name: getActiveCashier(),
+      cashier_name: cashierName,
       payment_method: 'cash',
     },
   });
@@ -150,20 +145,17 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
       return ordersApi.create({
         ...data,
         customer_id: customerId,
+        cashier_name: cashierName,
         delivery_latitude: coords?.lat,
         delivery_longitude: coords?.lng,
       });
     },
-    onSuccess: (_res, variables) => {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(CASHIER_STORAGE_KEY, variables.cashier_name);
-      }
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] });
       onClose();
     },
   });
 
-  const cashierName = watch('cashier_name');
   const paymentMethod = watch('payment_method');
 
   return (
@@ -272,29 +264,16 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
             {errors.order_value && <p className="text-xs text-red-500">{errors.order_value.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Cashier</Label>
-              <Select value={cashierName} onValueChange={(v) => setValue('cashier_name', v as CashierName)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CASHIER_NAMES.map((name) => (
-                    <SelectItem key={name} value={name}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={(v) => setValue('payment_method', v as PaymentMethod)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHODS.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Payment Method</Label>
+            <Select value={paymentMethod} onValueChange={(v) => setValue('payment_method', v as PaymentMethod)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

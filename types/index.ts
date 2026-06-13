@@ -101,6 +101,7 @@ export interface DeliveryOrder {
   picked_up_at: string | null;
   delivered_at: string | null;
   failed_at: string | null;
+  driver_id: number | null;
   driver?: Driver | null;
   customer?: Customer;
 }

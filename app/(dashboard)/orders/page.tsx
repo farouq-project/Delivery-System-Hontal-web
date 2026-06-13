@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi } from '@/lib/api';
-import { DeliveryOrder } from '@/types';
+import { ordersApi, driversApi } from '@/lib/api';
+import { DeliveryOrder, Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,9 +12,13 @@ import { Plus, Search, Eye, Trash2, Truck } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
 import AssignDriverDialog from './assign-driver-dialog';
+import { useCashierStore, CASHIER_NAMES } from '@/store/cashier';
+import { CashierName } from '@/types';
 
 export default function OrdersPage() {
   const qc = useQueryClient();
+  const cashierName = useCashierStore((s) => s.cashierName);
+  const setCashierName = useCashierStore((s) => s.setCashierName);
   const [search, setSearch]     = useState('');
   const [status, setStatus]     = useState('all');
   const [page, setPage]         = useState(1);
@@ -28,8 +32,19 @@ export default function OrdersPage() {
     queryFn: () => ordersApi.list({ page, per_page: 20, search, status: status === 'all' ? undefined : status }),
   });
 
+  const { data: driversData } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => driversApi.list(),
+  });
+  const drivers: Driver[] = driversData?.data?.data ?? [];
+
   const deleteMutation = useMutation({
     mutationFn: (id: number) => ordersApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: ({ id, driverId }: { id: number; driverId: number }) => ordersApi.assign(id, driverId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 
@@ -74,7 +89,20 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold">Delivery Orders</h1>
           <p className="text-gray-500 text-sm">{meta?.total ?? 0} total orders</p>
         </div>
-        <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> New Order</Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Cashier:</span>
+            <Select value={cashierName} onValueChange={(v) => setCashierName(v as CashierName)}>
+              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CASHIER_NAMES.map((name) => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> New Order</Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
@@ -153,15 +181,26 @@ export default function OrdersPage() {
                   : 'Anytime'}
               </span>
             </div>
-            {o.driver && (
-              <p className="text-xs text-blue-600 mb-2">Driver: {o.driver.driver_name}</p>
-            )}
+            <div className="mb-2">
+              <Select
+                value={o.driver_id ? String(o.driver_id) : 'unassigned'}
+                onValueChange={(v) => {
+                  if (v === 'unassigned') return;
+                  assignMutation.mutate({ id: o.id, driverId: Number(v) });
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned" disabled>Unassigned</SelectItem>
+                  {drivers.map((d) => (
+                    <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex justify-end gap-2">
               <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                 <Eye className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setAssigningIds([o.id])}>
-                <Truck className="h-4 w-4" />
               </Button>
               {o.status === 'pending' && (
                 <Button
@@ -216,7 +255,23 @@ export default function OrdersPage() {
                     ? `${formatTime(o.requested_delivery_start)} - ${formatTime(o.requested_delivery_end)}`
                     : 'Anytime'}
                 </td>
-                <td className="px-4 py-3 text-xs text-gray-600">{o.driver?.driver_name ?? '-'}</td>
+                <td className="px-4 py-3">
+                  <Select
+                    value={o.driver_id ? String(o.driver_id) : 'unassigned'}
+                    onValueChange={(v) => {
+                      if (v === 'unassigned') return;
+                      assignMutation.mutate({ id: o.id, driverId: Number(v) });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned" disabled>Unassigned</SelectItem>
+                      {drivers.map((d) => (
+                        <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[o.status]}`}>
                     {o.status.replace('_', ' ')}
@@ -226,9 +281,6 @@ export default function OrdersPage() {
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" title="Assign driver" onClick={() => setAssigningIds([o.id])}>
-                      <Truck className="h-4 w-4" />
                     </Button>
                     {o.status === 'pending' && (
                       <Button
