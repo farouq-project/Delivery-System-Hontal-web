@@ -112,12 +112,13 @@ export const usersApi = {
 export const routesApi = {
   list: (params?: Record<string, unknown>) => api.get('/routes', { params }),
   get: (id: number) => api.get(`/routes/${id}`),
-  generate: (data: { driver_ids: number[]; order_ids: number[]; route_date: string }) =>
+  generate: (data: { route_date: string }) =>
     api.post('/routes/generate', data),
   assignOrder: (data: { order_id: number; driver_id: number }) =>
     api.post('/routes/assign-order', data),
   lock: (id: number) => api.post(`/routes/${id}/lock`),
   unlock: (id: number) => api.post(`/routes/${id}/unlock`),
+  reset: (id: number) => api.post(`/routes/${id}/reset`),
   reoptimize: (id: number, orderIds: number[]) =>
     api.post(`/routes/${id}/reoptimize`, { order_ids: orderIds }),
   updateStop: (routeId: number, stopId: number, data: Record<string, unknown>) =>

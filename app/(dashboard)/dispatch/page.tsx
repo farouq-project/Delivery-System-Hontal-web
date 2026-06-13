@@ -7,7 +7,7 @@ import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, formatTime } from '@/lib/utils';
-import { Play, Lock, Unlock, RotateCcw, Loader2 } from 'lucide-react';
+import { Play, Lock, Unlock, RotateCcw, Loader2, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { getErrorMessage } from '@/lib/utils';
 
@@ -38,10 +38,16 @@ export default function DispatchPage() {
     queryFn: () => ordersApi.list({ status: 'pending', per_page: 200 }),
   });
 
+  const { data: assignedOrdersData } = useQuery({
+    queryKey: ['orders', 'assigned', today],
+    queryFn: () => ordersApi.list({ status: 'assigned', date: today, per_page: 200 }),
+  });
+
   const routes: Route[] = routesData?.data?.data ?? [];
   const drivers: Driver[] = driversData?.data?.data ?? [];
   const allDrivers: Driver[] = allDriversData?.data?.data ?? [];
   const pendingOrders: DeliveryOrder[] = ordersData?.data?.data ?? [];
+  const assignedOrders: DeliveryOrder[] = assignedOrdersData?.data?.data ?? [];
   const todayRouteId = routes[0]?.id ?? null;
 
   const { data: fullRouteData } = useQuery({
@@ -53,17 +59,7 @@ export default function DispatchPage() {
   const todayRoute: Route | null = fullRouteData?.data?.data ?? null;
 
   const generateMutation = useMutation({
-    mutationFn: async () => {
-      const allDriversRes = await driversApi.list();
-      const allDrivers: Driver[] = allDriversRes.data.data;
-      const allOrdersRes = await ordersApi.list({ status: 'pending', per_page: 200 });
-      const allOrders: DeliveryOrder[] = allOrdersRes.data.data;
-      return routesApi.generate({
-        driver_ids: allDrivers.map((d) => d.id),
-        order_ids: allOrders.map((o) => o.id),
-        route_date: today,
-      });
-    },
+    mutationFn: () => routesApi.generate({ route_date: today }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['routes'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
@@ -72,6 +68,14 @@ export default function DispatchPage() {
 
   const lockMutation   = useMutation({ mutationFn: (id: number) => routesApi.lock(id),   onSuccess: () => qc.invalidateQueries({ queryKey: ['routes'] }) });
   const unlockMutation = useMutation({ mutationFn: (id: number) => routesApi.unlock(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['routes'] }) });
+
+  const resetMutation = useMutation({
+    mutationFn: (id: number) => routesApi.reset(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['routes'] });
+      qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
 
   const assignOrderMutation = useMutation({
     mutationFn: (vars: { order_id: number; driver_id: number }) => routesApi.assignOrder(vars),
@@ -116,16 +120,29 @@ export default function DispatchPage() {
               <Button
                 variant="outline"
                 onClick={() => generateMutation.mutate()}
-                disabled={generateMutation.isPending}
+                disabled={generateMutation.isPending || assignedOrders.length === 0}
               >
                 <RotateCcw className="h-4 w-4" />
                 {generateMutation.isPending ? 'Regenerating...' : 'Regenerate'}
+              </Button>
+              <Button
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => {
+                  if (confirm('Reset today\'s dispatch? This will remove the route and return its orders to pending/unassigned.')) {
+                    resetMutation.mutate(todayRoute.id);
+                  }
+                }}
+                disabled={resetMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+                {resetMutation.isPending ? 'Resetting...' : 'Reset Dispatch'}
               </Button>
             </>
           ) : (
             <Button
               onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending || pendingOrders.length === 0}
+              disabled={generateMutation.isPending || assignedOrders.length === 0}
               className="bg-green-600 hover:bg-green-700"
             >
               {generateMutation.isPending ? (
@@ -139,6 +156,11 @@ export default function DispatchPage() {
         {generateMutation.isError && (
           <p className="text-xs text-red-500">
             {getErrorMessage(generateMutation.error) || 'Failed to generate route. Please try again.'}
+          </p>
+        )}
+        {resetMutation.isError && (
+          <p className="text-xs text-red-500">
+            {getErrorMessage(resetMutation.error) || 'Failed to reset dispatch. Please try again.'}
           </p>
         )}
         </div>
@@ -190,7 +212,7 @@ export default function DispatchPage() {
         <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
           <Play className="h-16 w-16 mb-4 opacity-30" />
           <p className="text-lg font-medium">No route for today</p>
-          <p className="text-sm">Click "Generate Route" to assign {pendingOrders.length} pending orders to drivers.</p>
+          <p className="text-sm">Assign drivers to orders in the panel above, then click "Generate Route" to optimize stop order.</p>
         </div>
       ) : (
         <DispatchBoard route={todayRoute} />
