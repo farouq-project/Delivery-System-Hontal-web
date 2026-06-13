@@ -48,6 +48,11 @@ export default function OrdersPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 
+  const unassignMutation = useMutation({
+    mutationFn: (id: number) => ordersApi.unassign(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+  });
+
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: number[]) => ordersApi.bulkDelete(ids),
     onSuccess: () => {
@@ -135,7 +140,7 @@ export default function OrdersPage() {
               variant="outline"
               className="text-red-500 hover:text-red-700"
               onClick={() => {
-                if (confirm(`Delete ${selectedIds.size} order(s)? Only pending/cancelled orders will be removed.`)) {
+                if (confirm(`Delete ${selectedIds.size} order(s)? Only pending, assigned, or cancelled orders will be removed.`)) {
                   bulkDeleteMutation.mutate(Array.from(selectedIds));
                 }
               }}
@@ -185,13 +190,16 @@ export default function OrdersPage() {
               <Select
                 value={o.driver_id ? String(o.driver_id) : 'unassigned'}
                 onValueChange={(v) => {
-                  if (v === 'unassigned') return;
+                  if (v === 'unassigned') {
+                    if (o.driver_id) unassignMutation.mutate(o.id);
+                    return;
+                  }
                   assignMutation.mutate({ id: o.id, driverId: Number(v) });
                 }}
               >
                 <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unassigned" disabled>Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {drivers.map((d) => (
                     <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
                   ))}
@@ -202,11 +210,11 @@ export default function OrdersPage() {
               <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                 <Eye className="h-4 w-4" />
               </Button>
-              {o.status === 'pending' && (
+              {['pending', 'assigned', 'cancelled'].includes(o.status) && (
                 <Button
                   size="sm" variant="ghost"
                   className="text-red-500 hover:text-red-700"
-                  onClick={() => { if (confirm('Cancel this order?')) deleteMutation.mutate(o.id); }}
+                  onClick={() => { if (confirm('Delete this order?')) deleteMutation.mutate(o.id); }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -259,13 +267,16 @@ export default function OrdersPage() {
                   <Select
                     value={o.driver_id ? String(o.driver_id) : 'unassigned'}
                     onValueChange={(v) => {
-                      if (v === 'unassigned') return;
+                      if (v === 'unassigned') {
+                        if (o.driver_id) unassignMutation.mutate(o.id);
+                        return;
+                      }
                       assignMutation.mutate({ id: o.id, driverId: Number(v) });
                     }}
                   >
                     <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Unassigned" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="unassigned" disabled>Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {drivers.map((d) => (
                         <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
                       ))}

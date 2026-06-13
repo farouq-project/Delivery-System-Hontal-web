@@ -73,6 +73,7 @@ export const ordersApi = {
   update: (id: number, data: Record<string, unknown>) => api.put(`/orders/${id}`, data),
   remove: (id: number) => api.delete(`/orders/${id}`),
   assign: (id: number, driverId: number) => api.post(`/orders/${id}/assign`, { driver_id: driverId }),
+  unassign: (id: number) => api.post(`/orders/${id}/unassign`),
   bulkAssign: (orderIds: number[], driverId: number) =>
     api.post('/orders/bulk-assign', { order_ids: orderIds, driver_id: driverId }),
   bulkDelete: (orderIds: number[]) =>
