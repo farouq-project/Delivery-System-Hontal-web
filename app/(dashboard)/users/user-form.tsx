@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { getErrorMessage } from '@/lib/utils';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: 'Super Admin',
@@ -126,7 +127,11 @@ export default function UserForm({ user, onClose }: Props) {
             <Input {...register('password')} type="password" placeholder="min 8 characters" />
             {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
           </div>
-          {mutation.isError && <p className="text-xs text-red-500">Save failed. Please try again.</p>}
+          {mutation.isError && (
+            <p className="text-xs text-red-500">
+              {getErrorMessage(mutation.error) || 'Save failed. Please try again.'}
+            </p>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={mutation.isPending}>

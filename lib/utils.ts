@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function getErrorMessage(error: unknown): string | null {
+  const data = (error as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data;
+  if (!data) return null;
+  if (data.errors) {
+    const first = Object.values(data.errors)[0];
+    if (first?.[0]) return first[0];
+  }
+  return data.message ?? null;
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
 }
