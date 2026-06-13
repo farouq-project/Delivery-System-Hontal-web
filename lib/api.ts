@@ -116,6 +116,8 @@ export const routesApi = {
     api.post('/routes/generate', data),
   assignOrder: (data: { order_id: number; driver_id: number }) =>
     api.post('/routes/assign-order', data),
+  assignOrders: (data: { order_ids: number[]; driver_id: number }) =>
+    api.post('/routes/assign-orders', data),
   lock: (id: number) => api.post(`/routes/${id}/lock`),
   unlock: (id: number) => api.post(`/routes/${id}/unlock`),
   reset: (id: number) => api.post(`/routes/${id}/reset`),

@@ -85,6 +85,25 @@ export default function DispatchPage() {
     },
   });
 
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+  const [bulkDriverId, setBulkDriverId] = useState('');
+
+  const assignOrdersMutation = useMutation({
+    mutationFn: (vars: { order_ids: number[]; driver_id: number }) => routesApi.assignOrders(vars),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['routes'] });
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      setSelectedOrderIds([]);
+      setBulkDriverId('');
+    },
+  });
+
+  const toggleOrderSelected = (orderId: number) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -120,7 +139,7 @@ export default function DispatchPage() {
               <Button
                 variant="outline"
                 onClick={() => generateMutation.mutate()}
-                disabled={generateMutation.isPending || assignedOrders.length === 0}
+                disabled={generateMutation.isPending || (pendingOrders.length === 0 && assignedOrders.length === 0)}
               >
                 <RotateCcw className="h-4 w-4" />
                 {generateMutation.isPending ? 'Regenerating...' : 'Regenerate'}
@@ -169,12 +188,42 @@ export default function DispatchPage() {
       {/* Unassigned orders — manual driver assignment */}
       {pendingOrders.length > 0 && (
         <div className="border-b bg-white px-4 sm:px-6 py-3">
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">Unassigned Orders ({pendingOrders.length})</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <h2 className="text-sm font-semibold text-gray-700">Unassigned Orders ({pendingOrders.length})</h2>
+            {selectedOrderIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">{selectedOrderIds.length} selected</span>
+                <Select value={bulkDriverId} onValueChange={setBulkDriverId}>
+                  <SelectTrigger className="h-8 text-xs w-40"><SelectValue placeholder="Assign driver..." /></SelectTrigger>
+                  <SelectContent>
+                    {allDrivers.map((d) => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  disabled={!bulkDriverId || assignOrdersMutation.isPending}
+                  onClick={() => assignOrdersMutation.mutate({ order_ids: selectedOrderIds, driver_id: Number(bulkDriverId) })}
+                >
+                  {assignOrdersMutation.isPending ? 'Assigning...' : `Assign ${selectedOrderIds.length}`}
+                </Button>
+              </div>
+            )}
+          </div>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {pendingOrders.map((o) => (
               <div key={o.id} className="shrink-0 w-64 border rounded-md p-2.5 bg-gray-50">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-mono text-xs font-medium text-gray-500">{o.order_number}</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5"
+                      checked={selectedOrderIds.includes(o.id)}
+                      onChange={() => toggleOrderSelected(o.id)}
+                    />
+                    <span className="font-mono text-xs font-medium text-gray-500">{o.order_number}</span>
+                  </label>
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>
                     {o.status.replace('_', ' ')}
                   </span>
@@ -195,9 +244,9 @@ export default function DispatchPage() {
               </div>
             ))}
           </div>
-          {assignOrderMutation.isError && (
+          {(assignOrderMutation.isError || assignOrdersMutation.isError) && (
             <p className="text-xs text-red-500 mt-2">
-              {getErrorMessage(assignOrderMutation.error) || 'Failed to assign order. Please try again.'}
+              {getErrorMessage(assignOrderMutation.error || assignOrdersMutation.error) || 'Failed to assign order. Please try again.'}
             </p>
           )}
         </div>
