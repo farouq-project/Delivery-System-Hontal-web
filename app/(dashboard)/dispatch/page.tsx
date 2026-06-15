@@ -38,11 +38,6 @@ export default function DispatchPage() {
     queryFn: () => ordersApi.list({ status: 'pending', per_page: 200 }),
   });
 
-  const { data: assignedOrdersData } = useQuery({
-    queryKey: ['orders', 'assigned', today],
-    queryFn: () => ordersApi.list({ status: 'assigned', date: today, per_page: 200 }),
-  });
-
   const { data: allAssignedOrdersData } = useQuery({
     queryKey: ['orders', 'assigned', 'all'],
     queryFn: () => ordersApi.list({ status: 'assigned', per_page: 200 }),
@@ -52,7 +47,6 @@ export default function DispatchPage() {
   const drivers: Driver[] = driversData?.data?.data ?? [];
   const allDrivers: Driver[] = allDriversData?.data?.data ?? [];
   const pendingOrders: DeliveryOrder[] = ordersData?.data?.data ?? [];
-  const assignedOrders: DeliveryOrder[] = assignedOrdersData?.data?.data ?? [];
   const allAssignedOrders: DeliveryOrder[] = allAssignedOrdersData?.data?.data ?? [];
   const todayRouteId = routes[0]?.id ?? null;
 
@@ -153,7 +147,7 @@ export default function DispatchPage() {
               <Button
                 variant="outline"
                 onClick={() => generateMutation.mutate()}
-                disabled={generateMutation.isPending || (pendingOrders.length === 0 && assignedOrders.length === 0)}
+                disabled={generateMutation.isPending || pendingOrders.length === 0}
               >
                 <RotateCcw className="h-4 w-4" />
                 {generateMutation.isPending ? 'Regenerating...' : 'Regenerate'}
@@ -175,7 +169,7 @@ export default function DispatchPage() {
           ) : (
             <Button
               onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending || (pendingOrders.length === 0 && assignedOrders.length === 0)}
+              disabled={generateMutation.isPending || pendingOrders.length === 0}
               className="bg-green-600 hover:bg-green-700"
             >
               {generateMutation.isPending ? (
