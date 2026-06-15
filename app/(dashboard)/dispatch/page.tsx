@@ -43,11 +43,17 @@ export default function DispatchPage() {
     queryFn: () => ordersApi.list({ status: 'assigned', date: today, per_page: 200 }),
   });
 
+  const { data: allAssignedOrdersData } = useQuery({
+    queryKey: ['orders', 'assigned', 'all'],
+    queryFn: () => ordersApi.list({ status: 'assigned', per_page: 200 }),
+  });
+
   const routes: Route[] = routesData?.data?.data ?? [];
   const drivers: Driver[] = driversData?.data?.data ?? [];
   const allDrivers: Driver[] = allDriversData?.data?.data ?? [];
   const pendingOrders: DeliveryOrder[] = ordersData?.data?.data ?? [];
   const assignedOrders: DeliveryOrder[] = assignedOrdersData?.data?.data ?? [];
+  const allAssignedOrders: DeliveryOrder[] = allAssignedOrdersData?.data?.data ?? [];
   const todayRouteId = routes[0]?.id ?? null;
 
   const { data: fullRouteData } = useQuery({
@@ -161,7 +167,7 @@ export default function DispatchPage() {
           ) : (
             <Button
               onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending || assignedOrders.length === 0}
+              disabled={generateMutation.isPending || (pendingOrders.length === 0 && assignedOrders.length === 0)}
               className="bg-green-600 hover:bg-green-700"
             >
               {generateMutation.isPending ? (
@@ -211,44 +217,108 @@ export default function DispatchPage() {
               </div>
             )}
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {pendingOrders.map((o) => (
-              <div key={o.id} className="shrink-0 w-64 border rounded-md p-2.5 bg-gray-50">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 border-b">
+                  <th className="py-1.5 pr-2 w-8">
                     <input
                       type="checkbox"
                       className="h-3.5 w-3.5"
-                      checked={selectedOrderIds.includes(o.id)}
-                      onChange={() => toggleOrderSelected(o.id)}
+                      checked={pendingOrders.length > 0 && selectedOrderIds.length === pendingOrders.length}
+                      onChange={() =>
+                        setSelectedOrderIds(
+                          selectedOrderIds.length === pendingOrders.length ? [] : pendingOrders.map((o) => o.id)
+                        )
+                      }
                     />
-                    <span className="font-mono text-xs font-medium text-gray-500">{o.order_number}</span>
-                  </label>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>
-                    {o.status.replace('_', ' ')}
-                  </span>
-                </div>
-                <p className="text-sm font-medium truncate">{o.customer_name}</p>
-                <p className="text-xs text-gray-400 truncate mb-2">{o.delivery_address}</p>
-                <Select
-                  value=""
-                  onValueChange={(v) => assignOrderMutation.mutate({ order_id: o.id, driver_id: Number(v) })}
-                >
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Assign driver..." /></SelectTrigger>
-                  <SelectContent>
-                    {allDrivers.map((d) => (
-                      <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+                  </th>
+                  <th className="py-1.5 pr-3">Order #</th>
+                  <th className="py-1.5 pr-3">Customer</th>
+                  <th className="py-1.5 pr-3">Address</th>
+                  <th className="py-1.5 pr-3">Status</th>
+                  <th className="py-1.5 pr-3">Assign Driver</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingOrders.map((o) => (
+                  <tr key={o.id} className="border-b last:border-0">
+                    <td className="py-1.5 pr-2">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5"
+                        checked={selectedOrderIds.includes(o.id)}
+                        onChange={() => toggleOrderSelected(o.id)}
+                      />
+                    </td>
+                    <td className="py-1.5 pr-3 font-mono text-xs text-gray-500 whitespace-nowrap">{o.order_number}</td>
+                    <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{o.customer_name}</td>
+                    <td className="py-1.5 pr-3 text-gray-500 max-w-xs truncate">{o.delivery_address}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>
+                        {o.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="py-1.5 pr-3">
+                      <Select
+                        value=""
+                        onValueChange={(v) => assignOrderMutation.mutate({ order_id: o.id, driver_id: Number(v) })}
+                      >
+                        <SelectTrigger className="h-8 text-xs w-40"><SelectValue placeholder="Assign driver..." /></SelectTrigger>
+                        <SelectContent>
+                          {allDrivers.map((d) => (
+                            <SelectItem key={d.id} value={String(d.id)}>{d.driver_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           {(assignOrderMutation.isError || assignOrdersMutation.isError) && (
             <p className="text-xs text-red-500 mt-2">
               {getErrorMessage(assignOrderMutation.error || assignOrdersMutation.error) || 'Failed to assign order. Please try again.'}
             </p>
           )}
+        </div>
+      )}
+
+      {/* All assigned orders (across all dates) */}
+      {allAssignedOrders.length > 0 && (
+        <div className="border-b bg-white px-4 sm:px-6 py-3">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Assigned Orders ({allAssignedOrders.length})</h2>
+          <div className="overflow-x-auto max-h-64">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 border-b">
+                  <th className="py-1.5 pr-3">Order #</th>
+                  <th className="py-1.5 pr-3">Customer</th>
+                  <th className="py-1.5 pr-3">Address</th>
+                  <th className="py-1.5 pr-3">Driver</th>
+                  <th className="py-1.5 pr-3">Delivery Date</th>
+                  <th className="py-1.5 pr-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allAssignedOrders.map((o) => (
+                  <tr key={o.id} className="border-b last:border-0">
+                    <td className="py-1.5 pr-3 font-mono text-xs text-gray-500 whitespace-nowrap">{o.order_number}</td>
+                    <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{o.customer_name}</td>
+                    <td className="py-1.5 pr-3 text-gray-500 max-w-xs truncate">{o.delivery_address}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">{o.driver?.driver_name ?? '—'}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">{o.requested_delivery_date}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>
+                        {o.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

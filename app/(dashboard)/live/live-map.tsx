@@ -71,7 +71,7 @@ export default function LiveMap({ drivers, selectedDriver, route }: Props) {
   return (
     <div className="flex-1 relative">
       <MapContainer
-        center={[-6.9175, 107.6191]}
+        center={[-6.8592, 107.4805]}
         zoom={12}
         className="w-full h-full"
         style={{ height: '100%' }}
