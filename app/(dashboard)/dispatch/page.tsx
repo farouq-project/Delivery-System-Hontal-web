@@ -91,6 +91,14 @@ export default function DispatchPage() {
     },
   });
 
+  const unassignOrderMutation = useMutation({
+    mutationFn: (id: number) => ordersApi.unassign(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['routes'] });
+      qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
   const [bulkDriverId, setBulkDriverId] = useState('');
 
@@ -299,6 +307,7 @@ export default function DispatchPage() {
                   <th className="py-1.5 pr-3">Driver</th>
                   <th className="py-1.5 pr-3">Delivery Date</th>
                   <th className="py-1.5 pr-3">Status</th>
+                  <th className="py-1.5 pr-3"></th>
                 </tr>
               </thead>
               <tbody>
@@ -314,11 +323,31 @@ export default function DispatchPage() {
                         {o.status.replace('_', ' ')}
                       </span>
                     </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                        disabled={unassignOrderMutation.isPending}
+                        onClick={() => {
+                          if (confirm(`Reset order ${o.order_number}? It will be unassigned and returned to pending.`)) {
+                            unassignOrderMutation.mutate(o.id);
+                          }
+                        }}
+                      >
+                        Reset
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {unassignOrderMutation.isError && (
+            <p className="text-xs text-red-500 mt-2">
+              {getErrorMessage(unassignOrderMutation.error) || 'Failed to reset order. Please try again.'}
+            </p>
+          )}
         </div>
       )}
 
