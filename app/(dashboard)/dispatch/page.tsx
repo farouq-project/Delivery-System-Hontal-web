@@ -6,7 +6,7 @@ import { routesApi, driversApi, ordersApi } from '@/lib/api';
 import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { STATUS_COLORS, formatTime } from '@/lib/utils';
+import { STATUS_COLORS, VIP_COLORS, formatTime } from '@/lib/utils';
 import { Play, Lock, Unlock, RotateCcw, Loader2, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { getErrorMessage } from '@/lib/utils';
@@ -243,7 +243,8 @@ export default function DispatchPage() {
                   </th>
                   <th className="py-1.5 pr-3">Order #</th>
                   <th className="py-1.5 pr-3">Customer</th>
-                  <th className="py-1.5 pr-3">Address</th>
+                  <th className="py-1.5 pr-3">Order Time</th>
+                  <th className="py-1.5 pr-3">VIP Label</th>
                   <th className="py-1.5 pr-3">Status</th>
                   <th className="py-1.5 pr-3">Assign Driver</th>
                 </tr>
@@ -261,7 +262,12 @@ export default function DispatchPage() {
                     </td>
                     <td className="py-1.5 pr-3 font-mono text-xs text-gray-500 whitespace-nowrap">{o.order_number}</td>
                     <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{o.customer_name}</td>
-                    <td className="py-1.5 pr-3 text-gray-500 max-w-xs truncate">{o.delivery_address}</td>
+                    <td className="py-1.5 pr-3 text-gray-500 whitespace-nowrap">{formatTime(o.requested_delivery_start)}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${VIP_COLORS[o.customer?.vip_level ?? 'standard']}`}>
+                        {(o.customer?.vip_level ?? 'standard').toUpperCase()}
+                      </span>
+                    </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">
                       <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>
                         {o.status.replace('_', ' ')}
@@ -303,7 +309,8 @@ export default function DispatchPage() {
                 <tr className="text-left text-xs text-gray-500 border-b">
                   <th className="py-1.5 pr-3">Order #</th>
                   <th className="py-1.5 pr-3">Customer</th>
-                  <th className="py-1.5 pr-3">Address</th>
+                  <th className="py-1.5 pr-3">Order Time</th>
+                  <th className="py-1.5 pr-3">VIP Label</th>
                   <th className="py-1.5 pr-3">Driver</th>
                   <th className="py-1.5 pr-3">Delivery Date</th>
                   <th className="py-1.5 pr-3">Status</th>
@@ -315,7 +322,12 @@ export default function DispatchPage() {
                   <tr key={o.id} className="border-b last:border-0">
                     <td className="py-1.5 pr-3 font-mono text-xs text-gray-500 whitespace-nowrap">{o.order_number}</td>
                     <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{o.customer_name}</td>
-                    <td className="py-1.5 pr-3 text-gray-500 max-w-xs truncate">{o.delivery_address}</td>
+                    <td className="py-1.5 pr-3 text-gray-500 whitespace-nowrap">{formatTime(o.requested_delivery_start)}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${VIP_COLORS[o.customer?.vip_level ?? 'standard']}`}>
+                        {(o.customer?.vip_level ?? 'standard').toUpperCase()}
+                      </span>
+                    </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">{o.driver?.driver_name ?? '—'}</td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">{o.requested_delivery_date}</td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">
