@@ -122,7 +122,7 @@ export interface RouteStop {
 
 export interface RouteAssignment {
   id: number;
-  driver: Pick<Driver, 'id' | 'driver_name' | 'phone' | 'status' | 'current_lat' | 'current_lng'>;
+  driver: Pick<Driver, 'id' | 'driver_name' | 'phone' | 'status' | 'current_lat' | 'current_lng'> | null;
   stops: RouteStop[];
   total_distance_m: number;
   total_stops: number;

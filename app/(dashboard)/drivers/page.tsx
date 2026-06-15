@@ -40,46 +40,66 @@ export default function DriversPage() {
         Drivers are added by creating a user with the &quot;Driver&quot; role on the Users page. Edit here to set their vehicle details.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isLoading ? (
-          <div className="col-span-3 text-center py-8 text-gray-400">Loading...</div>
-        ) : drivers.length === 0 ? (
-          <div className="col-span-3 text-center py-8 text-gray-400">No drivers yet</div>
-        ) : drivers.map((d) => (
-          <div key={d.id} className="bg-white rounded-lg border p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-semibold">{d.driver_name}</h3>
-                <p className="text-sm text-gray-500">{d.phone}</p>
-              </div>
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${DRIVER_STATUS_COLORS[d.status]}`}>
-                {d.status.replace('_', ' ')}
-              </span>
-            </div>
-            <div className="space-y-1 text-sm text-gray-600 mb-3">
-              <p>{d.vehicle_type} · <span className="font-medium">{d.vehicle_plate}</span></p>
-              {d.current_lat && (
-                <p className="flex items-center gap-1 text-xs text-green-600">
-                  <Signal className="h-3 w-3" />
-                  {d.current_lat.toFixed(4)}, {d.current_lng?.toFixed(4)}
-                  <span className="text-gray-400">· {formatDate(d.last_seen, 'HH:mm')}</span>
-                </p>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="ghost" onClick={() => { setEditing(d); setShowForm(true); }}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm" variant="ghost"
-                className="text-red-500 hover:text-red-700"
-                onClick={() => { if (confirm('Delete this driver?')) deleteMutation.mutate(d.id); }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
+      <div className="bg-white rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Vehicle</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {isLoading ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              ) : drivers.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">No drivers yet</td></tr>
+              ) : drivers.map((d) => (
+                <tr key={d.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium whitespace-nowrap">{d.driver_name}</td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{d.phone}</td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                    {d.vehicle_type} · <span className="font-medium">{d.vehicle_plate}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${DRIVER_STATUS_COLORS[d.status]}`}>
+                      {d.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {d.current_lat ? (
+                      <span className="flex items-center gap-1 text-xs text-green-600">
+                        <Signal className="h-3 w-3" />
+                        {d.current_lat.toFixed(4)}, {d.current_lng?.toFixed(4)}
+                        <span className="text-gray-400">· {formatDate(d.last_seen, 'HH:mm')}</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => { setEditing(d); setShowForm(true); }}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => { if (confirm('Delete this driver?')) deleteMutation.mutate(d.id); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showForm && editing && (

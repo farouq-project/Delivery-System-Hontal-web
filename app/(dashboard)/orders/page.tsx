@@ -128,60 +128,8 @@ export default function OrdersPage() {
         )}
       </div>
 
-      {/* Mobile card list */}
-      <div className="md:hidden space-y-3">
-        {isLoading ? (
-          <div className="text-center py-8 text-gray-400">Loading...</div>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">No orders found</div>
-        ) : orders.map((o) => (
-          <div key={o.id} className="bg-white rounded-lg border p-4">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex items-start gap-2 min-w-0">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={selectedIds.has(o.id)}
-                  onChange={() => toggleOne(o.id)}
-                />
-                <div className="min-w-0">
-                  <p className="font-mono text-xs font-medium text-gray-500">{o.order_number}</p>
-                  <p className="font-medium">{o.customer_name}</p>
-                  <p className="text-xs text-gray-400">{o.customer_phone}</p>
-                </div>
-              </div>
-              <span className={`shrink-0 text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[o.status]}`}>
-                {o.status.replace('_', ' ')}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 truncate mb-1">{o.product_name}</p>
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="font-medium text-gray-700">{formatCurrency(o.order_value)}</span>
-              <span className="text-xs text-gray-500">
-                {o.requested_delivery_start
-                  ? `${formatTime(o.requested_delivery_start)} - ${formatTime(o.requested_delivery_end)}`
-                  : 'Anytime'}
-              </span>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
-                <Eye className="h-4 w-4" />
-              </Button>
-              {['pending', 'assigned', 'cancelled'].includes(o.status) && (
-                <Button
-                  size="sm" variant="ghost"
-                  className="text-red-500 hover:text-red-700"
-                  onClick={() => { if (confirm('Delete this order?')) deleteMutation.mutate(o.id); }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="hidden md:block bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
@@ -244,6 +192,7 @@ export default function OrdersPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {meta && meta.last_page > 1 && (

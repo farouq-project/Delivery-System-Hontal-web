@@ -37,7 +37,7 @@ export default function DispatchBoard({ route }: Props) {
     <div className="flex-1 overflow-hidden">
       <div className="flex gap-0 h-full overflow-x-auto p-4">
         <DragDropContext onDragEnd={onDragEnd}>
-          {route.assignments.map((assignment) => (
+          {route.assignments.filter((assignment): assignment is RouteAssignment & { driver: NonNullable<RouteAssignment['driver']> } => !!assignment.driver).map((assignment) => (
             <AssignmentColumn
               key={assignment.id}
               assignment={assignment}
@@ -53,7 +53,7 @@ export default function DispatchBoard({ route }: Props) {
 }
 
 interface ColumnProps {
-  assignment: RouteAssignment;
+  assignment: RouteAssignment & { driver: NonNullable<RouteAssignment['driver']> };
   isLocked: boolean;
   onRemove: (stopId: number) => void;
   onToggleLock: (stopId: number, locked: boolean) => void;

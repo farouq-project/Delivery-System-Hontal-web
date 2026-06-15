@@ -112,59 +112,8 @@ export default function CustomersPage() {
         )}
       </div>
 
-      {/* Mobile card list */}
-      <div className="md:hidden space-y-3">
-        {isLoading ? (
-          <div className="text-center py-8 text-gray-400">Loading...</div>
-        ) : customers.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">No customers found</div>
-        ) : customers.map((c) => (
-          <div key={c.id} className="bg-white rounded-lg border p-4">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex items-start gap-2 min-w-0">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={selectedIds.has(c.id)}
-                  onChange={() => toggleOne(c.id)}
-                />
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{c.customer_name}</p>
-                  <p className="text-sm text-gray-500">{c.phone}</p>
-                </div>
-              </div>
-              <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${VIP_COLORS[c.vip_level]}`}>
-                {c.vip_level}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">{c.default_address}</p>
-            <div className="flex items-center justify-between">
-              {c.default_latitude ? (
-                <span className="text-green-600 flex items-center gap-1 text-xs">
-                  <MapPin className="h-3 w-3" /> Location set
-                </span>
-              ) : (
-                <span className="text-gray-400 text-xs">Location not set</span>
-              )}
-              <div className="flex gap-2">
-                <Button size="sm" variant="ghost" onClick={() => handleEdit(c)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm" variant="ghost"
-                  className="text-red-500 hover:text-red-700"
-                  onClick={() => { if (confirm('Delete this customer?')) deleteMutation.mutate(c.id); }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
@@ -224,6 +173,7 @@ export default function CustomersPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {meta && meta.last_page > 1 && (

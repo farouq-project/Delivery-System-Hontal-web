@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { authApi } from '@/lib/api';
 import { useState } from 'react';
+import { InstallButton } from './install-button';
 
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
@@ -103,6 +104,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               <p className="text-xs text-gray-400 truncate">{user.email}</p>
             </div>
           )}
+          <InstallButton collapsed={collapsed} />
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"

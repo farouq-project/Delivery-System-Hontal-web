@@ -65,6 +65,7 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
   const [coords, setCoords]     = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const skipNextSearch = useRef(false);
 
   const cashierName = useCashierStore((s) => s.cashierName);
 
@@ -82,6 +83,7 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   useEffect(() => {
+    if (skipNextSearch.current) { skipNextSearch.current = false; return; }
     if (query.length < 2) { setResults([]); return; }
     clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
@@ -93,6 +95,7 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
   }, [query]);
 
   const selectCustomer = (c: Customer) => {
+    skipNextSearch.current = true;
     setSelected(c);
     setResults([]);
     setQuery(c.customer_name);
