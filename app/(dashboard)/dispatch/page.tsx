@@ -58,6 +58,12 @@ export default function DispatchPage() {
 
   const todayRoute: Route | null = fullRouteData?.data?.data ?? null;
 
+  // Build order_id → stop lookup from the unassigned (driver=null) route assignment
+  const unassignedStopMap = new Map(
+    (todayRoute?.assignments.find((a) => a.driver === null)?.stops ?? [])
+      .map((s) => [s.order?.id, s])
+  );
+
   const generateMutation = useMutation({
     mutationFn: () => routesApi.generate({ route_date: today }),
     onSuccess: () => {
@@ -235,16 +241,25 @@ export default function DispatchPage() {
                       }
                     />
                   </th>
+                  <th className="py-1.5 pr-3">#</th>
                   <th className="py-1.5 pr-3">Order #</th>
                   <th className="py-1.5 pr-3">Customer</th>
                   <th className="py-1.5 pr-3">Order Time</th>
-                  <th className="py-1.5 pr-3">VIP Label</th>
-                  <th className="py-1.5 pr-3">Status</th>
+                  <th className="py-1.5 pr-3">VIP</th>
+                  <th className="py-1.5 pr-3">Total Score</th>
+                  <th className="py-1.5 pr-3">Dist</th>
+                  <th className="py-1.5 pr-3">Wait</th>
+                  <th className="py-1.5 pr-3">Window</th>
+                  <th className="py-1.5 pr-3">VIP Sc</th>
+                  <th className="py-1.5 pr-3">GPS</th>
                   <th className="py-1.5 pr-3">Assign Driver</th>
                 </tr>
               </thead>
               <tbody>
-                {pendingOrders.map((o) => (
+                {pendingOrders.map((o) => {
+                  const stop = unassignedStopMap.get(o.id);
+                  const hasCoords = !!(o.delivery_latitude && o.delivery_longitude);
+                  return (
                   <tr key={o.id} className="border-b last:border-0">
                     <td className="py-1.5 pr-2">
                       <input
@@ -254,6 +269,9 @@ export default function DispatchPage() {
                         onChange={() => toggleOrderSelected(o.id)}
                       />
                     </td>
+                    <td className="py-1.5 pr-3 font-bold text-blue-600 whitespace-nowrap">
+                      {stop ? `#${stop.stop_sequence}` : '—'}
+                    </td>
                     <td className="py-1.5 pr-3 font-mono text-xs text-gray-500 whitespace-nowrap">{o.order_number}</td>
                     <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{o.customer_name}</td>
                     <td className="py-1.5 pr-3 text-gray-500 whitespace-nowrap">{formatTime(o.requested_delivery_start)}</td>
@@ -262,10 +280,26 @@ export default function DispatchPage() {
                         {(o.customer?.vip_level ?? 'standard').toUpperCase()}
                       </span>
                     </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap font-semibold text-indigo-700">
+                      {stop ? Math.round(stop.total_score) : '—'}
+                    </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap text-gray-500 text-xs">
+                      {stop ? Math.round(stop.distance_score) : '—'}
+                    </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap text-gray-500 text-xs">
+                      {stop ? Math.round(stop.waiting_score) : '—'}
+                    </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap text-gray-500 text-xs">
+                      {stop ? Math.round(stop.window_score) : '—'}
+                    </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap text-gray-500 text-xs">
+                      {stop ? Math.round(stop.vip_score) : '—'}
+                    </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>
-                        {o.status.replace('_', ' ')}
-                      </span>
+                      {hasCoords
+                        ? <span className="text-xs text-green-600">✓</span>
+                        : <span className="text-xs text-orange-500" title="No GPS coordinates — distance score = 0">⚠</span>
+                      }
                     </td>
                     <td className="py-1.5 pr-3">
                       <Select
@@ -281,7 +315,8 @@ export default function DispatchPage() {
                       </Select>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
