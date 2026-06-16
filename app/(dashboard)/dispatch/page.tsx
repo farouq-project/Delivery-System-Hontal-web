@@ -64,6 +64,14 @@ export default function DispatchPage() {
       .map((s) => [s.order?.id, s])
   );
 
+  // Sort pending orders by total_score descending when a route has been generated;
+  // orders not yet in the stop map (no route run yet) stay at the bottom.
+  const sortedPendingOrders = [...pendingOrders].sort((a, b) => {
+    const sa = unassignedStopMap.get(a.id)?.total_score ?? -Infinity;
+    const sb = unassignedStopMap.get(b.id)?.total_score ?? -Infinity;
+    return sb - sa;
+  });
+
   const generateMutation = useMutation({
     mutationFn: () => routesApi.generate({ route_date: today }),
     onSuccess: () => {
@@ -256,7 +264,7 @@ export default function DispatchPage() {
                 </tr>
               </thead>
               <tbody>
-                {pendingOrders.map((o) => {
+                {sortedPendingOrders.map((o) => {
                   const stop = unassignedStopMap.get(o.id);
                   const hasCoords = !!(o.delivery_latitude && o.delivery_longitude);
                   return (
