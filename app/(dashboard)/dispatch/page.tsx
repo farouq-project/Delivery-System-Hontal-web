@@ -268,7 +268,6 @@ export default function DispatchPage() {
                       }
                     />
                   </th>
-                  <th className="py-1.5 pr-3">#</th>
                   <th className="py-1.5 pr-3">Order #</th>
                   <th className="py-1.5 pr-3">Customer</th>
                   <th className="py-1.5 pr-3">Order Time</th>
@@ -295,9 +294,6 @@ export default function DispatchPage() {
                         checked={selectedOrderIds.includes(o.id)}
                         onChange={() => toggleOrderSelected(o.id)}
                       />
-                    </td>
-                    <td className="py-1.5 pr-3 font-bold text-blue-600 whitespace-nowrap">
-                      {stop ? `#${stop.stop_sequence}` : '—'}
                     </td>
                     <td className="py-1.5 pr-3 font-mono text-xs text-gray-500 whitespace-nowrap">{o.order_number}</td>
                     <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{o.customer_name}</td>
@@ -367,6 +363,7 @@ export default function DispatchPage() {
                   <th className="py-1.5 pr-3">Customer</th>
                   <th className="py-1.5 pr-3">Order Time</th>
                   <th className="py-1.5 pr-3">VIP Label</th>
+                  <th className="py-1.5 pr-3">Total Score</th>
                   <th className="py-1.5 pr-3">Driver</th>
                   <th className="py-1.5 pr-3">Delivery Date</th>
                   <th className="py-1.5 pr-3">Status</th>
@@ -383,6 +380,11 @@ export default function DispatchPage() {
                       <span className={`text-xs px-1.5 py-0.5 rounded-full ${VIP_COLORS[o.customer?.vip_level ?? 'standard']}`}>
                         {(o.customer?.vip_level ?? 'standard').toUpperCase()}
                       </span>
+                    </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap font-semibold text-indigo-700">
+                      {allStopMap.get(o.id)?.total_score !== undefined
+                        ? Math.round(allStopMap.get(o.id)!.total_score)
+                        : (o.route_sequence !== null ? `~${o.route_sequence}` : '—')}
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">{o.driver?.driver_name ?? '—'}</td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">{o.requested_delivery_date}</td>

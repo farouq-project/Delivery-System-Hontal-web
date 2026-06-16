@@ -10,17 +10,31 @@ import { STATUS_COLORS, formatCurrency, formatTime, VIP_COLORS } from '@/lib/uti
 import { useAuthStore } from '@/store/auth';
 import { Layers, Settings2 } from 'lucide-react';
 
+type PaymentKey = 'cash' | 'transfer' | 'qris';
+
 interface KlotterOrder {
   id: number;
   order_number: string;
   customer_name: string;
   product_name: string;
   order_value: number;
+  payment_method: PaymentKey | null;
   delivery_address: string;
   requested_delivery_start: string | null;
   requested_delivery_end: string | null;
   status: string;
   customer?: { vip_level?: string };
+}
+
+function paymentTotals(orders: KlotterOrder[]): Record<PaymentKey, number> {
+  return orders.reduce(
+    (acc, o) => {
+      const m = o.payment_method ?? 'cash';
+      acc[m] = (acc[m] ?? 0) + o.order_value;
+      return acc;
+    },
+    { cash: 0, transfer: 0, qris: 0 } as Record<PaymentKey, number>
+  );
 }
 
 interface KlotterGroup {
@@ -111,15 +125,41 @@ export default function KlotterPage() {
         <div className="space-y-6">
           {drivers.map((driver) => (
             <div key={driver.driver_id} className="bg-white rounded-lg border overflow-hidden">
-              <div className="bg-gray-50 border-b px-4 py-3 flex items-center justify-between">
-                <h2 className="font-semibold">{driver.driver_name}</h2>
-                <span className="text-sm text-gray-500">{driver.total_orders} order(s) · {driver.klotters.length} klotter(s)</span>
+              <div className="bg-gray-50 border-b px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold">{driver.driver_name}</h2>
+                  <span className="text-sm text-gray-500">{driver.total_orders} order(s) · {driver.klotters.length} klotter(s)</span>
+                </div>
+                {(() => {
+                  const allOrders = driver.klotters.flatMap((k) => k.orders);
+                  const totals = paymentTotals(allOrders);
+                  return (
+                    <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-gray-600">
+                      {totals.cash    > 0 && <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">Cash: {formatCurrency(totals.cash)}</span>}
+                      {totals.transfer > 0 && <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Transfer: {formatCurrency(totals.transfer)}</span>}
+                      {totals.qris    > 0 && <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded">QRIS: {formatCurrency(totals.qris)}</span>}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="p-4 space-y-4">
                 {driver.klotters.map((klotter) => (
                   <div key={klotter.klotter_number} className="border rounded-md">
-                    <div className="bg-blue-50 px-3 py-2 border-b text-sm font-medium text-blue-700">
-                      Klotter {klotter.klotter_number} ({klotter.orders.length} order{klotter.orders.length > 1 ? 's' : ''})
+                    <div className="bg-blue-50 px-3 py-2 border-b">
+                      <div className="flex items-center justify-between text-sm font-medium text-blue-700">
+                        <span>Klotter {klotter.klotter_number} ({klotter.orders.length} order{klotter.orders.length > 1 ? 's' : ''})</span>
+                        <span className="font-normal text-xs text-blue-600">{formatCurrency(klotter.orders.reduce((s, o) => s + o.order_value, 0))}</span>
+                      </div>
+                      {(() => {
+                        const totals = paymentTotals(klotter.orders);
+                        return (
+                          <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                            {totals.cash     > 0 && <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Cash: {formatCurrency(totals.cash)}</span>}
+                            {totals.transfer > 0 && <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">Transfer: {formatCurrency(totals.transfer)}</span>}
+                            {totals.qris     > 0 && <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">QRIS: {formatCurrency(totals.qris)}</span>}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="divide-y">
                       {klotter.orders.map((order) => (

@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersApi } from '@/lib/api';
+import { usersApi, settingsApi } from '@/lib/api';
 import { User, UserRole } from '@/types';
 import { useAuthStore } from '@/store/auth';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,8 @@ export default function UserForm({ user, onClose }: Props) {
   const qc = useQueryClient();
   const { user: authUser } = useAuthStore();
   const isPlatformAdmin = authUser?.role === 'super_admin' || authUser?.role === 'developer';
+  const isOwnerEditing  = authUser?.role === 'merchant_owner' && user?.role === 'merchant_owner';
+  const [editPin, setEditPin] = useState('');
 
   const assignableRoles: UserRole[] = isPlatformAdmin
     ? ['super_admin', 'developer', 'merchant_owner', 'dispatcher', 'driver']
@@ -59,14 +62,20 @@ export default function UserForm({ user, onClose }: Props) {
   const role = watch('role');
 
   const mutation = useMutation({
-    mutationFn: (data: FormData) => {
+    mutationFn: async (data: FormData) => {
       const payload: Record<string, unknown> = { ...data };
       if (!payload.password) delete payload.password;
       if (!isPlatformAdmin) delete payload.merchant_id;
-      return user ? usersApi.update(user.id, payload) : usersApi.create(payload);
+      const result = await (user ? usersApi.update(user.id, payload) : usersApi.create(payload));
+      // If owner updated their own PIN, persist it to merchant settings
+      if (isOwnerEditing && editPin.trim().length >= 3) {
+        await settingsApi.update({ order_edit_pin: editPin.trim() });
+      }
+      return result;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] });
+      qc.invalidateQueries({ queryKey: ['settings'] });
       onClose();
     },
   });
@@ -127,6 +136,20 @@ export default function UserForm({ user, onClose }: Props) {
             <Input {...register('password')} type="password" placeholder="min 8 characters" />
             {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
           </div>
+          {isOwnerEditing && (
+            <div className="space-y-2">
+              <Label>Order Edit PIN (3–6 digits, leave blank to keep current)</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={editPin}
+                onChange={(e) => setEditPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="e.g. 152"
+              />
+              <p className="text-xs text-gray-400">Required to edit assigned orders. Only the merchant owner can change this.</p>
+            </div>
+          )}
           {mutation.isError && (
             <p className="text-xs text-red-500">
               {getErrorMessage(mutation.error) || 'Save failed. Please try again.'}

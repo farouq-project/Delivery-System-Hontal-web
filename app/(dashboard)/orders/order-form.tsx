@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, customersApi } from '@/lib/api';
-import { Customer } from '@/types';
+import { Customer, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,12 +57,19 @@ function formatThousands(value: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-export default function OrderForm({ onClose }: { onClose: () => void }) {
+interface Props { onClose: () => void; order?: DeliveryOrder }
+
+export default function OrderForm({ onClose, order }: Props) {
   const qc = useQueryClient();
-  const [query, setQuery]       = useState('');
+  const isEdit    = !!order;
+  const isPending = !order || order.status === 'pending';
+
+  const [query, setQuery]       = useState(order?.customer_name ?? '');
   const [results, setResults]   = useState<Customer[]>([]);
   const [selected, setSelected] = useState<Customer | null>(null);
-  const [coords, setCoords]     = useState<{ lat: number; lng: number } | null>(null);
+  const [coords, setCoords]     = useState<{ lat: number; lng: number } | null>(
+    order?.delivery_latitude ? { lat: order.delivery_latitude, lng: order.delivery_longitude! } : null
+  );
   const [geocoding, setGeocoding] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const skipNextSearch = useRef(false);
@@ -71,7 +78,20 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
 
   const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
+    defaultValues: order ? {
+      customer_id:              order.customer_id,
+      customer_name:            order.customer_name,
+      customer_phone:           order.customer_phone,
+      items:                    (order.items?.length ? order.items : [{ name: order.product_name, quantity: undefined, notes: '' }]) as { name: string; quantity?: number | null; notes?: string }[],
+      order_value:              order.order_value,
+      delivery_address:         order.delivery_address,
+      requested_delivery_date:  order.requested_delivery_date,
+      requested_delivery_start: order.requested_delivery_start?.slice(11, 16) ?? undefined,
+      requested_delivery_end:   order.requested_delivery_end?.slice(11, 16) ?? undefined,
+      notes:                    order.notes ?? undefined,
+      cashier_name:             (order.cashier_name ?? cashierName) as 'Mian' | 'Sela' | 'Epa' | 'Tira',
+      payment_method:           (order.payment_method ?? 'cash') as 'cash' | 'transfer' | 'qris',
+    } : {
       requested_delivery_date: new Date().toISOString().split('T')[0],
       requested_delivery_start: nowTime(),
       items: [{ name: '', quantity: undefined, notes: '' }],
@@ -130,6 +150,15 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
+      if (isEdit) {
+        return ordersApi.update(order.id, {
+          ...data,
+          cashier_name: data.cashier_name,
+          delivery_latitude: coords?.lat,
+          delivery_longitude: coords?.lng,
+        });
+      }
+
       let customerId = data.customer_id;
 
       // If the typed name doesn't match a selected existing customer, register it as a new customer
@@ -168,66 +197,80 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader><DialogTitle>New Delivery Order</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? `Edit Order ${order.order_number}` : 'New Delivery Order'}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
-          {/* Customer autocomplete */}
-          <div className="space-y-2">
-            <Label>Customer</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                className="pl-9"
-                placeholder="Type customer name (existing or new)..."
-                value={query}
-                onChange={(e) => handleCustomerNameChange(e.target.value)}
-              />
-              {results.length > 0 && (
-                <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
-                  {results.map((c) => (
-                    <button
-                      key={c.id} type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm"
-                      onClick={() => selectCustomer(c)}
-                    >
-                      <div className="font-medium">{c.customer_name}</div>
-                      <div className="text-xs text-gray-400">{c.phone} · {c.default_address?.substring(0, 40)}...</div>
-                    </button>
-                  ))}
-                </div>
+          {/* Customer autocomplete — hidden when editing a non-pending order */}
+          {isPending && (
+            <div className="space-y-2">
+              <Label>Customer</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  className="pl-9"
+                  placeholder="Type customer name (existing or new)..."
+                  value={query}
+                  onChange={(e) => handleCustomerNameChange(e.target.value)}
+                />
+                {results.length > 0 && (
+                  <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                    {results.map((c) => (
+                      <button
+                        key={c.id} type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm"
+                        onClick={() => selectCustomer(c)}
+                      >
+                        <div className="font-medium">{c.customer_name}</div>
+                        <div className="text-xs text-gray-400">{c.phone} · {c.default_address?.substring(0, 40)}...</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {errors.customer_name && <p className="text-xs text-red-500">{errors.customer_name.message}</p>}
+              {!selected && query.length >= 2 && (
+                <p className="text-xs text-amber-600">New customer — will be saved as &quot;{query}&quot; (VIP: Standard)</p>
               )}
             </div>
-            {errors.customer_name && <p className="text-xs text-red-500">{errors.customer_name.message}</p>}
-            {!selected && query.length >= 2 && (
-              <p className="text-xs text-amber-600">New customer — will be saved as &quot;{query}&quot; (VIP: Standard)</p>
-            )}
-          </div>
+          )}
 
-          <div className="space-y-2">
-            <Label>Delivery Address</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <AddressAutocomplete
-                  value={watch('delivery_address') ?? ''}
-                  onChange={(v) => setValue('delivery_address', v, { shouldValidate: true })}
-                  onSelect={({ address, lat, lng }) => {
-                    setValue('delivery_address', address, { shouldValidate: true });
-                    setCoords({ lat, lng });
-                  }}
-                  placeholder="Address..."
-                />
+          {isPending && (
+            <div className="space-y-2">
+              <Label>Delivery Address</Label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <AddressAutocomplete
+                    value={watch('delivery_address') ?? ''}
+                    onChange={(v) => setValue('delivery_address', v, { shouldValidate: true })}
+                    onSelect={({ address, lat, lng }) => {
+                      setValue('delivery_address', address, { shouldValidate: true });
+                      setCoords({ lat, lng });
+                    }}
+                    placeholder="Address..."
+                  />
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={handleGeocode} disabled={geocoding}>
+                  {geocoding ? '...' : 'Pin'}
+                </Button>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleGeocode} disabled={geocoding}>
-                {geocoding ? '...' : 'Pin'}
-              </Button>
+              {coords && <p className="text-xs text-green-600">Pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>}
+              {errors.delivery_address && <p className="text-xs text-red-500">{errors.delivery_address.message}</p>}
             </div>
-            {coords && <p className="text-xs text-green-600">Pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>}
-            {errors.delivery_address && <p className="text-xs text-red-500">{errors.delivery_address.message}</p>}
-          </div>
+          )}
 
-          <div className="space-y-2">
-            <Label>Customer Phone {selected ? '' : '(optional)'}</Label>
-            <Input {...register('customer_phone')} placeholder="0812-3456-7890" />
-          </div>
+          {!isPending && (
+            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-xs text-amber-700">
+              Customer and address fields are locked for assigned orders.
+            </div>
+          )}
+
+          {isPending && (
+            <div className="space-y-2">
+              <Label>Customer Phone {selected ? '' : '(optional)'}</Label>
+              <Input {...register('customer_phone')} placeholder="0812-3456-7890" />
+            </div>
+          )}
 
           {/* Items */}
           <div className="space-y-2">
@@ -323,11 +366,11 @@ export default function OrderForm({ onClose }: { onClose: () => void }) {
             <Input {...register('notes')} placeholder="Delivery instructions..." />
           </div>
 
-          {mutation.isError && <p className="text-xs text-red-500">Failed to create order. Please try again.</p>}
+          {mutation.isError && <p className="text-xs text-red-500">{isEdit ? 'Failed to update order.' : 'Failed to create order.'} Please try again.</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Creating...' : 'Create Order'}
+              {mutation.isPending ? (isEdit ? 'Saving...' : 'Creating...') : (isEdit ? 'Save Changes' : 'Create Order')}
             </Button>
           </div>
         </form>

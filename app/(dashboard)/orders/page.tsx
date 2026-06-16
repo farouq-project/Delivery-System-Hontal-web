@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi } from '@/lib/api';
+import { ordersApi, settingsApi } from '@/lib/api';
 import { DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, formatCurrency, formatDate, formatTime } from '@/lib/utils';
-import { Plus, Search, Eye, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
+import PinDialog from '@/components/pin-dialog';
 import { useCashierStore, CASHIER_NAMES } from '@/store/cashier';
 import { CashierName } from '@/types';
 
@@ -22,8 +23,16 @@ export default function OrdersPage() {
   const [status, setStatus]     = useState('all');
   const [page, setPage]         = useState(1);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing]   = useState<DeliveryOrder | null>(null);
   const [viewing, setViewing]   = useState<DeliveryOrder | null>(null);
+  const [pinTarget, setPinTarget] = useState<DeliveryOrder | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => settingsApi.get(),
+  });
+  const editPin: string = settingsData?.data?.data?.order_edit_pin ?? '152';
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders', page, search, status],
@@ -177,6 +186,18 @@ export default function OrdersPage() {
                     <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
                     </Button>
+                    {['pending', 'assigned'].includes(o.status) && (
+                      <Button
+                        size="sm" variant="ghost"
+                        title="Edit order"
+                        onClick={() => {
+                          if (o.status === 'pending') { setEditing(o); }
+                          else { setPinTarget(o); }
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     {['pending', 'assigned', 'cancelled'].includes(o.status) && (
                       <Button
                         size="sm" variant="ghost"
@@ -206,7 +227,15 @@ export default function OrdersPage() {
       )}
 
       {showForm  && <OrderForm onClose={() => setShowForm(false)} />}
+      {editing   && <OrderForm order={editing} onClose={() => setEditing(null)} />}
       {viewing   && <OrderDetail order={viewing} onClose={() => setViewing(null)} />}
+      {pinTarget && (
+        <PinDialog
+          correctPin={editPin}
+          onSuccess={() => { setEditing(pinTarget); setPinTarget(null); }}
+          onCancel={() => setPinTarget(null)}
+        />
+      )}
     </div>
   );
 }
