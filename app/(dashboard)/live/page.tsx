@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { driversApi, routesApi } from '@/lib/api';
+import { Route } from '@/types';
 import { LiveDriver } from '@/types';
 import { DRIVER_STATUS_COLORS, formatDate } from '@/lib/utils';
 import dynamic from 'next/dynamic';
@@ -20,14 +21,24 @@ export default function LivePage() {
     refetchInterval: 15_000,
   });
 
+  const today = new Date().toISOString().split('T')[0];
+
   const { data: routesData } = useQuery({
-    queryKey: ['routes', 'today'],
-    queryFn: () => routesApi.list({ date: new Date().toISOString().split('T')[0] }),
+    queryKey: ['routes', today],
+    queryFn: () => routesApi.list({ date: today }),
+  });
+
+  const todayRouteId: number | null = routesData?.data?.data?.[0]?.id ?? null;
+
+  const { data: fullRouteData } = useQuery({
+    queryKey: ['routes', 'full', todayRouteId],
+    queryFn: () => routesApi.get(todayRouteId!),
+    enabled: !!todayRouteId,
+    refetchInterval: 30_000,
   });
 
   const drivers: LiveDriver[] = driversData?.data?.data ?? [];
-  const routes = routesData?.data?.data ?? [];
-  const todayRoute = routes[0] ?? null;
+  const todayRoute: Route | null = fullRouteData?.data?.data ?? null;
 
   return (
     <div className="flex flex-col md:flex-row h-full">

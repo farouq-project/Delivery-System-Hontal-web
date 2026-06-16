@@ -13,6 +13,7 @@ interface CashierRow {
   total_cash: number;
   total_transfer: number;
   total_qris: number;
+  total_bayar_di_toko: number;
   total_orders: number;
 }
 
@@ -49,11 +50,12 @@ export default function ReportsPage() {
   }, [rows, sortKey, sortDir]);
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
-    total_cash: acc.total_cash + r.total_cash,
-    total_transfer: acc.total_transfer + r.total_transfer,
-    total_qris: acc.total_qris + r.total_qris,
-    total_orders: acc.total_orders + r.total_orders,
-  }), { total_cash: 0, total_transfer: 0, total_qris: 0, total_orders: 0 }), [rows]);
+    total_cash:          acc.total_cash + r.total_cash,
+    total_transfer:      acc.total_transfer + r.total_transfer,
+    total_qris:          acc.total_qris + r.total_qris,
+    total_bayar_di_toko: acc.total_bayar_di_toko + r.total_bayar_di_toko,
+    total_orders:        acc.total_orders + r.total_orders,
+  }), { total_cash: 0, total_transfer: 0, total_qris: 0, total_bayar_di_toko: 0, total_orders: 0 }), [rows]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -65,11 +67,12 @@ export default function ReportsPage() {
   };
 
   const columns: { key: SortKey; label: string; align?: 'right' | 'left' }[] = [
-    { key: 'cashier_name', label: 'Cashier Name', align: 'left' },
-    { key: 'total_cash', label: 'Total Cash', align: 'right' },
-    { key: 'total_transfer', label: 'Total Transfer', align: 'right' },
-    { key: 'total_qris', label: 'Total QRIS', align: 'right' },
-    { key: 'total_orders', label: 'Orders', align: 'right' },
+    { key: 'cashier_name',        label: 'Cashier Name',    align: 'left' },
+    { key: 'total_cash',          label: 'Cash',            align: 'right' },
+    { key: 'total_transfer',      label: 'Transfer',        align: 'right' },
+    { key: 'total_qris',          label: 'QRIS',            align: 'right' },
+    { key: 'total_bayar_di_toko', label: 'Bayar di Toko',  align: 'right' },
+    { key: 'total_orders',        label: 'Orders',          align: 'right' },
   ];
 
   const sortIcon = (key: SortKey) => {
@@ -125,6 +128,7 @@ export default function ReportsPage() {
                 <td className="px-4 py-2 border text-right">{formatCurrency(row.total_cash)}</td>
                 <td className="px-4 py-2 border text-right">{formatCurrency(row.total_transfer)}</td>
                 <td className="px-4 py-2 border text-right">{formatCurrency(row.total_qris)}</td>
+                <td className="px-4 py-2 border text-right">{formatCurrency(row.total_bayar_di_toko)}</td>
                 <td className="px-4 py-2 border text-right">{row.total_orders}</td>
               </tr>
             ))}
@@ -136,6 +140,7 @@ export default function ReportsPage() {
                 <td className="px-4 py-2 border text-right">{formatCurrency(totals.total_cash)}</td>
                 <td className="px-4 py-2 border text-right">{formatCurrency(totals.total_transfer)}</td>
                 <td className="px-4 py-2 border text-right">{formatCurrency(totals.total_qris)}</td>
+                <td className="px-4 py-2 border text-right">{formatCurrency(totals.total_bayar_di_toko)}</td>
                 <td className="px-4 py-2 border text-right">{totals.total_orders}</td>
               </tr>
             </tfoot>

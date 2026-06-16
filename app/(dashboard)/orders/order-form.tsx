@@ -25,9 +25,10 @@ const itemSchema = z.object({
 });
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'transfer', label: 'Transfer' },
-  { value: 'qris', label: 'QRIS' },
+  { value: 'cash',          label: 'Cash' },
+  { value: 'transfer',      label: 'Transfer' },
+  { value: 'qris',          label: 'QRIS' },
+  { value: 'bayar_di_toko', label: 'Bayar di Toko' },
 ];
 
 const schema = z.object({
@@ -42,7 +43,7 @@ const schema = z.object({
   requested_delivery_end:   z.string().optional(),
   notes:                    z.string().optional(),
   cashier_name:             z.enum(['Mian', 'Sela', 'Epa', 'Tira']),
-  payment_method:           z.enum(['cash', 'transfer', 'qris']),
+  payment_method:           z.enum(['cash', 'transfer', 'qris', 'bayar_di_toko']),
 });
 type FormData = z.infer<typeof schema>;
 

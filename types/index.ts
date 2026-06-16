@@ -68,7 +68,7 @@ export type OrderStatus = 'pending' | 'assigned' | 'in_transit' | 'delivered' | 
 
 export type CashierName = 'Mian' | 'Sela' | 'Epa' | 'Tira';
 
-export type PaymentMethod = 'cash' | 'transfer' | 'qris';
+export type PaymentMethod = 'cash' | 'transfer' | 'qris' | 'bayar_di_toko';
 
 export interface OrderItem {
   name: string;
