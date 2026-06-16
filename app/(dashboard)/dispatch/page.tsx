@@ -73,9 +73,15 @@ export default function DispatchPage() {
   });
 
   const sortedAssignedOrders = [...allAssignedOrders].sort((a, b) => {
-    const sa = allStopMap.get(a.id)?.total_score ?? -Infinity;
-    const sb = allStopMap.get(b.id)?.total_score ?? -Infinity;
-    return sb - sa;
+    const sa = allStopMap.get(a.id)?.total_score;
+    const sb = allStopMap.get(b.id)?.total_score;
+    // Prefer live score from stop map; fall back to route_sequence when stop map is stale
+    if (sa !== undefined && sb !== undefined) return sb - sa;
+    if (sa !== undefined) return -1;
+    if (sb !== undefined) return 1;
+    const ra = a.route_sequence ?? Infinity;
+    const rb = b.route_sequence ?? Infinity;
+    return ra - rb;
   });
 
   const generateMutation = useMutation({
@@ -232,7 +238,14 @@ export default function DispatchPage() {
                 <Button
                   size="sm"
                   disabled={!bulkDriverId || assignOrdersMutation.isPending}
-                  onClick={() => assignOrdersMutation.mutate({ order_ids: selectedOrderIds, driver_id: Number(bulkDriverId) })}
+                  onClick={() => {
+                    const sortedIds = [...selectedOrderIds].sort((a, b) => {
+                      const sa = allStopMap.get(a)?.total_score ?? -Infinity;
+                      const sb = allStopMap.get(b)?.total_score ?? -Infinity;
+                      return sb - sa;
+                    });
+                    assignOrdersMutation.mutate({ order_ids: sortedIds, driver_id: Number(bulkDriverId) });
+                  }}
                 >
                   {assignOrdersMutation.isPending ? 'Assigning...' : `Assign ${selectedOrderIds.length}`}
                 </Button>
@@ -247,10 +260,10 @@ export default function DispatchPage() {
                     <input
                       type="checkbox"
                       className="h-3.5 w-3.5"
-                      checked={pendingOrders.length > 0 && selectedOrderIds.length === pendingOrders.length}
+                      checked={sortedPendingOrders.length > 0 && selectedOrderIds.length === sortedPendingOrders.length}
                       onChange={() =>
                         setSelectedOrderIds(
-                          selectedOrderIds.length === pendingOrders.length ? [] : pendingOrders.map((o) => o.id)
+                          selectedOrderIds.length === sortedPendingOrders.length ? [] : sortedPendingOrders.map((o) => o.id)
                         )
                       }
                     />

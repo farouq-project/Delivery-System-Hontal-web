@@ -102,6 +102,7 @@ export interface DeliveryOrder {
   delivered_at: string | null;
   failed_at: string | null;
   driver_id: number | null;
+  route_sequence: number | null;
   driver?: Driver | null;
   customer?: Customer;
 }
