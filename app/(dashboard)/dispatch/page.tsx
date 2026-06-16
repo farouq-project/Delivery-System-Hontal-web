@@ -58,17 +58,23 @@ export default function DispatchPage() {
 
   const todayRoute: Route | null = fullRouteData?.data?.data ?? null;
 
-  // Build order_id → stop lookup from the unassigned (driver=null) route assignment
-  const unassignedStopMap = new Map(
-    (todayRoute?.assignments.find((a) => a.driver === null)?.stops ?? [])
+  // Build order_id → stop lookup covering ALL route assignments (unassigned + driver-assigned)
+  const allStopMap = new Map(
+    (todayRoute?.assignments.flatMap((a) => a.stops) ?? [])
       .map((s) => [s.order?.id, s])
   );
 
-  // Sort pending orders by total_score descending when a route has been generated;
-  // orders not yet in the stop map (no route run yet) stay at the bottom.
+  // Sort pending and assigned orders by total_score descending once a route has been generated.
+  // Orders not yet in the stop map stay at the bottom (score = -Infinity).
   const sortedPendingOrders = [...pendingOrders].sort((a, b) => {
-    const sa = unassignedStopMap.get(a.id)?.total_score ?? -Infinity;
-    const sb = unassignedStopMap.get(b.id)?.total_score ?? -Infinity;
+    const sa = allStopMap.get(a.id)?.total_score ?? -Infinity;
+    const sb = allStopMap.get(b.id)?.total_score ?? -Infinity;
+    return sb - sa;
+  });
+
+  const sortedAssignedOrders = [...allAssignedOrders].sort((a, b) => {
+    const sa = allStopMap.get(a.id)?.total_score ?? -Infinity;
+    const sb = allStopMap.get(b.id)?.total_score ?? -Infinity;
     return sb - sa;
   });
 
@@ -265,7 +271,7 @@ export default function DispatchPage() {
               </thead>
               <tbody>
                 {sortedPendingOrders.map((o) => {
-                  const stop = unassignedStopMap.get(o.id);
+                  const stop = allStopMap.get(o.id);
                   const hasCoords = !!(o.delivery_latitude && o.delivery_longitude);
                   return (
                   <tr key={o.id} className="border-b last:border-0">
@@ -355,7 +361,7 @@ export default function DispatchPage() {
                 </tr>
               </thead>
               <tbody>
-                {allAssignedOrders.map((o) => (
+                {sortedAssignedOrders.map((o) => (
                   <tr key={o.id} className="border-b last:border-0">
                     <td className="py-1.5 pr-3 font-mono text-xs text-gray-500 whitespace-nowrap">{o.order_number}</td>
                     <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{o.customer_name}</td>
