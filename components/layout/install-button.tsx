@@ -10,9 +10,11 @@ interface BeforeInstallPromptEvent extends Event {
 
 interface InstallButtonProps {
   collapsed?: boolean;
+  className?: string;
+  label?: string;
 }
 
-export function InstallButton({ collapsed = false }: InstallButtonProps) {
+export function InstallButton({ collapsed = false, className, label = 'Install App' }: InstallButtonProps) {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
@@ -49,10 +51,10 @@ export function InstallButton({ collapsed = false }: InstallButtonProps) {
   return (
     <button
       onClick={handleInstall}
-      className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+      className={className ?? 'flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors'}
     >
       <Download className="h-5 w-5 shrink-0" />
-      {!collapsed && 'Install App'}
+      {!collapsed && label}
     </button>
   );
 }

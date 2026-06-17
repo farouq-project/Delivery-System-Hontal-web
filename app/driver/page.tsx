@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { STATUS_COLORS, formatTime } from '@/lib/utils';
 import { CheckCircle, XCircle, MapPin, Package, LogOut } from 'lucide-react';
 import DeliverModal from './deliver-modal';
+import { InstallButton } from '@/components/layout/install-button';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } });
 
@@ -72,11 +73,18 @@ function DriverApp() {
             <h1 className="font-bold text-lg">Hontal Driver</h1>
             <p className="text-blue-100 text-sm">{user?.name}</p>
           </div>
-          {!hideLogout && (
-            <button onClick={handleLogout} className="p-2 rounded-full hover:bg-blue-700">
-              <LogOut className="h-5 w-5" />
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            <InstallButton
+              collapsed
+              className="p-2 rounded-full hover:bg-blue-700 text-white"
+              label="Install"
+            />
+            {!hideLogout && (
+              <button onClick={handleLogout} className="p-2 rounded-full hover:bg-blue-700">
+                <LogOut className="h-5 w-5" />
+              </button>
+            )}
+          </div>
         </div>
         {driverInfo && (
           <div className="mt-3 flex gap-4 text-sm">
