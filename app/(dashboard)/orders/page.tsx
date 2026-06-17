@@ -8,15 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, formatCurrency, formatDate, formatTime } from '@/lib/utils';
-import { Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2, Camera, X } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
 import PinDialog from '@/components/pin-dialog';
 import { useCashierStore, CASHIER_NAMES } from '@/store/cashier';
 import { CashierName } from '@/types';
+import { useAuthStore } from '@/store/auth';
 
 export default function OrdersPage() {
   const qc = useQueryClient();
+  const authUser = useAuthStore((s) => s.user);
+  const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
   const cashierName = useCashierStore((s) => s.cashierName);
   const setCashierName = useCashierStore((s) => s.setCashierName);
   const [search, setSearch]     = useState('');
@@ -27,6 +30,7 @@ export default function OrdersPage() {
   const [viewing, setViewing]   = useState<DeliveryOrder | null>(null);
   const [pinTarget, setPinTarget] = useState<DeliveryOrder | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [podPhoto, setPodPhoto] = useState<{ url: string; notes?: string } | null>(null);
 
   const { data: settingsData } = useQuery({
     queryKey: ['settings'],
@@ -49,6 +53,19 @@ export default function OrdersPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] });
       setSelectedIds(new Set());
+    },
+  });
+
+  const podMutation = useMutation({
+    mutationFn: (id: number) => ordersApi.get(id),
+    onSuccess: (res) => {
+      const proof = res.data?.data?.proof;
+      if (proof?.photo_path) {
+        const base = (process.env.NEXT_PUBLIC_API_URL ?? '').replace('/api/v1', '');
+        setPodPhoto({ url: `${base}/storage/${proof.photo_path}`, notes: proof.notes ?? undefined });
+      } else {
+        alert('No proof-of-delivery photo for this order.');
+      }
     },
   });
 
@@ -198,7 +215,18 @@ export default function OrdersPage() {
                         <Pencil className="h-4 w-4" />
                       </Button>
                     )}
-                    {['pending', 'assigned', 'cancelled'].includes(o.status) && (
+                    {o.status === 'delivered' && isOwner && (
+                      <Button
+                        size="sm" variant="ghost"
+                        title="View proof of delivery"
+                        onClick={() => podMutation.mutate(o.id)}
+                        disabled={podMutation.isPending}
+                      >
+                        <Camera className="h-4 w-4 text-blue-500" />
+                      </Button>
+                    )}
+                    {(['pending', 'assigned', 'cancelled'].includes(o.status) ||
+                      (o.status === 'delivered' && isOwner)) && (
                       <Button
                         size="sm" variant="ghost"
                         className="text-red-500 hover:text-red-700"
@@ -235,6 +263,23 @@ export default function OrdersPage() {
           onSuccess={() => { setEditing(pinTarget); setPinTarget(null); }}
           onCancel={() => setPinTarget(null)}
         />
+      )}
+
+      {podPhoto && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPodPhoto(null)}>
+          <div className="bg-white rounded-xl overflow-hidden max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <h3 className="font-semibold text-sm">Proof of Delivery</h3>
+              <button onClick={() => setPodPhoto(null)} className="p-1 rounded hover:bg-gray-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <img src={podPhoto.url} alt="Proof of delivery" className="w-full max-h-[70vh] object-contain bg-gray-100" />
+            {podPhoto.notes && (
+              <p className="px-4 py-3 text-sm text-gray-600 border-t">{podPhoto.notes}</p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

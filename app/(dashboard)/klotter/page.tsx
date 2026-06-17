@@ -22,6 +22,7 @@ interface KlotterOrder {
   delivery_address: string;
   requested_delivery_start: string | null;
   requested_delivery_end: string | null;
+  assigned_at: string | null;
   status: string;
   customer?: { vip_level?: string };
 }
@@ -179,6 +180,9 @@ export default function KlotterPage() {
                               )}
                             </div>
                             <p className="text-gray-400 truncate text-xs">{order.product_name} · {order.delivery_address}</p>
+                            {order.assigned_at && (
+                              <p className="text-blue-400 text-xs">Dispatch: {formatTime(order.assigned_at)}</p>
+                            )}
                           </div>
                           <div className="text-right ml-3 shrink-0">
                             <p className="font-medium">{formatCurrency(order.order_value)}</p>

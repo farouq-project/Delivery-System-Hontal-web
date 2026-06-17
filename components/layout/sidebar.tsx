@@ -51,13 +51,13 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     <>
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-[1000] bg-black/50 md:hidden"
           onClick={onMobileClose}
         />
       )}
       <aside
         className={cn(
-          'flex flex-col h-screen bg-gray-900 text-white transition-all duration-200 z-50',
+          'flex flex-col h-screen bg-gray-900 text-white transition-all duration-200 z-[1001]',
           'fixed inset-y-0 left-0 w-60 md:static',
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
           collapsed ? 'md:w-16' : 'md:w-60'
