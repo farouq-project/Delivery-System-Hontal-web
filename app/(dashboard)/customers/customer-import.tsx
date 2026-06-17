@@ -5,7 +5,20 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Download } from 'lucide-react';
+
+async function downloadTemplate() {
+  const res = await customersApi.downloadTemplate();
+  const blob = new Blob([res.data as ArrayBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'customers_template.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function CustomerImportDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -31,10 +44,13 @@ export default function CustomerImportDialog({ onClose }: { onClose: () => void 
         <DialogHeader><DialogTitle>Import Customers</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <p className="text-sm text-gray-500">
-            Upload an Excel (.xlsx) or CSV file. The first row must contain column headers.
-            Only <span className="font-medium">customer_name</span> (or &quot;name&quot;) is required —
-            other columns (phone, email, default_address, vip_level, notes) can be left empty.
+            Upload an Excel (.xlsx) or CSV file. Addresses are auto-geocoded on import.
+            Only <span className="font-medium">customer_name</span> is required —
+            other columns (phone, email, default_address, vip_level, notes) are optional.
           </p>
+          <Button variant="outline" size="sm" type="button" onClick={downloadTemplate} className="w-full">
+            <Download className="h-4 w-4 mr-1" /> Download Template (.xlsx)
+          </Button>
 
           <div
             className="border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:bg-gray-50"

@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersApi } from '@/lib/api';
+import { usersApi, settingsApi, ordersApi } from '@/lib/api';
 import { User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit, Trash2, KeyRound } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Plus, Search, Edit, Trash2, KeyRound, MapPin, Loader2 } from 'lucide-react';
 import UserForm from './user-form';
+import { useAuthStore } from '@/store/auth';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -17,8 +19,143 @@ const ROLE_LABELS: Record<string, string> = {
   driver: 'Driver',
 };
 
+function DepotSettingsPanel() {
+  const qc = useQueryClient();
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => settingsApi.get(),
+  });
+
+  const settings = settingsData?.data?.data;
+
+  const [depotAddress, setDepotAddress]   = useState('');
+  const [depotLat, setDepotLat]           = useState('');
+  const [depotLng, setDepotLng]           = useState('');
+  const [geocoding, setGeocoding]         = useState(false);
+  const [geocodeError, setGeocodeError]   = useState('');
+
+  // Populate from loaded settings when first available
+  const [initialized, setInitialized]     = useState(false);
+  if (settings && !initialized) {
+    setDepotAddress(settings.depot_address ?? '');
+    setDepotLat(settings.depot_latitude != null ? String(settings.depot_latitude) : '');
+    setDepotLng(settings.depot_longitude != null ? String(settings.depot_longitude) : '');
+    setInitialized(true);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: () => settingsApi.update({
+      depot_address:   depotAddress || null,
+      depot_latitude:  depotLat  ? parseFloat(depotLat)  : null,
+      depot_longitude: depotLng  ? parseFloat(depotLng) : null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['settings'] });
+      alert('Depot settings saved.');
+    },
+  });
+
+  const handleGeocode = async () => {
+    if (!depotAddress.trim()) return;
+    setGeocoding(true);
+    setGeocodeError('');
+    try {
+      const res = await ordersApi.geocode(depotAddress);
+      const { latitude, longitude } = res.data?.data ?? {};
+      if (latitude && longitude) {
+        setDepotLat(String(latitude));
+        setDepotLng(String(longitude));
+      } else {
+        setGeocodeError('Address not found. Enter coordinates manually.');
+      }
+    } catch {
+      setGeocodeError('Geocode failed. Check API key or enter coordinates manually.');
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg border p-5 mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <MapPin className="h-5 w-5 text-blue-600" />
+        <h2 className="font-semibold text-base">Depot / Warehouse GPS</h2>
+        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-auto">Owner only</span>
+      </div>
+      <p className="text-sm text-gray-500 mb-4">
+        Set the depot address and coordinates used as the starting point for route generation.
+      </p>
+
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs text-gray-600 mb-1 block">Depot Address</Label>
+          <div className="flex gap-2">
+            <Input
+              value={depotAddress}
+              onChange={e => setDepotAddress(e.target.value)}
+              placeholder="Jl. Raya No. 1 Bandung"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleGeocode}
+              disabled={geocoding || !depotAddress.trim()}
+            >
+              {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Auto GPS'}
+            </Button>
+          </div>
+          {geocodeError && <p className="text-xs text-red-500 mt-1">{geocodeError}</p>}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs text-gray-600 mb-1 block">Latitude</Label>
+            <Input
+              type="number"
+              step="any"
+              value={depotLat}
+              onChange={e => setDepotLat(e.target.value)}
+              placeholder="-6.9175"
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-gray-600 mb-1 block">Longitude</Label>
+            <Input
+              type="number"
+              step="any"
+              value={depotLng}
+              onChange={e => setDepotLng(e.target.value)}
+              placeholder="107.6191"
+            />
+          </div>
+        </div>
+
+        {depotLat && depotLng && (
+          <p className="text-xs text-gray-400">
+            Preview: {parseFloat(depotLat).toFixed(5)}, {parseFloat(depotLng).toFixed(5)}
+          </p>
+        )}
+
+        <div className="flex justify-end pt-1">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? 'Saving…' : 'Save Depot Settings'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UsersPage() {
   const qc = useQueryClient();
+  const authUser = useAuthStore(s => s.user);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
@@ -64,6 +201,8 @@ export default function UsersPage() {
         </div>
         <Button onClick={handleNew}><Plus className="h-4 w-4" /> Add User</Button>
       </div>
+
+      {authUser?.role === 'merchant_owner' && <DepotSettingsPanel />}
 
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">

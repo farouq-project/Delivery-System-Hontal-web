@@ -51,6 +51,8 @@ export const customersApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  downloadTemplate: () =>
+    api.get('/customers/template', { responseType: 'arraybuffer' }),
 };
 
 // Drivers
