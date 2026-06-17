@@ -91,7 +91,7 @@ export default function OrderForm({ onClose, order }: Props) {
       requested_delivery_end:   order.requested_delivery_end?.slice(11, 16) ?? undefined,
       notes:                    order.notes ?? undefined,
       cashier_name:             (order.cashier_name ?? cashierName) as 'Mian' | 'Sela' | 'Epa' | 'Tira',
-      payment_method:           (order.payment_method ?? 'cash') as 'cash' | 'transfer' | 'qris',
+      payment_method:           (order.payment_method ?? 'cash') as PaymentMethod,
     } : {
       requested_delivery_date: new Date().toISOString().split('T')[0],
       requested_delivery_start: nowTime(),
@@ -154,6 +154,7 @@ export default function OrderForm({ onClose, order }: Props) {
       if (isEdit) {
         return ordersApi.update(order.id, {
           ...data,
+          delivery_notes: data.notes,
           cashier_name: data.cashier_name,
           delivery_latitude: coords?.lat,
           delivery_longitude: coords?.lng,
@@ -185,6 +186,8 @@ export default function OrderForm({ onClose, order }: Props) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] });
+      qc.invalidateQueries({ queryKey: ['klotters'] });
+      qc.invalidateQueries({ queryKey: ['reports'] });
       onClose();
     },
   });
