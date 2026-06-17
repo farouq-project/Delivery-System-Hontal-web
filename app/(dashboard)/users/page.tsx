@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi, settingsApi, ordersApi } from '@/lib/api';
 import { User } from '@/types';
@@ -21,27 +21,28 @@ const ROLE_LABELS: Record<string, string> = {
 
 function DepotSettingsPanel() {
   const qc = useQueryClient();
-  const { data: settingsData } = useQuery({
+  const { data: settingsData, refetch: refetchSettings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => settingsApi.get(),
   });
 
   const settings = settingsData?.data?.data;
 
-  const [depotAddress, setDepotAddress]   = useState('');
-  const [depotLat, setDepotLat]           = useState('');
-  const [depotLng, setDepotLng]           = useState('');
-  const [geocoding, setGeocoding]         = useState(false);
-  const [geocodeError, setGeocodeError]   = useState('');
+  const [depotAddress, setDepotAddress] = useState('');
+  const [depotLat, setDepotLat]         = useState('');
+  const [depotLng, setDepotLng]         = useState('');
+  const [geocoding, setGeocoding]       = useState(false);
+  const [geocodeError, setGeocodeError] = useState('');
 
-  // Populate from loaded settings when first available
-  const [initialized, setInitialized]     = useState(false);
-  if (settings && !initialized) {
+  // Sync form whenever settings data arrives or is refreshed after a save
+  useEffect(() => {
+    if (!settings) return;
     setDepotAddress(settings.depot_address ?? '');
-    setDepotLat(settings.depot_latitude != null ? String(settings.depot_latitude) : '');
+    setDepotLat(settings.depot_latitude  != null ? String(settings.depot_latitude)  : '');
     setDepotLng(settings.depot_longitude != null ? String(settings.depot_longitude) : '');
-    setInitialized(true);
-  }
+  }, [settings]);
+
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const saveMutation = useMutation({
     mutationFn: () => settingsApi.update({
@@ -49,9 +50,10 @@ function DepotSettingsPanel() {
       depot_latitude:  depotLat  ? parseFloat(depotLat)  : null,
       depot_longitude: depotLng  ? parseFloat(depotLng) : null,
     }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['settings'] });
-      alert('Depot settings saved.');
+    onSuccess: async () => {
+      await refetchSettings();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     },
   });
 
@@ -138,7 +140,9 @@ function DepotSettingsPanel() {
           </p>
         )}
 
-        <div className="flex justify-end pt-1">
+        <div className="flex items-center justify-end gap-3 pt-1">
+          {saveSuccess && <span className="text-xs text-green-600">Saved!</span>}
+          {saveMutation.isError && <span className="text-xs text-red-500">Save failed.</span>}
           <Button
             type="button"
             size="sm"
