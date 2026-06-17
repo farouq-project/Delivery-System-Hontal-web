@@ -7,7 +7,7 @@ import { User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Search, Edit, Trash2, KeyRound, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, KeyRound, MapPin, Loader2, Smartphone } from 'lucide-react';
 import UserForm from './user-form';
 import { useAuthStore } from '@/store/auth';
 
@@ -28,11 +28,12 @@ function DepotSettingsPanel() {
 
   const settings = settingsData?.data?.data;
 
-  const [depotAddress, setDepotAddress] = useState('');
-  const [depotLat, setDepotLat]         = useState('');
-  const [depotLng, setDepotLng]         = useState('');
-  const [geocoding, setGeocoding]       = useState(false);
-  const [geocodeError, setGeocodeError] = useState('');
+  const [depotAddress, setDepotAddress]       = useState('');
+  const [depotLat, setDepotLat]               = useState('');
+  const [depotLng, setDepotLng]               = useState('');
+  const [geocoding, setGeocoding]             = useState(false);
+  const [geocodeError, setGeocodeError]       = useState('');
+  const [hideDriverLogout, setHideDriverLogout] = useState(false);
 
   // Sync form whenever settings data arrives or is refreshed after a save
   useEffect(() => {
@@ -40,9 +41,21 @@ function DepotSettingsPanel() {
     setDepotAddress(settings.depot_address ?? '');
     setDepotLat(settings.depot_latitude  != null ? String(settings.depot_latitude)  : '');
     setDepotLng(settings.depot_longitude != null ? String(settings.depot_longitude) : '');
+    setHideDriverLogout(!!settings.hide_driver_logout);
   }, [settings]);
 
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveSuccess, setSaveSuccess]     = useState(false);
+  const [toggleSuccess, setToggleSuccess] = useState(false);
+
+  const toggleLogoutMutation = useMutation({
+    mutationFn: (value: boolean) => settingsApi.update({ hide_driver_logout: value }),
+    onSuccess: async (_, value) => {
+      setHideDriverLogout(value);
+      await refetchSettings();
+      setToggleSuccess(true);
+      setTimeout(() => setToggleSuccess(false), 2000);
+    },
+  });
 
   const saveMutation = useMutation({
     mutationFn: () => settingsApi.update({
@@ -151,6 +164,37 @@ function DepotSettingsPanel() {
           >
             {saveMutation.isPending ? 'Saving…' : 'Save Depot Settings'}
           </Button>
+        </div>
+      </div>
+
+      {/* Driver App Settings */}
+      <div className="border-t pt-4 mt-2">
+        <div className="flex items-center gap-2 mb-3">
+          <Smartphone className="h-4 w-4 text-gray-500" />
+          <h3 className="font-medium text-sm text-gray-700">Driver App Settings</h3>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Hide Logout Button</p>
+            <p className="text-xs text-gray-400">When enabled, drivers cannot log out from their app</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {toggleSuccess && <span className="text-xs text-green-600">Saved!</span>}
+            <button
+              type="button"
+              onClick={() => toggleLogoutMutation.mutate(!hideDriverLogout)}
+              disabled={toggleLogoutMutation.isPending}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                hideDriverLogout ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  hideDriverLogout ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
     </div>
