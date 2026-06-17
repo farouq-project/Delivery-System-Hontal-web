@@ -16,14 +16,15 @@ export default function CustomersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const { data, isLoading } = useQuery({
-    queryKey: ['customers', page, search],
-    queryFn: () => customersApi.list({ page, search, per_page: 20 }),
+    queryKey: ['customers', page, search, perPage],
+    queryFn: () => customersApi.list({ page, search, per_page: perPage }),
   });
 
   const deleteMutation = useMutation({
@@ -100,6 +101,25 @@ export default function CustomersPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
+
+        {/* Per-page selector */}
+        <div className="flex items-center gap-1 text-sm">
+          <span className="text-gray-500 mr-1">Show:</span>
+          {([50, 100, 9999] as const).map((n) => (
+            <button
+              key={n}
+              onClick={() => { setPerPage(n); setPage(1); }}
+              className={`px-2.5 py-1 rounded border text-xs font-medium transition-colors ${
+                perPage === n
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+              }`}
+            >
+              {n === 9999 ? 'All' : n}
+            </button>
+          ))}
+        </div>
+
         {selectedIds.size > 0 && (
           <Button
             variant="outline"
