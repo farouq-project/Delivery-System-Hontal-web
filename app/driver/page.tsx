@@ -8,14 +8,14 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { STATUS_COLORS, formatTime } from '@/lib/utils';
-import { CheckCircle, XCircle, MapPin, Package, LogOut } from 'lucide-react';
+import { CheckCircle, XCircle, MapPin, Package } from 'lucide-react';
 import DeliverModal from './deliver-modal';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } });
 
 function DriverApp() {
   const router = useRouter();
-  const { user, isAuthenticated, clearAuth } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const qc = useQueryClient();
   const [delivering, setDelivering] = useState<number | null>(null);
   const [failing, setFailing] = useState<number | null>(null);
@@ -56,24 +56,13 @@ function DriverApp() {
   const pending = stops.filter((s: { order: { status: string } }) => s.order?.status !== 'delivered' && s.order?.status !== 'failed');
   const done    = stops.filter((s: { order: { status: string } }) => s.order?.status === 'delivered' || s.order?.status === 'failed');
 
-  const handleLogout = async () => {
-    try { await driverApi.updateStatus('off_duty'); } catch {}
-    clearAuth();
-    router.push('/login');
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
       {/* Header */}
       <div className="bg-blue-600 text-white px-4 py-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="font-bold text-lg">Hontal Driver</h1>
-            <p className="text-blue-100 text-sm">{user?.name}</p>
-          </div>
-          <button onClick={handleLogout} className="p-2 rounded-full hover:bg-blue-700">
-            <LogOut className="h-5 w-5" />
-          </button>
+        <div>
+          <h1 className="font-bold text-lg">Hontal Driver</h1>
+          <p className="text-blue-100 text-sm">{user?.name}</p>
         </div>
         {driverInfo && (
           <div className="mt-3 flex gap-4 text-sm">
