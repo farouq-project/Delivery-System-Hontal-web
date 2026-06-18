@@ -25,7 +25,7 @@ function DriverApp() {
   useEffect(() => {
     if (!isAuthenticated()) { router.replace('/login'); return; }
 
-    // GPS ping every 30s
+    // GPS ping every 15s
     const ping = () => {
       if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition((pos) => {
@@ -33,7 +33,7 @@ function DriverApp() {
       });
     };
     ping();
-    gpsInterval.current = setInterval(ping, 30_000);
+    gpsInterval.current = setInterval(ping, 15_000);
     return () => clearInterval(gpsInterval.current);
   }, []);
 
