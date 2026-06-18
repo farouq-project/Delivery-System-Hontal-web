@@ -6,7 +6,7 @@ import { ordersApi, settingsApi } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { STATUS_COLORS, formatCurrency, formatTime, VIP_COLORS } from '@/lib/utils';
+import { STATUS_COLORS, formatCurrency, formatTime, formatDate, VIP_COLORS } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { Layers, Settings2 } from 'lucide-react';
 
@@ -196,7 +196,7 @@ export default function KlotterPage() {
                             </div>
                             <p className="text-gray-400 truncate text-xs">{order.product_name} · {order.delivery_address}</p>
                             {order.assigned_at && (
-                              <p className="text-blue-400 text-xs">Dispatch: {formatTime(order.assigned_at)}</p>
+                              <p className="text-blue-400 text-xs">Dispatch: {formatDate(order.assigned_at, 'HH:mm')}</p>
                             )}
                           </div>
                           <div className="text-right ml-3 shrink-0">
