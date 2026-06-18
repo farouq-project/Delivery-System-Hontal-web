@@ -145,25 +145,19 @@ export default function KlotterPage() {
                   );
                 })()}
               </div>
-              <div className="p-4 space-y-2">
-                {driver.klotters.map((klotter, idx) => {
-                  const prevTime = idx > 0 ? driver.klotters[idx - 1].dispatch_time : null;
-                  const showBatchHeader = klotter.dispatch_time !== prevTime;
-                  return (
-                  <div key={klotter.klotter_number}>
-                    {showBatchHeader && (
-                      <div className="flex items-center gap-2 pt-2 pb-1">
-                        <Clock className="h-3.5 w-3.5 text-gray-400" />
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                          Dispatch {klotter.dispatch_time ? formatDate(klotter.dispatch_time, 'HH:mm') : '-'}
-                        </span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                      </div>
-                    )}
-                  <div className="border rounded-md">
+              <div className="p-4 space-y-4">
+                {driver.klotters.map((klotter) => (
+                  <div key={klotter.klotter_number} className="border rounded-md">
                     <div className="bg-blue-50 px-3 py-2 border-b">
                       <div className="flex items-center justify-between text-sm font-medium text-blue-700">
-                        <span>Klotter {klotter.klotter_number} ({klotter.orders.length} order{klotter.orders.length > 1 ? 's' : ''})</span>
+                        <div className="flex items-center gap-2">
+                          <span>Klotter {klotter.klotter_number}</span>
+                          <span className="flex items-center gap-1 text-xs font-normal text-blue-600">
+                            <Clock className="h-3 w-3" />
+                            {klotter.dispatch_time ? formatDate(klotter.dispatch_time, 'HH:mm') : '-'}
+                          </span>
+                          <span className="text-xs font-normal text-gray-500">({klotter.orders.length} order{klotter.orders.length > 1 ? 's' : ''})</span>
+                        </div>
                         <span className="font-normal text-xs text-blue-600">{formatCurrency(klotter.orders.reduce((s, o) => s + o.order_value, 0))}</span>
                       </div>
                       {(() => {
@@ -210,9 +204,7 @@ export default function KlotterPage() {
                       ))}
                     </div>
                   </div>
-                  </div>
-                );
-                })}
+                ))}
               </div>
             </div>
           ))}
