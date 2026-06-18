@@ -209,9 +209,6 @@ export default function KlotterPage() {
                               )}
                             </div>
                             <p className="text-gray-400 truncate text-xs">{order.product_name} · {order.delivery_address}</p>
-                            {order.assigned_at && (
-                              <p className="text-blue-400 text-xs">Dispatch: {formatDate(order.assigned_at, 'HH:mm')}</p>
-                            )}
                           </div>
                           <div className="text-right ml-3 shrink-0">
                             <p className="font-medium">{formatCurrency(order.order_value)}</p>
