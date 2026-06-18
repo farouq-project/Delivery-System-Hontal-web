@@ -8,18 +8,52 @@ import { Camera, CheckCircle } from 'lucide-react';
 
 interface Props { stopId: number; onClose: () => void; }
 
+// Convert any image (including HEIC from iPhone) to JPEG via canvas.
+// Also caps resolution to 1920px and compresses, keeping uploads small.
+function toJpeg(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1920;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+        else                { width  = Math.round(width  * MAX / height); height = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(url);
+          resolve(blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file);
+        },
+        'image/jpeg',
+        0.85,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 export default function DeliverModal({ stopId, onClose }: Props) {
   const qc = useQueryClient();
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photo, setPhoto]   = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes]   = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const fd = new FormData();
       fd.append('signature_name', 'Customer');
-      if (photo) fd.append('photo', photo);
+      if (photo) {
+        const jpeg = await toJpeg(photo);
+        fd.append('photo', jpeg);
+      }
       if (notes) fd.append('notes', notes);
       return driverApi.deliver(stopId, fd);
     },
@@ -28,16 +62,11 @@ export default function DeliverModal({ stopId, onClose }: Props) {
       onClose();
     },
     onError: (err: unknown) => {
-      // If there is no HTTP response (network drop, timeout), the request likely
-      // reached the server and was saved — refresh and close so the driver
-      // sees the correct "delivered" status without a confusing error.
       const hasServerResponse = !!(err as { response?: unknown })?.response;
       if (!hasServerResponse) {
         qc.invalidateQueries({ queryKey: ['driver-today'] });
         onClose();
       }
-      // If there IS a response (4xx/5xx), leave the modal open so the driver
-      // can retry — the delivery was not recorded in that case.
     },
   });
 
@@ -53,7 +82,6 @@ export default function DeliverModal({ stopId, onClose }: Props) {
       <div className="w-full bg-white rounded-t-2xl p-6">
         <h3 className="font-bold text-lg mb-4">Confirm Delivery</h3>
 
-        {/* Photo capture */}
         <div
           className="border-2 border-dashed border-gray-300 rounded-xl p-6 mb-4 text-center cursor-pointer hover:bg-gray-50"
           onClick={() => fileRef.current?.click()}
@@ -67,10 +95,16 @@ export default function DeliverModal({ stopId, onClose }: Props) {
               <p className="text-xs text-gray-300">(Optional but recommended)</p>
             </div>
           )}
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handlePhoto}
+          />
         </div>
 
-        {/* Notes */}
         <input
           type="text"
           placeholder="Notes (optional)..."
