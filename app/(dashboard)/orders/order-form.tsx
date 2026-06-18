@@ -21,7 +21,7 @@ import { useCashierStore } from '@/store/cashier';
 const itemSchema = z.object({
   name:     z.string().min(1, 'Required'),
   quantity: z.number().min(0).optional().nullable(),
-  notes:    z.string().optional(),
+  notes:    z.string().optional().nullable(),
 });
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
@@ -32,16 +32,16 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 const schema = z.object({
-  customer_id:              z.number().optional(),
+  customer_id:              z.number().optional().nullable(),
   customer_name:            z.string().min(2, 'Customer name is required'),
-  customer_phone:           z.string().optional(),
+  customer_phone:           z.string().optional().nullable(),
   items:                    z.array(itemSchema).min(1, 'Add at least one item'),
   order_value:              z.number().min(0),
   delivery_address:         z.string().min(5),
   requested_delivery_date:  z.string().min(1, 'Required'),
-  requested_delivery_start: z.string().optional(),
-  requested_delivery_end:   z.string().optional(),
-  notes:                    z.string().optional(),
+  requested_delivery_start: z.string().optional().nullable(),
+  requested_delivery_end:   z.string().optional().nullable(),
+  notes:                    z.string().optional().nullable(),
   cashier_name:             z.enum(['Mian', 'Sela', 'Epa', 'Tira']),
   payment_method:           z.enum(['cash', 'transfer', 'qris', 'bayar_di_toko']),
 });
@@ -80,15 +80,19 @@ export default function OrderForm({ onClose, order }: Props) {
   const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: order ? {
-      customer_id:              order.customer_id,
+      customer_id:              order.customer_id ?? undefined,
       customer_name:            order.customer_name,
-      customer_phone:           order.customer_phone,
-      items:                    (order.items?.length ? order.items : [{ name: order.product_name, quantity: undefined, notes: '' }]) as { name: string; quantity?: number | null; notes?: string }[],
+      customer_phone:           order.customer_phone ?? undefined,
+      items:                    (order.items?.length
+        ? order.items.map(it => ({ ...it, notes: it.notes ?? undefined }))
+        : [{ name: order.product_name, quantity: undefined, notes: undefined }]
+      ) as { name: string; quantity?: number | null; notes?: string }[],
       order_value:              order.order_value,
       delivery_address:         order.delivery_address,
       requested_delivery_date:  order.requested_delivery_date,
-      requested_delivery_start: order.requested_delivery_start?.slice(11, 16) ?? undefined,
-      requested_delivery_end:   order.requested_delivery_end?.slice(11, 16) ?? undefined,
+      // Use || so an empty string (from slicing an HH:MM:SS time) becomes undefined
+      requested_delivery_start: order.requested_delivery_start?.slice(11, 16) || undefined,
+      requested_delivery_end:   order.requested_delivery_end?.slice(11, 16) || undefined,
       notes:                    order.notes ?? undefined,
       cashier_name:             (order.cashier_name ?? cashierName) as 'Mian' | 'Sela' | 'Epa' | 'Tira',
       payment_method:           (order.payment_method ?? 'cash') as PaymentMethod,
