@@ -19,7 +19,8 @@ import { useAuthStore } from '@/store/auth';
 export default function OrdersPage() {
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
-  const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+  const isOwner   = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+  const canViewPOD = ['merchant_owner', 'super_admin', 'developer', 'dispatcher'].includes(authUser?.role ?? '');
   const cashierName = useCashierStore((s) => s.cashierName);
   const setCashierName = useCashierStore((s) => s.setCashierName);
   const [search, setSearch]     = useState('');
@@ -107,23 +108,29 @@ export default function OrdersPage() {
 
   return (
     <div className="p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:grid sm:grid-cols-3 sm:items-center gap-3 mb-6">
+        {/* Left: title */}
         <div>
           <h1 className="text-2xl font-bold">Delivery Orders</h1>
           <p className="text-gray-500 text-sm">{meta?.total ?? 0} total orders</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Cashier:</span>
-            <Select value={cashierName} onValueChange={(v) => setCashierName(v as CashierName)}>
-              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CASHIER_NAMES.map((name) => (
-                  <SelectItem key={name} value={name}>{name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+
+        {/* Centre: active cashier — big & prominent */}
+        <div className="text-center">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-0.5">Active Cashier</p>
+          <p className="text-4xl font-extrabold text-blue-600 leading-none">{cashierName}</p>
+        </div>
+
+        {/* Right: selector + new order */}
+        <div className="flex items-center gap-3 justify-end">
+          <Select value={cashierName} onValueChange={(v) => setCashierName(v as CashierName)}>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {CASHIER_NAMES.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> New Order</Button>
         </div>
       </div>
@@ -247,7 +254,7 @@ export default function OrdersPage() {
                         <Pencil className="h-4 w-4" />
                       </Button>
                     )}
-                    {o.status === 'delivered' && isOwner && (
+                    {o.status === 'delivered' && canViewPOD && (
                       <Button
                         size="sm" variant="ghost"
                         title="View proof of delivery"
