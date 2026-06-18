@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { reportsApi } from '@/lib/api';
+import { reportsApi, ordersApi } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
@@ -34,7 +34,18 @@ export default function ReportsPage() {
     queryFn: () => reportsApi.cashierSummary({ start_date: startDate, end_date: endDate }),
   });
 
+  const { data: transferData, isLoading: transferLoading } = useQuery({
+    queryKey: ['reports', 'transfer-orders', startDate, endDate],
+    queryFn: () => ordersApi.list({
+      payment_method: 'transfer',
+      date_from: startDate,
+      date_to: endDate,
+      per_page: 9999,
+    }),
+  });
+
   const rows: CashierRow[] = data?.data?.data?.rows ?? [];
+  const transferOrders = transferData?.data?.data ?? [];
 
   const sortedRows = useMemo(() => {
     const copy = [...rows];
@@ -146,6 +157,53 @@ export default function ReportsPage() {
             </tfoot>
           )}
         </table>
+      </div>
+      {/* Transfer Orders Detail */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium">Transfer</span>
+          Transfer Order Detail
+        </h2>
+        <div className="bg-white rounded-lg border overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 border">Order #</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 border">Customer</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 border">Product</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 border">Driver</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 border">Date</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600 border">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transferLoading ? (
+                <tr><td colSpan={6} className="text-center py-6 text-gray-400 border">Loading...</td></tr>
+              ) : transferOrders.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-6 text-gray-400 border">No transfer orders in this date range</td></tr>
+              ) : transferOrders.map((o: { id: number; order_number: string; customer_name: string; product_name: string; order_value: number; requested_delivery_date: string; driver?: { driver_name: string } | null }) => (
+                <tr key={o.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 border font-mono text-xs">{o.order_number}</td>
+                  <td className="px-4 py-2 border">{o.customer_name}</td>
+                  <td className="px-4 py-2 border text-gray-600 max-w-[160px] truncate">{o.product_name}</td>
+                  <td className="px-4 py-2 border text-gray-600">{o.driver?.driver_name ?? '—'}</td>
+                  <td className="px-4 py-2 border text-gray-600">{o.requested_delivery_date}</td>
+                  <td className="px-4 py-2 border text-right font-medium">{formatCurrency(o.order_value)}</td>
+                </tr>
+              ))}
+            </tbody>
+            {transferOrders.length > 0 && (
+              <tfoot>
+                <tr className="bg-gray-50 font-semibold">
+                  <td colSpan={5} className="px-4 py-2 border">Total ({transferOrders.length} orders)</td>
+                  <td className="px-4 py-2 border text-right">
+                    {formatCurrency(transferOrders.reduce((s: number, o: { order_value: number }) => s + o.order_value, 0))}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -62,8 +62,11 @@ interface Props { onClose: () => void; order?: DeliveryOrder }
 
 export default function OrderForm({ onClose, order }: Props) {
   const qc = useQueryClient();
-  const isEdit    = !!order;
-  const isPending = !order || order.status === 'pending';
+  const isEdit       = !!order;
+  // Address/customer fields are editable for new orders, pending, and delivered (data correction).
+  // They are locked only while the order is actively assigned or in transit.
+  const canEditAddress = !order || order.status === 'pending' || order.status === 'delivered';
+  const isPending      = canEditAddress; // kept as alias used throughout the JSX
 
   const [query, setQuery]       = useState(order?.customer_name ?? '');
   const [results, setResults]   = useState<Customer[]>([]);

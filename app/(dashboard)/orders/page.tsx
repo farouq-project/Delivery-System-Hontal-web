@@ -203,7 +203,8 @@ export default function OrdersPage() {
                     <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {['pending', 'assigned'].includes(o.status) && (
+                    {(['pending', 'assigned'].includes(o.status) ||
+                      (o.status === 'delivered' && isOwner)) && (
                       <Button
                         size="sm" variant="ghost"
                         title="Edit order"
