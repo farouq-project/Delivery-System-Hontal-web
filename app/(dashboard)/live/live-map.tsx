@@ -62,9 +62,10 @@ interface Props {
   drivers: LiveDriver[];
   selectedDriver: number | null;
   route: Route | null;
+  staleDriverIds?: Set<number>;
 }
 
-export default function LiveMap({ drivers, selectedDriver, route }: Props) {
+export default function LiveMap({ drivers, selectedDriver, route, staleDriverIds = new Set() }: Props) {
   const selected = drivers.find((d) => d.driver_id === selectedDriver);
 
   // Only real driver assignments (filter out null-driver unassigned group)
@@ -133,10 +134,11 @@ export default function LiveMap({ drivers, selectedDriver, route }: Props) {
           );
         })}
 
-        {/* Driver markers — colored to match their klotter */}
+        {/* Driver markers — colored to match their klotter, grey if GPS stale */}
         {drivers.map((d) => {
           if (!d.lat) return null;
-          const color = driverColorMap.get(d.driver_id) ?? '#6b7280';
+          const isStale = staleDriverIds.has(d.driver_id);
+          const color = isStale ? '#9ca3af' : (driverColorMap.get(d.driver_id) ?? '#6b7280');
           return (
             <Marker
               key={d.driver_id}

@@ -6,6 +6,13 @@ import { driversApi, routesApi } from '@/lib/api';
 import { Route } from '@/types';
 import { LiveDriver } from '@/types';
 import { DRIVER_STATUS_COLORS, formatDate } from '@/lib/utils';
+import { WifiOff } from 'lucide-react';
+
+function isGpsStale(lastSeen: string | null): boolean {
+  if (!lastSeen) return true;
+  const diffMs = Date.now() - new Date(lastSeen).getTime();
+  return diffMs > 3 * 60 * 1000; // stale after 3 minutes
+}
 import dynamic from 'next/dynamic';
 
 const LiveMap = dynamic(() => import('./live-map'), { ssr: false, loading: () => (
@@ -51,41 +58,55 @@ export default function LivePage() {
 
         <div className="p-3">
           <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Drivers</p>
-          {drivers.map((d) => (
-            <button
-              key={d.driver_id}
-              className={`w-full text-left p-3 rounded-lg mb-2 border transition-colors ${
-                selectedDriver === d.driver_id ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:bg-gray-50'
-              }`}
-              onClick={() => setSelectedDriver(selectedDriver === d.driver_id ? null : d.driver_id)}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium text-sm">{d.driver_name}</p>
-                  <p className="text-xs text-gray-400">{d.vehicle_plate ?? d.vehicle_type}</p>
+          {drivers.map((d) => {
+            const stale = isGpsStale(d.last_seen);
+            return (
+              <button
+                key={d.driver_id}
+                className={`w-full text-left p-3 rounded-lg mb-2 border transition-colors ${
+                  selectedDriver === d.driver_id ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:bg-gray-50'
+                }`}
+                onClick={() => setSelectedDriver(selectedDriver === d.driver_id ? null : d.driver_id)}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-sm">{d.driver_name}</p>
+                    <p className="text-xs text-gray-400">{d.vehicle_plate ?? d.vehicle_type}</p>
+                  </div>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${DRIVER_STATUS_COLORS[d.status]}`}>
+                    {d.status.replace('_', ' ')}
+                  </span>
                 </div>
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${DRIVER_STATUS_COLORS[d.status]}`}>
-                  {d.status.replace('_', ' ')}
-                </span>
-              </div>
-              {d.lat && (
-                <p className="text-xs text-green-600 mt-1">
-                  {d.lat.toFixed(4)}, {d.lng?.toFixed(4)}
-                  <span className="text-gray-400 ml-1">· {formatDate(d.last_seen, 'HH:mm')}</span>
-                </p>
-              )}
-              {todayRoute && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {d.delivered_stops ?? 0}/{d.today_stops ?? 0} stops done
-                </p>
-              )}
-            </button>
-          ))}
+                {stale ? (
+                  <p className="text-xs text-orange-500 mt-1 flex items-center gap-1">
+                    <WifiOff className="h-3 w-3" />
+                    GPS off or unavailable
+                    {d.last_seen && <span className="text-gray-400">· last seen {formatDate(d.last_seen, 'HH:mm')}</span>}
+                  </p>
+                ) : (
+                  <p className="text-xs text-green-600 mt-1">
+                    {d.lat?.toFixed(4)}, {d.lng?.toFixed(4)}
+                    <span className="text-gray-400 ml-1">· {formatDate(d.last_seen, 'HH:mm')}</span>
+                  </p>
+                )}
+                {todayRoute && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {d.delivered_stops ?? 0}/{d.today_stops ?? 0} stops done
+                  </p>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Map */}
-      <LiveMap drivers={drivers} selectedDriver={selectedDriver} route={todayRoute} />
+      <LiveMap
+        drivers={drivers}
+        selectedDriver={selectedDriver}
+        route={todayRoute}
+        staleDriverIds={new Set(drivers.filter(d => isGpsStale(d.last_seen)).map(d => d.driver_id))}
+      />
     </div>
   );
 }

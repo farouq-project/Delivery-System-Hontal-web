@@ -20,18 +20,38 @@ function DriverApp() {
   const qc = useQueryClient();
   const [delivering, setDelivering] = useState<number | null>(null);
   const [failing, setFailing] = useState<number | null>(null);
+  const [gpsError, setGpsError]   = useState<string | null>(null);
   const gpsInterval = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     if (!isAuthenticated()) { router.replace('/login'); return; }
 
-    // GPS ping every 15s
-    const ping = () => {
-      if (!navigator.geolocation) return;
-      navigator.geolocation.getCurrentPosition((pos) => {
-        driverApi.updateLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy).catch(() => {});
-      });
+    if (!navigator.geolocation) {
+      setGpsError('GPS not supported on this device.');
+      return;
+    }
+
+    const onSuccess = (pos: GeolocationPosition) => {
+      setGpsError(null);
+      driverApi.updateLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy).catch(() => {});
     };
+
+    const onError = (err: GeolocationPositionError) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        setGpsError('Location permission denied. Enable GPS in browser settings.');
+      } else if (err.code === err.POSITION_UNAVAILABLE) {
+        setGpsError('GPS signal unavailable. Move to an open area.');
+      } else {
+        setGpsError('GPS timeout. Retrying...');
+      }
+    };
+
+    const ping = () => navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      enableHighAccuracy: true,
+      timeout: 10_000,
+      maximumAge: 0,
+    });
+
     ping();
     gpsInterval.current = setInterval(ping, 15_000);
     return () => clearInterval(gpsInterval.current);
@@ -66,6 +86,14 @@ function DriverApp() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
+      {/* GPS warning banner */}
+      {gpsError && (
+        <div className="bg-red-500 text-white px-4 py-2 text-sm flex items-center gap-2">
+          <MapPin className="h-4 w-4 shrink-0" />
+          <span>{gpsError}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-blue-600 text-white px-4 py-4">
         <div className="flex justify-between items-center">
