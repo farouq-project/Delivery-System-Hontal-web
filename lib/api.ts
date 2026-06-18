@@ -80,6 +80,8 @@ export const ordersApi = {
     api.post('/orders/bulk-assign', { order_ids: orderIds, driver_id: driverId }),
   bulkDelete: (orderIds: number[]) =>
     api.post('/orders/bulk-delete', { order_ids: orderIds }),
+  bulkUpdateCashier: (orderIds: number[], cashierName: string) =>
+    api.post('/orders/bulk-update-cashier', { order_ids: orderIds, cashier_name: cashierName }),
   updateStatus: (id: number, status: string, notes?: string) =>
     api.post(`/orders/${id}/status`, { status, notes }),
   history: (id: number) => api.get(`/orders/${id}/history`),

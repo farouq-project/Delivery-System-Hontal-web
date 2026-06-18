@@ -56,6 +56,16 @@ export default function OrdersPage() {
     },
   });
 
+  const bulkCashierMutation = useMutation({
+    mutationFn: ({ ids, name }: { ids: number[]; name: string }) =>
+      ordersApi.bulkUpdateCashier(ids, name),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      qc.invalidateQueries({ queryKey: ['reports'] });
+      setSelectedIds(new Set());
+    },
+  });
+
   const podMutation = useMutation({
     mutationFn: (id: number) => ordersApi.get(id),
     onSuccess: (res) => {
@@ -139,6 +149,25 @@ export default function OrdersPage() {
             <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
+        {selectedIds.size > 0 && isOwner && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">Change cashier:</span>
+            <Select
+              onValueChange={(v) => {
+                if (confirm(`Change cashier to "${v}" for ${selectedIds.size} order(s)?`)) {
+                  bulkCashierMutation.mutate({ ids: Array.from(selectedIds), name: v });
+                }
+              }}
+            >
+              <SelectTrigger className="w-28 h-8 text-xs"><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectContent>
+                {CASHIER_NAMES.map((n) => (
+                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {selectedIds.size > 0 && (
           <Button
             variant="outline"
@@ -167,15 +196,16 @@ export default function OrdersPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-600">Product</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Value</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Window</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Cashier</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
-              <tr><td colSpan={8} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={9} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-8 text-gray-400">No orders found</td></tr>
+              <tr><td colSpan={9} className="text-center py-8 text-gray-400">No orders found</td></tr>
             ) : orders.map((o) => (
               <tr key={o.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
@@ -193,6 +223,7 @@ export default function OrdersPage() {
                     ? `${formatTime(o.requested_delivery_start)} - ${formatTime(o.requested_delivery_end)}`
                     : 'Anytime'}
                 </td>
+                <td className="px-4 py-3 text-xs text-gray-600">{o.cashier_name ?? '—'}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[o.status]}`}>
                     {o.status.replace('_', ' ')}
