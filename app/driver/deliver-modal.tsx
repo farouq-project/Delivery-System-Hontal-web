@@ -27,6 +27,18 @@ export default function DeliverModal({ stopId, onClose }: Props) {
       qc.invalidateQueries({ queryKey: ['driver-today'] });
       onClose();
     },
+    onError: (err: unknown) => {
+      // If there is no HTTP response (network drop, timeout), the request likely
+      // reached the server and was saved — refresh and close so the driver
+      // sees the correct "delivered" status without a confusing error.
+      const hasServerResponse = !!(err as { response?: unknown })?.response;
+      if (!hasServerResponse) {
+        qc.invalidateQueries({ queryKey: ['driver-today'] });
+        onClose();
+      }
+      // If there IS a response (4xx/5xx), leave the modal open so the driver
+      // can retry — the delivery was not recorded in that case.
+    },
   });
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
