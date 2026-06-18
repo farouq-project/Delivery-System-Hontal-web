@@ -40,19 +40,9 @@ function paymentTotals(orders: KlotterOrder[]): Record<PaymentKey, number> {
 
 interface KlotterGroup {
   klotter_number: number;
-  dispatch_time: string;
-  status: string;
+  dispatch_time: string | null;
   orders: KlotterOrder[];
 }
-
-const STATUS_BADGE: Record<string, string> = {
-  pending:    'bg-gray-100 text-gray-700',
-  assigned:   'bg-blue-100 text-blue-700',
-  in_transit: 'bg-yellow-100 text-yellow-700',
-  delivered:  'bg-green-100 text-green-700',
-  failed:     'bg-red-100 text-red-700',
-  cancelled:  'bg-gray-100 text-gray-500',
-};
 
 interface DriverKlotters {
   driver_id: number;
@@ -165,7 +155,7 @@ export default function KlotterPage() {
                       <div className="flex items-center gap-2 pt-2 pb-1">
                         <Clock className="h-3.5 w-3.5 text-gray-400" />
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                          Dispatch {klotter.dispatch_time}
+                          Dispatch {klotter.dispatch_time ? formatDate(klotter.dispatch_time, 'HH:mm') : '-'}
                         </span>
                         <div className="flex-1 h-px bg-gray-200" />
                       </div>
@@ -173,12 +163,7 @@ export default function KlotterPage() {
                   <div className="border rounded-md">
                     <div className="bg-blue-50 px-3 py-2 border-b">
                       <div className="flex items-center justify-between text-sm font-medium text-blue-700">
-                        <div className="flex items-center gap-2">
-                          <span>Klotter {klotter.klotter_number} ({klotter.orders.length} order{klotter.orders.length > 1 ? 's' : ''})</span>
-                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[klotter.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                            {klotter.status.replace('_', ' ')}
-                          </span>
-                        </div>
+                        <span>Klotter {klotter.klotter_number} ({klotter.orders.length} order{klotter.orders.length > 1 ? 's' : ''})</span>
                         <span className="font-normal text-xs text-blue-600">{formatCurrency(klotter.orders.reduce((s, o) => s + o.order_value, 0))}</span>
                       </div>
                       {(() => {
@@ -209,6 +194,9 @@ export default function KlotterPage() {
                               )}
                             </div>
                             <p className="text-gray-400 truncate text-xs">{order.product_name} · {order.delivery_address}</p>
+                            {order.assigned_at && (
+                              <p className="text-blue-400 text-xs">Dispatch: {formatDate(order.assigned_at, 'HH:mm')}</p>
+                            )}
                           </div>
                           <div className="text-right ml-3 shrink-0">
                             <p className="font-medium">{formatCurrency(order.order_value)}</p>
