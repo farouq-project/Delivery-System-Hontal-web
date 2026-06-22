@@ -19,8 +19,10 @@ import { useAuthStore } from '@/store/auth';
 export default function OrdersPage() {
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
-  const isOwner   = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
-  const canViewPOD = ['merchant_owner', 'super_admin', 'developer', 'dispatcher'].includes(authUser?.role ?? '');
+  const isOwner        = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+  // Merchant Owner + Dispatcher can edit assigned/delivered orders (PIN protected)
+  const canEditAssigned = ['merchant_owner', 'super_admin', 'developer', 'dispatcher'].includes(authUser?.role ?? '');
+  const canViewPOD      = canEditAssigned;
   const cashierName = useCashierStore((s) => s.cashierName);
   const setCashierName = useCashierStore((s) => s.setCashierName);
   const [search, setSearch]     = useState('');
@@ -241,8 +243,8 @@ export default function OrdersPage() {
                     <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {(['pending', 'assigned'].includes(o.status) ||
-                      (o.status === 'delivered' && isOwner)) && (
+                    {(o.status === 'pending' ||
+                      (['assigned', 'delivered'].includes(o.status) && canEditAssigned)) && (
                       <Button
                         size="sm" variant="ghost"
                         title="Edit order"

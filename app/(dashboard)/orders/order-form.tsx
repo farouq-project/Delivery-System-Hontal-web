@@ -63,9 +63,9 @@ interface Props { onClose: () => void; order?: DeliveryOrder }
 export default function OrderForm({ onClose, order }: Props) {
   const qc = useQueryClient();
   const isEdit       = !!order;
-  // Address/customer fields are editable for new orders, pending, and delivered (data correction).
-  // They are locked only while the order is actively assigned or in transit.
-  const canEditAddress = !order || order.status === 'pending' || order.status === 'delivered';
+  // Address/customer fields are editable for: new orders, pending, assigned, and delivered.
+  // Only locked for in_transit (driver is actively en route).
+  const canEditAddress = !order || ['pending', 'assigned', 'delivered'].includes(order.status);
   const isPending      = canEditAddress; // kept as alias used throughout the JSX
 
   const [query, setQuery]       = useState(order?.customer_name ?? '');
@@ -272,7 +272,7 @@ export default function OrderForm({ onClose, order }: Props) {
 
           {!isPending && (
             <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-xs text-amber-700">
-              Customer and address fields are locked for assigned orders.
+              Customer and address fields are locked while the order is in transit.
             </div>
           )}
 
