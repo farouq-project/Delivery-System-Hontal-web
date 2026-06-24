@@ -40,6 +40,8 @@ export default function CustomersPage() {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortBy(field);
+      // Coordinate columns: default to ASC so smallest (most negative) values
+      // appear first — click again for DESC to see values closest to 0 (outliers) at top
       setSortDir('asc');
     }
     setPage(1);
@@ -195,12 +197,14 @@ export default function CustomersPage() {
                 <th
                   className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
                   onClick={() => toggleSort('default_latitude')}
+                  title="Click once: most south first. Click twice: closest to equator first (finds outliers)"
                 >
                   Latitude <SortIcon field="default_latitude" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th
                   className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
                   onClick={() => toggleSort('default_longitude')}
+                  title="Click once: most west first. Click twice: most east first"
                 >
                   Longitude <SortIcon field="default_longitude" sortBy={sortBy} sortDir={sortDir} />
                 </th>
