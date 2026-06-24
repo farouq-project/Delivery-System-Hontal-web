@@ -6,25 +6,55 @@ import { customersApi } from '@/lib/api';
 import { Customer } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { VIP_COLORS } from '@/lib/utils';
-import { Plus, Search, Edit, Trash2, MapPin, Upload } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Upload, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import CustomerForm from './customer-form';
 import CustomerImportDialog from './customer-import';
 
+type SortField = 'customer_name' | 'default_latitude' | 'default_longitude';
+type SortDir   = 'asc' | 'desc';
+type CoordsFilter = 'all' | '1' | '0';
+
+function SortIcon({ field, sortBy, sortDir }: { field: SortField; sortBy: SortField; sortDir: SortDir }) {
+  if (sortBy !== field) return <ArrowUpDown className="h-3 w-3 text-gray-300 ml-1 inline" />;
+  return sortDir === 'asc'
+    ? <ArrowUp className="h-3 w-3 text-blue-500 ml-1 inline" />
+    : <ArrowDown className="h-3 w-3 text-blue-500 ml-1 inline" />;
+}
+
 export default function CustomersPage() {
   const qc = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
-  const [showForm, setShowForm] = useState(false);
-  const [showImport, setShowImport] = useState(false);
-  const [editing, setEditing] = useState<Customer | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [search, setSearch]             = useState('');
+  const [page, setPage]                 = useState(1);
+  const [perPage, setPerPage]           = useState(25);
+  const [showForm, setShowForm]         = useState(false);
+  const [showImport, setShowImport]     = useState(false);
+  const [editing, setEditing]           = useState<Customer | null>(null);
+  const [selectedIds, setSelectedIds]   = useState<Set<number>>(new Set());
+  const [coordsFilter, setCoordsFilter] = useState<CoordsFilter>('all');
+  const [sortBy, setSortBy]             = useState<SortField>('customer_name');
+  const [sortDir, setSortDir]           = useState<SortDir>('asc');
+
+  const toggleSort = (field: SortField) => {
+    if (sortBy === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortDir('asc');
+    }
+    setPage(1);
+  };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['customers', page, search, perPage],
-    queryFn: () => customersApi.list({ page, search, per_page: perPage }),
+    queryKey: ['customers', page, search, perPage, coordsFilter, sortBy, sortDir],
+    queryFn: () => customersApi.list({
+      page,
+      search,
+      per_page: perPage,
+      has_coords: coordsFilter === 'all' ? undefined : coordsFilter,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -48,28 +78,26 @@ export default function CustomersPage() {
     per_page: data.data.per_page,
   } : null;
 
-  const handleEdit = (c: Customer) => { setEditing(c); setShowForm(true); };
-  const handleNew  = () => { setEditing(null); setShowForm(true); };
+  const handleEdit  = (c: Customer) => { setEditing(c); setShowForm(true); };
+  const handleNew   = () => { setEditing(null); setShowForm(true); };
   const handleClose = () => { setShowForm(false); setEditing(null); };
 
   const allSelected = customers.length > 0 && customers.every((c) => selectedIds.has(c.id));
 
-  const toggleAll = () => {
+  const toggleAll = () =>
     setSelectedIds((prev) => {
       if (allSelected) return new Set();
       const next = new Set(prev);
       customers.forEach((c) => next.add(c.id));
       return next;
     });
-  };
 
-  const toggleOne = (id: number) => {
+  const toggleOne = (id: number) =>
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  };
 
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return;
@@ -91,8 +119,10 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4 sm:items-center">
-        <div className="relative flex-1 max-w-sm">
+      {/* Toolbar */}
+      <div className="flex flex-wrap gap-3 mb-4 items-center">
+        {/* Search */}
+        <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search by name, phone, address..."
@@ -102,14 +132,32 @@ export default function CustomersPage() {
           />
         </div>
 
+        {/* GPS filter */}
+        <div className="flex items-center gap-1 text-xs">
+          <span className="text-gray-500 mr-1">GPS:</span>
+          {(['all', '1', '0'] as CoordsFilter[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => { setCoordsFilter(v); setPage(1); }}
+              className={`px-2.5 py-1 rounded border font-medium transition-colors ${
+                coordsFilter === v
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+              }`}
+            >
+              {v === 'all' ? 'All' : v === '1' ? 'Has GPS' : 'No GPS'}
+            </button>
+          ))}
+        </div>
+
         {/* Per-page selector */}
-        <div className="flex items-center gap-1 text-sm">
+        <div className="flex items-center gap-1 text-xs">
           <span className="text-gray-500 mr-1">Show:</span>
           {([50, 100, 9999] as const).map((n) => (
             <button
               key={n}
               onClick={() => { setPerPage(n); setPage(1); }}
-              className={`px-2.5 py-1 rounded border text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded border font-medium transition-colors ${
                 perPage === n
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
@@ -121,12 +169,7 @@ export default function CustomersPage() {
         </div>
 
         {selectedIds.size > 0 && (
-          <Button
-            variant="outline"
-            className="text-red-500 hover:text-red-700"
-            onClick={handleBulkDelete}
-            disabled={bulkDeleteMutation.isPending}
-          >
+          <Button variant="outline" className="text-red-500 hover:text-red-700" onClick={handleBulkDelete} disabled={bulkDeleteMutation.isPending}>
             <Trash2 className="h-4 w-4" /> Delete {selectedIds.size} selected
           </Button>
         )}
@@ -134,65 +177,78 @@ export default function CustomersPage() {
 
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 w-8">
-                <input type="checkbox" checked={allSelected} onChange={toggleAll} />
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Address</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">VIP</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Coords</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {isLoading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">Loading...</td></tr>
-            ) : customers.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-gray-400">No customers found</td></tr>
-            ) : customers.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleOne(c.id)} />
-                </td>
-                <td className="px-4 py-3 font-medium">{c.customer_name}</td>
-                <td className="px-4 py-3 text-gray-600">{c.phone}</td>
-                <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{c.default_address}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${VIP_COLORS[c.vip_level]}`}>
-                    {c.vip_level}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {c.default_latitude ? (
-                    <span className="text-green-600 flex items-center gap-1 text-xs">
-                      <MapPin className="h-3 w-3" /> Set
-                    </span>
-                  ) : (
-                    <span className="text-gray-400 text-xs">Not set</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(c)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm" variant="ghost"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => { if (confirm('Delete this customer?')) deleteMutation.mutate(c.id); }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 w-8">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                </th>
+                <th
+                  className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600"
+                  onClick={() => toggleSort('customer_name')}
+                >
+                  Name <SortIcon field="customer_name" sortBy={sortBy} sortDir={sortDir} />
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Address</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">VIP</th>
+                <th
+                  className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
+                  onClick={() => toggleSort('default_latitude')}
+                >
+                  Latitude <SortIcon field="default_latitude" sortBy={sortBy} sortDir={sortDir} />
+                </th>
+                <th
+                  className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
+                  onClick={() => toggleSort('default_longitude')}
+                >
+                  Longitude <SortIcon field="default_longitude" sortBy={sortBy} sortDir={sortDir} />
+                </th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y">
+              {isLoading ? (
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              ) : customers.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No customers found</td></tr>
+              ) : customers.map((c) => (
+                <tr key={c.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleOne(c.id)} />
+                  </td>
+                  <td className="px-4 py-3 font-medium">{c.customer_name}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.phone}</td>
+                  <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{c.default_address}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${VIP_COLORS[c.vip_level]}`}>
+                      {c.vip_level}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">
+                    {c.default_latitude != null ? c.default_latitude.toFixed(6) : <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">
+                    {c.default_longitude != null ? c.default_longitude.toFixed(6) : <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(c)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => { if (confirm('Delete this customer?')) deleteMutation.mutate(c.id); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -200,23 +256,14 @@ export default function CustomersPage() {
         <div className="flex justify-between items-center mt-4">
           <p className="text-sm text-gray-500">Page {meta.current_page} of {meta.last_page}</p>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              Previous
-            </Button>
-            <Button size="sm" variant="outline" disabled={page >= meta.last_page} onClick={() => setPage(p => p + 1)}>
-              Next
-            </Button>
+            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+            <Button size="sm" variant="outline" disabled={page >= meta.last_page} onClick={() => setPage(p => p + 1)}>Next</Button>
           </div>
         </div>
       )}
 
-      {showForm && (
-        <CustomerForm customer={editing} onClose={handleClose} />
-      )}
-
-      {showImport && (
-        <CustomerImportDialog onClose={() => setShowImport(false)} />
-      )}
+      {showForm && <CustomerForm customer={editing} onClose={handleClose} />}
+      {showImport && <CustomerImportDialog onClose={() => setShowImport(false)} />}
     </div>
   );
 }
