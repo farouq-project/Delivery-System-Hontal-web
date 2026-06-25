@@ -53,6 +53,8 @@ export const customersApi = {
   },
   downloadTemplate: () =>
     api.get('/customers/template', { responseType: 'arraybuffer' }),
+  deduplicate: () =>
+    api.post('/customers/deduplicate'),
 };
 
 // Drivers
