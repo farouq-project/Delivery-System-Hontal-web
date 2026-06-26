@@ -294,28 +294,32 @@ export default function CustomersPage() {
                     >
                       Longitude <SortIcon field="default_longitude" sortBy={sortBy} sortDir={sortDir} />
                     </th>
-                    <th
-                      className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
-                      onClick={() => toggleSort('total_belanja')}
-                      title="Sort by total order value"
-                    >
-                      Total Belanja <SortIcon field="total_belanja" sortBy={sortBy} sortDir={sortDir} />
-                    </th>
-                    <th
-                      className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
-                      onClick={() => toggleSort('avg_belanja_per_month')}
-                      title="Sort by average monthly spending"
-                    >
-                      Avg/Bulan <SortIcon field="avg_belanja_per_month" sortBy={sortBy} sortDir={sortDir} />
-                    </th>
+                    {isOwner && (
+                      <th
+                        className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
+                        onClick={() => toggleSort('total_belanja')}
+                        title="Sort by total order value"
+                      >
+                        Total Belanja <SortIcon field="total_belanja" sortBy={sortBy} sortDir={sortDir} />
+                      </th>
+                    )}
+                    {isOwner && (
+                      <th
+                        className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
+                        onClick={() => toggleSort('avg_belanja_per_month')}
+                        title="Sort by average monthly spending"
+                      >
+                        Avg/Bulan <SortIcon field="avg_belanja_per_month" sortBy={sortBy} sortDir={sortDir} />
+                      </th>
+                    )}
                     <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {isLoading ? (
-                    <tr><td colSpan={10} className="text-center py-8 text-gray-400">Loading...</td></tr>
+                    <tr><td colSpan={isOwner ? 10 : 8} className="text-center py-8 text-gray-400">Loading...</td></tr>
                   ) : customers.length === 0 ? (
-                    <tr><td colSpan={10} className="text-center py-8 text-gray-400">No customers found</td></tr>
+                    <tr><td colSpan={isOwner ? 10 : 8} className="text-center py-8 text-gray-400">No customers found</td></tr>
                   ) : customers.map((c) => (
                     <tr key={c.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
@@ -335,12 +339,16 @@ export default function CustomersPage() {
                       <td className="px-4 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">
                         {c.default_longitude != null ? c.default_longitude.toFixed(6) : <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-800 whitespace-nowrap">
-                        {c.total_belanja != null ? formatCurrency(c.total_belanja) : <span className="text-gray-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600 whitespace-nowrap">
-                        {c.avg_belanja_per_month != null ? formatCurrency(Math.round(c.avg_belanja_per_month)) : <span className="text-gray-300">—</span>}
-                      </td>
+                      {isOwner && (
+                        <td className="px-4 py-3 text-right text-sm font-medium text-gray-800 whitespace-nowrap">
+                          {c.total_belanja != null ? formatCurrency(c.total_belanja) : <span className="text-gray-300">—</span>}
+                        </td>
+                      )}
+                      {isOwner && (
+                        <td className="px-4 py-3 text-right text-sm text-gray-600 whitespace-nowrap">
+                          {c.avg_belanja_per_month != null ? formatCurrency(Math.round(c.avg_belanja_per_month)) : <span className="text-gray-300">—</span>}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="ghost" onClick={() => handleEdit(c)}>
