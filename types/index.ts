@@ -48,6 +48,8 @@ export interface Customer {
   is_active: boolean;
   notes: string | null;
   created_at: string;
+  total_belanja?: number;
+  avg_belanja_per_month?: number;
 }
 
 export interface Driver {

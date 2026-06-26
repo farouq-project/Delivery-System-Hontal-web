@@ -6,7 +6,7 @@ import { customersApi } from '@/lib/api';
 import { Customer } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { VIP_COLORS } from '@/lib/utils';
+import { VIP_COLORS, formatCurrency } from '@/lib/utils';
 import {
   Plus, Search, Edit, Trash2, Upload,
   ArrowUp, ArrowDown, ArrowUpDown, Map, TableIcon, Copy,
@@ -21,7 +21,7 @@ const CustomerMap = dynamic(() => import('./customer-map'), {
   loading: () => <div className="flex-1 bg-gray-100 flex items-center justify-center text-gray-400 h-96">Loading map...</div>,
 });
 
-type SortField = 'customer_name' | 'default_latitude' | 'default_longitude';
+type SortField = 'customer_name' | 'default_latitude' | 'default_longitude' | 'total_belanja' | 'avg_belanja_per_month';
 type SortDir   = 'asc' | 'desc';
 type CoordsFilter = 'all' | '1' | '0';
 
@@ -278,12 +278,12 @@ export default function CustomersPage() {
                       Name <SortIcon field="customer_name" sortBy={sortBy} sortDir={sortDir} />
                     </th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Address</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600 w-32">Address</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">VIP</th>
                     <th
                       className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
                       onClick={() => toggleSort('default_latitude')}
-                      title="Click once: most south first. Click twice: closest to equator first (finds outliers)"
+                      title="Click once: most south first. Click twice: closest to equator first"
                     >
                       Latitude <SortIcon field="default_latitude" sortBy={sortBy} sortDir={sortDir} />
                     </th>
@@ -294,14 +294,28 @@ export default function CustomersPage() {
                     >
                       Longitude <SortIcon field="default_longitude" sortBy={sortBy} sortDir={sortDir} />
                     </th>
+                    <th
+                      className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
+                      onClick={() => toggleSort('total_belanja')}
+                      title="Sort by total order value"
+                    >
+                      Total Belanja <SortIcon field="total_belanja" sortBy={sortBy} sortDir={sortDir} />
+                    </th>
+                    <th
+                      className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
+                      onClick={() => toggleSort('avg_belanja_per_month')}
+                      title="Sort by average monthly spending"
+                    >
+                      Avg/Bulan <SortIcon field="avg_belanja_per_month" sortBy={sortBy} sortDir={sortDir} />
+                    </th>
                     <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {isLoading ? (
-                    <tr><td colSpan={8} className="text-center py-8 text-gray-400">Loading...</td></tr>
+                    <tr><td colSpan={10} className="text-center py-8 text-gray-400">Loading...</td></tr>
                   ) : customers.length === 0 ? (
-                    <tr><td colSpan={8} className="text-center py-8 text-gray-400">No customers found</td></tr>
+                    <tr><td colSpan={10} className="text-center py-8 text-gray-400">No customers found</td></tr>
                   ) : customers.map((c) => (
                     <tr key={c.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
@@ -309,7 +323,7 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-4 py-3 font-medium">{c.customer_name}</td>
                       <td className="px-4 py-3 text-gray-600">{c.phone}</td>
-                      <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{c.default_address}</td>
+                      <td className="px-4 py-3 text-gray-600 w-32 max-w-[8rem] truncate">{c.default_address}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${VIP_COLORS[c.vip_level]}`}>
                           {c.vip_level}
@@ -320,6 +334,12 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">
                         {c.default_longitude != null ? c.default_longitude.toFixed(6) : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-800 whitespace-nowrap">
+                        {c.total_belanja != null ? formatCurrency(c.total_belanja) : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm text-gray-600 whitespace-nowrap">
+                        {c.avg_belanja_per_month != null ? formatCurrency(Math.round(c.avg_belanja_per_month)) : <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
