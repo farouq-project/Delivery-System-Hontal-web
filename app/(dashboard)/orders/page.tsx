@@ -218,6 +218,7 @@ export default function OrdersPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-600">Value</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Window</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Duration</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Driver</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Cashier</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
@@ -225,9 +226,9 @@ export default function OrdersPage() {
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
-              <tr><td colSpan={10} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={11} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-8 text-gray-400">No orders found</td></tr>
+              <tr><td colSpan={11} className="text-center py-8 text-gray-400">No orders found</td></tr>
             ) : orders.map((o) => (
               <tr key={o.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
@@ -259,6 +260,7 @@ export default function OrdersPage() {
                       : <span className="text-gray-300">—</span>;
                   })()}
                 </td>
+                <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{o.driver?.driver_name ?? '—'}</td>
                 <td className="px-4 py-3 text-xs text-gray-600">{o.cashier_name ?? '—'}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[o.status]}`}>
