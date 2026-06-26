@@ -8,6 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, formatCurrency, formatDate, formatTime } from '@/lib/utils';
+
+function calcDuration(createdAt: string | null, deliveredAt: string | null): string | null {
+  if (!createdAt || !deliveredAt) return null;
+  const ms = new Date(deliveredAt).getTime() - new Date(createdAt).getTime();
+  if (ms <= 0) return null;
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
 import { Plus, Search, Eye, Pencil, Trash2, Camera, X } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
@@ -205,6 +217,7 @@ export default function OrdersPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-600">Product</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Value</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Window</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Duration</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Cashier</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
@@ -212,9 +225,9 @@ export default function OrdersPage() {
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
-              <tr><td colSpan={9} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={10} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-8 text-gray-400">No orders found</td></tr>
+              <tr><td colSpan={10} className="text-center py-8 text-gray-400">No orders found</td></tr>
             ) : orders.map((o) => (
               <tr key={o.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
@@ -227,10 +240,24 @@ export default function OrdersPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{o.product_name}</td>
                 <td className="px-4 py-3 text-gray-700">{formatCurrency(o.order_value)}</td>
-                <td className="px-4 py-3 text-xs text-gray-500">
-                  {o.requested_delivery_start
-                    ? `${formatTime(o.requested_delivery_start)} - ${formatTime(o.requested_delivery_end)}`
-                    : 'Anytime'}
+                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                  {o.status === 'delivered' && o.delivered_at
+                    ? <>
+                        {o.requested_delivery_start ? formatTime(o.requested_delivery_start) : '—'}
+                        <span className="text-gray-400"> → </span>
+                        <span className="text-green-600">{formatDate(o.delivered_at, 'HH:mm')} ✓</span>
+                      </>
+                    : o.requested_delivery_start
+                      ? `${formatTime(o.requested_delivery_start)} - ${formatTime(o.requested_delivery_end)}`
+                      : 'Anytime'}
+                </td>
+                <td className="px-4 py-3 text-xs whitespace-nowrap">
+                  {(() => {
+                    const dur = calcDuration(o.order_created_at, o.delivered_at);
+                    return dur
+                      ? <span className="text-blue-600 font-medium">{dur}</span>
+                      : <span className="text-gray-300">—</span>;
+                  })()}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-600">{o.cashier_name ?? '—'}</td>
                 <td className="px-4 py-3">
