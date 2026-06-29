@@ -332,6 +332,11 @@ export default function CustomersPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600 w-32">Address</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">VIP</th>
+                    {isOwner && (
+                      <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                        Cluster
+                      </th>
+                    )}
                     <th
                       className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
                       onClick={() => toggleSort('default_latitude')}
@@ -346,11 +351,6 @@ export default function CustomersPage() {
                     >
                       Longitude <SortIcon field="default_longitude" sortBy={sortBy} sortDir={sortDir} />
                     </th>
-                    {isOwner && (
-                      <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
-                        Cluster
-                      </th>
-                    )}
                     {isOwner && (
                       <th
                         className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
@@ -414,12 +414,12 @@ export default function CustomersPage() {
                               onClick={() => setEditingClusterId(c.id)}
                               title="Click to change cluster"
                             >
-                              {c.cluster ? (
+                              {c.cluster && c.cluster !== 'no cluster' ? (
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLUSTER_COLORS[c.cluster] ?? 'bg-gray-100 text-gray-700'}`}>
                                   {c.cluster}
                                 </span>
                               ) : (
-                                <span className="text-gray-300 text-xs">+ set</span>
+                                <span className="text-gray-400 text-xs italic">no cluster</span>
                               )}
                             </button>
                           )}
