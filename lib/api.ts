@@ -53,6 +53,8 @@ export const customersApi = {
   },
   downloadTemplate: () =>
     api.get('/customers/template', { responseType: 'arraybuffer' }),
+  bulkUpdateCluster: (ids: number[], cluster: string) =>
+    api.post('/customers/bulk-update-cluster', { customer_ids: ids, cluster }),
   deduplicate: () =>
     api.post('/customers/deduplicate'),
 };

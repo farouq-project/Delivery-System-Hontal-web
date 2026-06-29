@@ -92,6 +92,15 @@ export default function CustomersPage() {
     },
   });
 
+  const bulkClusterMutation = useMutation({
+    mutationFn: ({ ids, cluster }: { ids: number[]; cluster: string }) =>
+      customersApi.bulkUpdateCluster(ids, cluster),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] });
+      setSelectedIds(new Set());
+    },
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ['customers', page, search, perPage, coordsFilter, clusterFilter, sortBy, sortDir],
     queryFn: () => customersApi.list({
@@ -271,6 +280,28 @@ export default function CustomersPage() {
               </button>
             ))}
           </div>
+
+          {selectedIds.size > 0 && isOwner && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Change cluster ({selectedIds.size}):</span>
+              <select
+                className="text-xs border rounded px-2 py-1 h-8 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                defaultValue=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  if (confirm(`Change cluster to "${val}" for ${selectedIds.size} customer(s)?`)) {
+                    bulkClusterMutation.mutate({ ids: Array.from(selectedIds), cluster: val });
+                  }
+                  e.target.value = '';
+                }}
+              >
+                <option value="" disabled>Select…</option>
+                {CLUSTER_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                <option value="no cluster">no cluster</option>
+              </select>
+            </div>
+          )}
 
           {selectedIds.size > 0 && (
             <Button
