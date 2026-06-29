@@ -129,6 +129,7 @@ export const routesApi = {
   lock: (id: number) => api.post(`/routes/${id}/lock`),
   unlock: (id: number) => api.post(`/routes/${id}/unlock`),
   reset: (id: number) => api.post(`/routes/${id}/reset`),
+  resetUnassigned: (id: number) => api.post(`/routes/${id}/reset-unassigned`),
   remove: (id: number) => api.delete(`/routes/${id}`),
   reoptimize: (id: number, orderIds: number[]) =>
     api.post(`/routes/${id}/reoptimize`, { order_ids: orderIds }),

@@ -23,7 +23,28 @@ const CustomerMap = dynamic(() => import('./customer-map'), {
 
 type SortField = 'customer_name' | 'default_latitude' | 'default_longitude' | 'total_belanja' | 'avg_belanja_per_month';
 type SortDir   = 'asc' | 'desc';
-type CoordsFilter = 'all' | '1' | '0';
+type CoordsFilter   = 'all' | '1' | '0';
+type ClusterFilter  = 'all' | '1' | '0';
+
+const CLUSTER_NAMES = [
+  'Banyak','Candra','Guru','Jingga','Kama','Kidang','Kumala','Larang',
+  'Loka','Mayang','Naga','Naya','Pita','Purba','Rambut','Ratna',
+  'Sima','Subang','Taru','Teja','Titis','Wangsa',
+];
+
+const CLUSTER_COLORS: Record<string, string> = {
+  Banyak:'bg-red-100 text-red-700', Candra:'bg-orange-100 text-orange-700',
+  Guru:'bg-amber-100 text-amber-700', Jingga:'bg-yellow-100 text-yellow-700',
+  Kama:'bg-lime-100 text-lime-700', Kidang:'bg-green-100 text-green-700',
+  Kumala:'bg-emerald-100 text-emerald-700', Larang:'bg-teal-100 text-teal-700',
+  Loka:'bg-cyan-100 text-cyan-700', Mayang:'bg-sky-100 text-sky-700',
+  Naga:'bg-blue-100 text-blue-700', Naya:'bg-indigo-100 text-indigo-700',
+  Pita:'bg-violet-100 text-violet-700', Purba:'bg-purple-100 text-purple-700',
+  Rambut:'bg-fuchsia-100 text-fuchsia-700', Ratna:'bg-pink-100 text-pink-700',
+  Sima:'bg-rose-100 text-rose-700', Subang:'bg-slate-100 text-slate-700',
+  Taru:'bg-gray-100 text-gray-700', Teja:'bg-zinc-100 text-zinc-700',
+  Titis:'bg-stone-100 text-stone-700', Wangsa:'bg-neutral-100 text-neutral-700',
+};
 
 function SortIcon({ field, sortBy, sortDir }: { field: SortField; sortBy: SortField; sortDir: SortDir }) {
   if (sortBy !== field) return <ArrowUpDown className="h-3 w-3 text-gray-300 ml-1 inline" />;
@@ -44,7 +65,9 @@ export default function CustomersPage() {
   const [showImport, setShowImport]     = useState(false);
   const [editing, setEditing]           = useState<Customer | null>(null);
   const [selectedIds, setSelectedIds]   = useState<Set<number>>(new Set());
-  const [coordsFilter, setCoordsFilter] = useState<CoordsFilter>('all');
+  const [coordsFilter, setCoordsFilter]     = useState<CoordsFilter>('all');
+  const [clusterFilter, setClusterFilter]   = useState<ClusterFilter>('all');
+  const [editingClusterId, setEditingClusterId] = useState<number | null>(null);
   const [sortBy, setSortBy]             = useState<SortField>('customer_name');
   const [sortDir, setSortDir]           = useState<SortDir>('asc');
   const [viewMode, setViewMode]         = useState<'table' | 'map'>('table');
@@ -60,13 +83,23 @@ export default function CustomersPage() {
   };
 
   // Table query — paginated, filtered, sorted
+  const updateClusterMutation = useMutation({
+    mutationFn: ({ id, cluster }: { id: number; cluster: string | null }) =>
+      customersApi.update(id, { cluster }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] });
+      setEditingClusterId(null);
+    },
+  });
+
   const { data, isLoading } = useQuery({
-    queryKey: ['customers', page, search, perPage, coordsFilter, sortBy, sortDir],
+    queryKey: ['customers', page, search, perPage, coordsFilter, clusterFilter, sortBy, sortDir],
     queryFn: () => customersApi.list({
       page,
       search,
       per_page: perPage,
       has_coords: coordsFilter === 'all' ? undefined : coordsFilter,
+      cluster_filter: clusterFilter === 'all' ? undefined : clusterFilter,
       sort_by: sortBy,
       sort_dir: sortDir,
     }),
@@ -186,6 +219,25 @@ export default function CustomersPage() {
             />
           </div>
 
+          {isOwner && (
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-gray-500 mr-1">Cluster:</span>
+              {(['all', '1', '0'] as ClusterFilter[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => { setClusterFilter(v); setPage(1); }}
+                  className={`px-2.5 py-1 rounded border font-medium transition-colors ${
+                    clusterFilter === v
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                  }`}
+                >
+                  {v === 'all' ? 'All' : v === '1' ? 'Has Cluster' : 'No Cluster'}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-1 text-xs">
             <span className="text-gray-500 mr-1">GPS:</span>
             {(['all', '1', '0'] as CoordsFilter[]).map((v) => (
@@ -295,6 +347,11 @@ export default function CustomersPage() {
                       Longitude <SortIcon field="default_longitude" sortBy={sortBy} sortDir={sortDir} />
                     </th>
                     {isOwner && (
+                      <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                        Cluster
+                      </th>
+                    )}
+                    {isOwner && (
                       <th
                         className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer select-none hover:text-blue-600 whitespace-nowrap"
                         onClick={() => toggleSort('total_belanja')}
@@ -317,9 +374,9 @@ export default function CustomersPage() {
                 </thead>
                 <tbody className="divide-y">
                   {isLoading ? (
-                    <tr><td colSpan={isOwner ? 10 : 8} className="text-center py-8 text-gray-400">Loading...</td></tr>
+                    <tr><td colSpan={isOwner ? 11 : 8} className="text-center py-8 text-gray-400">Loading...</td></tr>
                   ) : customers.length === 0 ? (
-                    <tr><td colSpan={isOwner ? 10 : 8} className="text-center py-8 text-gray-400">No customers found</td></tr>
+                    <tr><td colSpan={isOwner ? 11 : 8} className="text-center py-8 text-gray-400">No customers found</td></tr>
                   ) : customers.map((c) => (
                     <tr key={c.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
@@ -333,6 +390,41 @@ export default function CustomersPage() {
                           {c.vip_level}
                         </span>
                       </td>
+                      {isOwner && (
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {editingClusterId === c.id ? (
+                            <select
+                              autoFocus
+                              defaultValue={c.cluster ?? ''}
+                              className="text-xs border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              onBlur={() => setEditingClusterId(null)}
+                              onChange={(e) => {
+                                const val = e.target.value || null;
+                                updateClusterMutation.mutate({ id: c.id, cluster: val });
+                              }}
+                            >
+                              <option value="">— none —</option>
+                              {CLUSTER_NAMES.map(n => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <button
+                              className="text-left"
+                              onClick={() => setEditingClusterId(c.id)}
+                              title="Click to change cluster"
+                            >
+                              {c.cluster ? (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLUSTER_COLORS[c.cluster] ?? 'bg-gray-100 text-gray-700'}`}>
+                                  {c.cluster}
+                                </span>
+                              ) : (
+                                <span className="text-gray-300 text-xs">+ set</span>
+                              )}
+                            </button>
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">
                         {c.default_latitude != null ? c.default_latitude.toFixed(6) : <span className="text-gray-300">—</span>}
                       </td>

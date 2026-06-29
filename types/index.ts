@@ -50,6 +50,7 @@ export interface Customer {
   created_at: string;
   total_belanja?: number;
   avg_belanja_per_month?: number;
+  cluster?: string | null;
 }
 
 export interface Driver {
