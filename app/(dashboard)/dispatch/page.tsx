@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { routesApi, driversApi, ordersApi } from '@/lib/api';
 import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, VIP_COLORS, formatTime } from '@/lib/utils';
-import { Loader2, Trash2, RotateCcw, X } from 'lucide-react';
+import { Loader2, Trash2, RotateCcw, X, Lock, Unlock, Play, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { getErrorMessage } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 
 const DispatchBoard = dynamic(() => import('./dispatch-board'), { ssr: false });
@@ -19,10 +18,6 @@ export default function DispatchPage() {
   const authUser = useAuthStore((s) => s.user);
   const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
   const today = new Date().toISOString().split('T')[0];
-
-  // Track whether we've already triggered auto-routing for the current pending count
-  // to avoid re-triggering after the route generates and route_sequence values appear.
-  const lastAutoRoutedUnsequenced = useRef(-1);
 
   const { data: routesData, isLoading: routesLoading } = useQuery({
     queryKey: ['routes', today],
@@ -52,7 +47,6 @@ export default function DispatchPage() {
   });
 
   const routes: Route[] = routesData?.data?.data ?? [];
-  const drivers: Driver[] = driversData?.data?.data ?? [];
   const allDrivers: Driver[] = allDriversData?.data?.data ?? [];
   const pendingOrders: DeliveryOrder[] = ordersData?.data?.data ?? [];
   const allAssignedOrders: DeliveryOrder[] = (allAssignedOrdersData?.data?.data ?? [])
@@ -66,6 +60,7 @@ export default function DispatchPage() {
   });
 
   const todayRoute: Route | null = fullRouteData?.data?.data ?? null;
+  const isLocked = !!(todayRoute?.locked_at);
 
   const allStopMap = new Map(
     (todayRoute?.assignments.flatMap((a) => a.stops) ?? [])
@@ -87,7 +82,6 @@ export default function DispatchPage() {
     return (a.route_sequence ?? Infinity) - (b.route_sequence ?? Infinity);
   });
 
-  // Auto-route whenever there are pending orders without route sequences
   const generateMutation = useMutation({
     mutationFn: () => routesApi.generate({ route_date: today }),
     onSuccess: () => {
@@ -97,30 +91,25 @@ export default function DispatchPage() {
     },
   });
 
-  useEffect(() => {
-    const unsequenced = pendingOrders.filter(o => !o.route_sequence).length;
-    if (
-      unsequenced > 0 &&
-      !generateMutation.isPending &&
-      lastAutoRoutedUnsequenced.current !== unsequenced
-    ) {
-      lastAutoRoutedUnsequenced.current = unsequenced;
-      generateMutation.mutate();
-    }
-  }, [pendingOrders]);
+  const lockMutation = useMutation({
+    mutationFn: (id: number) => routesApi.lock(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['routes'] }),
+  });
 
-  // Reset unassigned stops only (leaves assigned orders intact)
+  const unlockMutation = useMutation({
+    mutationFn: (id: number) => routesApi.unlock(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['routes'] }),
+  });
+
   const resetUnassignedMutation = useMutation({
     mutationFn: (id: number) => routesApi.resetUnassigned(id),
     onSuccess: () => {
-      lastAutoRoutedUnsequenced.current = -1; // allow auto-re-route after reset
       qc.invalidateQueries({ queryKey: ['routes'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
       qc.invalidateQueries({ queryKey: ['klotters'] });
     },
   });
 
-  // Owner-only: delete route record without touching order statuses
   const deleteRouteMutation = useMutation({
     mutationFn: (id: number) => routesApi.remove(id),
     onSuccess: () => {
@@ -186,21 +175,55 @@ export default function DispatchPage() {
           <h1 className="text-xl font-bold">Dispatch Board</h1>
           <p className="text-sm text-gray-500">
             {pendingOrders.length} pending · {allAssignedOrders.length} assigned
-            {generateMutation.isPending && (
-              <span className="ml-2 inline-flex items-center gap-1 text-blue-500">
-                <Loader2 className="h-3 w-3 animate-spin" /> Auto-routing...
-              </span>
-            )}
+            {isLocked && <span className="ml-2 text-blue-600 font-medium">· Locked</span>}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          {/* Generate / Regenerate */}
+          <Button
+            onClick={() => generateMutation.mutate()}
+            disabled={generateMutation.isPending}
+          >
+            {generateMutation.isPending ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Routing...</>
+            ) : todayRoute ? (
+              <><RefreshCw className="h-4 w-4" /> Regenerate</>
+            ) : (
+              <><Play className="h-4 w-4" /> Generate Route</>
+            )}
+          </Button>
+
           {todayRoute && (
             <>
+              {/* Lock / Unlock */}
+              {isLocked ? (
+                <Button
+                  variant="outline"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  onClick={() => unlockMutation.mutate(todayRoute.id)}
+                  disabled={unlockMutation.isPending}
+                >
+                  <Unlock className="h-4 w-4" />
+                  {unlockMutation.isPending ? 'Unlocking...' : 'Unlock'}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  onClick={() => lockMutation.mutate(todayRoute.id)}
+                  disabled={lockMutation.isPending}
+                >
+                  <Lock className="h-4 w-4" />
+                  {lockMutation.isPending ? 'Locking...' : 'Lock'}
+                </Button>
+              )}
+
+              {/* Reset Unassigned */}
               <Button
                 variant="outline"
                 className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                 onClick={() => {
-                  if (confirm('Clear routing for unassigned orders? They will be re-routed automatically. Assigned orders are unaffected.')) {
+                  if (confirm('Clear routing for unassigned orders? Assigned orders are unaffected.')) {
                     resetUnassignedMutation.mutate(todayRoute.id);
                   }
                 }}
@@ -209,6 +232,8 @@ export default function DispatchPage() {
                 <RotateCcw className="h-4 w-4" />
                 {resetUnassignedMutation.isPending ? 'Resetting...' : 'Reset Unassigned'}
               </Button>
+
+              {/* Delete Dispatch — owner only */}
               {isOwner && (
                 <Button
                   variant="outline"
@@ -458,12 +483,19 @@ export default function DispatchPage() {
           <Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading route...
         </div>
       ) : !todayRoute ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-          <Loader2 className="h-16 w-16 mb-4 opacity-20 animate-spin" />
-          <p className="text-lg font-medium">
-            {generateMutation.isPending ? 'Routing in progress...' : 'Waiting for orders...'}
-          </p>
-          <p className="text-sm">New orders are routed automatically when they arrive.</p>
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4">
+          <Play className="h-16 w-16 opacity-20" />
+          <div className="text-center">
+            <p className="text-lg font-medium">No route generated yet</p>
+            <p className="text-sm">Click "Generate Route" to score and sequence today's orders.</p>
+          </div>
+          <Button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
+            {generateMutation.isPending ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Routing...</>
+            ) : (
+              <><Play className="h-4 w-4" /> Generate Route</>
+            )}
+          </Button>
         </div>
       ) : (
         <DispatchBoard route={todayRoute} />

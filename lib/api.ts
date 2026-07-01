@@ -27,10 +27,10 @@ api.interceptors.response.use(
 
 export default api;
 
-// Auth
+// Auth — KL v2 requires terminal_id, branch_id, app_version for all logins
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
+    api.post('/auth/login', { email, password, terminal_id: 'pwa-dispatch', branch_id: 1, app_version: '1.0.0' }),
   me: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
 };
@@ -71,40 +71,41 @@ export const driversApi = {
   locationHistory: (id: number) => api.get(`/drivers/${id}/location-history`),
 };
 
-// Orders
+// Delivery Orders — mapped to KL v2 /deliveries endpoints
 export const ordersApi = {
-  list: (params?: Record<string, unknown>) => api.get('/orders', { params }),
-  get: (id: number) => api.get(`/orders/${id}`),
-  create: (data: Record<string, unknown>) => api.post('/orders', data),
-  update: (id: number, data: Record<string, unknown>) => api.put(`/orders/${id}`, data),
-  remove: (id: number) => api.delete(`/orders/${id}`),
-  assign: (id: number, driverId: number) => api.post(`/orders/${id}/assign`, { driver_id: driverId }),
-  unassign: (id: number) => api.post(`/orders/${id}/unassign`),
+  list: (params?: Record<string, unknown>) => api.get('/deliveries', { params }),
+  get: (id: number) => api.get(`/deliveries/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/deliveries', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/deliveries/${id}`, data),
+  remove: (id: number) => api.delete(`/deliveries/${id}`),
+  assign: (id: number, driverId: number) => api.post(`/deliveries/${id}/assign`, { driver_id: driverId }),
+  unassign: (id: number) => api.post(`/deliveries/${id}/unassign`),
   bulkAssign: (orderIds: number[], driverId: number) =>
-    api.post('/orders/bulk-assign', { order_ids: orderIds, driver_id: driverId }),
+    api.post('/deliveries/bulk/assign', { order_ids: orderIds, driver_id: driverId }),
   bulkDelete: (orderIds: number[]) =>
-    api.post('/orders/bulk-delete', { order_ids: orderIds }),
+    api.post('/deliveries/bulk/unassign', { order_ids: orderIds }),
   bulkUnassign: (orderIds: number[]) =>
-    api.post('/orders/bulk-unassign', { order_ids: orderIds }),
-  bulkUpdateCashier: (orderIds: number[], cashierName: string) =>
-    api.post('/orders/bulk-update-cashier', { order_ids: orderIds, cashier_name: cashierName }),
+    api.post('/deliveries/bulk/unassign', { order_ids: orderIds }),
   updateStatus: (id: number, status: string, notes?: string) =>
-    api.post(`/orders/${id}/status`, { status, notes }),
-  history: (id: number) => api.get(`/orders/${id}/history`),
+    api.post(`/deliveries/${id}/status`, { status, notes }),
+  history: (id: number) => api.get(`/deliveries/${id}`),
   geocode: (address: string) => api.post('/geocode/address', { address }),
-  productSuggestions: (q?: string) => api.get('/orders/product-suggestions', { params: { q } }),
-  klotters: (date?: string) => api.get('/orders/klotters', { params: { date } }),
+  nextNumber: () => api.get('/deliveries/next-number'),
 };
 
 // Reports
 export const reportsApi = {
-  cashierSummary: (params?: Record<string, unknown>) => api.get('/reports/cashier-summary', { params }),
+  deliverySummary: (params?: Record<string, unknown>) => api.get('/reports/delivery-summary', { params }),
+  salesSummary: (params?: Record<string, unknown>) => api.get('/reports/sales', { params }),
 };
 
-// Settings
+// Delivery Settings
 export const settingsApi = {
-  get: () => api.get('/settings'),
-  update: (data: Record<string, unknown>) => api.patch('/settings', data),
+  get: () => api.get('/delivery-settings'),
+  update: (data: Record<string, unknown>) => api.patch('/delivery-settings', data),
+  vipIndex: () => api.get('/vip-configs'),
+  vipUpdate: (configs: Array<{ vip_level: string; score_value: number }>) =>
+    api.patch('/vip-configs', { configs }),
 };
 
 // Users (developer / super_admin / merchant_owner)
@@ -136,7 +137,7 @@ export const routesApi = {
   reoptimize: (id: number, orderIds: number[]) =>
     api.post(`/routes/${id}/reoptimize`, { order_ids: orderIds }),
   updateStop: (routeId: number, stopId: number, data: Record<string, unknown>) =>
-    api.patch(`/routes/${routeId}/stops/${stopId}`, data),
+    api.put(`/routes/${routeId}/stops/${stopId}`, data),
   removeStop: (routeId: number, stopId: number) =>
     api.delete(`/routes/${routeId}/stops/${stopId}`),
 };
@@ -146,11 +147,11 @@ export const driverApi = {
   me: () => api.get('/driver/me'),
   today: () => api.get('/driver/today'),
   updateLocation: (lat: number, lng: number, accuracy?: number) =>
-    api.patch('/driver/location', { latitude: lat, longitude: lng, accuracy_m: accuracy }),
-  updateStatus: (status: string) => api.patch('/driver/status', { status }),
+    api.post('/driver/location', { latitude: lat, longitude: lng, accuracy_m: accuracy }),
+  updateStatus: (status: string) => api.post('/driver/status', { status }),
   deliver: (stopId: number, formData: FormData) =>
     api.post(`/driver/stops/${stopId}/deliver`, formData),
   fail: (stopId: number, reason: string) =>
-    api.post(`/driver/stops/${stopId}/fail`, { fail_reason: reason }),
+    api.post(`/driver/stops/${stopId}/fail`, { reason }),
   history: () => api.get('/driver/history'),
 };
