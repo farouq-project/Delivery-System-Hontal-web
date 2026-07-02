@@ -71,26 +71,26 @@ export const driversApi = {
   locationHistory: (id: number) => api.get(`/drivers/${id}/location-history`),
 };
 
-// Delivery Orders — mapped to KL v2 /deliveries endpoints
+// Delivery Orders
 export const ordersApi = {
-  list: (params?: Record<string, unknown>) => api.get('/deliveries', { params }),
-  get: (id: number) => api.get(`/deliveries/${id}`),
-  create: (data: Record<string, unknown>) => api.post('/deliveries', data),
-  update: (id: number, data: Record<string, unknown>) => api.put(`/deliveries/${id}`, data),
-  remove: (id: number) => api.delete(`/deliveries/${id}`),
-  assign: (id: number, driverId: number) => api.post(`/deliveries/${id}/assign`, { driver_id: driverId }),
-  unassign: (id: number) => api.post(`/deliveries/${id}/unassign`),
+  list: (params?: Record<string, unknown>) => api.get('/orders', { params }),
+  get: (id: number) => api.get(`/orders/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/orders', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/orders/${id}`, data),
+  remove: (id: number) => api.delete(`/orders/${id}`),
+  assign: (id: number, driverId: number) => api.post(`/orders/${id}/assign`, { driver_id: driverId }),
+  unassign: (id: number) => api.post(`/orders/${id}/unassign`),
   bulkAssign: (orderIds: number[], driverId: number) =>
-    api.post('/deliveries/bulk/assign', { order_ids: orderIds, driver_id: driverId }),
+    api.post('/orders/bulk-assign', { order_ids: orderIds, driver_id: driverId }),
   bulkDelete: (orderIds: number[]) =>
-    api.post('/deliveries/bulk/unassign', { order_ids: orderIds }),
+    api.post('/orders/bulk-delete', { order_ids: orderIds }),
   bulkUnassign: (orderIds: number[]) =>
-    api.post('/deliveries/bulk/unassign', { order_ids: orderIds }),
+    api.post('/orders/bulk-unassign', { order_ids: orderIds }),
   updateStatus: (id: number, status: string, notes?: string) =>
-    api.post(`/deliveries/${id}/status`, { status, notes }),
-  history: (id: number) => api.get(`/deliveries/${id}`),
+    api.post(`/orders/${id}/status`, { status, notes }),
+  history: (id: number) => api.get(`/orders/${id}/history`),
   geocode: (address: string) => api.post('/geocode/address', { address }),
-  nextNumber: () => api.get('/deliveries/next-number'),
+  nextNumber: () => api.get('/orders/next-number'),
   klotters: (date?: string) => api.get('/orders/klotters', { params: { date } }),
   productSuggestions: (q: string) => api.get('/orders/product-suggestions', { params: { q } }),
   bulkUpdateCashier: (ids: number[], cashier_name: string) =>
