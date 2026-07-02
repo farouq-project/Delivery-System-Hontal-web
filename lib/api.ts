@@ -91,6 +91,7 @@ export const ordersApi = {
   history: (id: number) => api.get(`/deliveries/${id}`),
   geocode: (address: string) => api.post('/geocode/address', { address }),
   nextNumber: () => api.get('/deliveries/next-number'),
+  klotters: (date?: string) => api.get('/orders/klotters', { params: { date } }),
 };
 
 // Reports
