@@ -92,6 +92,7 @@ export const ordersApi = {
   geocode: (address: string) => api.post('/geocode/address', { address }),
   nextNumber: () => api.get('/deliveries/next-number'),
   klotters: (date?: string) => api.get('/orders/klotters', { params: { date } }),
+  productSuggestions: (q: string) => api.get('/orders/product-suggestions', { params: { q } }),
   bulkUpdateCashier: (ids: number[], cashier_name: string) =>
     api.post('/orders/bulk-update-cashier', { order_ids: ids, cashier_name }),
 };
