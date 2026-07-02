@@ -92,12 +92,15 @@ export const ordersApi = {
   geocode: (address: string) => api.post('/geocode/address', { address }),
   nextNumber: () => api.get('/deliveries/next-number'),
   klotters: (date?: string) => api.get('/orders/klotters', { params: { date } }),
+  bulkUpdateCashier: (ids: number[], cashier_name: string) =>
+    api.post('/orders/bulk-update-cashier', { order_ids: ids, cashier_name }),
 };
 
 // Reports
 export const reportsApi = {
   deliverySummary: (params?: Record<string, unknown>) => api.get('/reports/delivery-summary', { params }),
   salesSummary: (params?: Record<string, unknown>) => api.get('/reports/sales', { params }),
+  cashierSummary: (params?: Record<string, unknown>) => api.get('/reports/cashier-summary', { params }),
 };
 
 // Delivery Settings
