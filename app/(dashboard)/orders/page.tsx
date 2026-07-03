@@ -20,7 +20,7 @@ function calcDuration(createdAt: string | null, deliveredAt: string | null): str
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
-import { Plus, Search, Eye, Pencil, Trash2, Camera, X } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2, Camera, X, CalendarDays } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
 import PinDialog from '@/components/pin-dialog';
@@ -39,6 +39,7 @@ export default function OrdersPage() {
   const setCashierName = useCashierStore((s) => s.setCashierName);
   const [search, setSearch]     = useState('');
   const [status, setStatus]     = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
   const [page, setPage]         = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]   = useState<DeliveryOrder | null>(null);
@@ -54,8 +55,14 @@ export default function OrdersPage() {
   const editPin: string = settingsData?.data?.data?.order_edit_pin ?? '152';
 
   const { data, isLoading } = useQuery({
-    queryKey: ['orders', page, search, status],
-    queryFn: () => ordersApi.list({ page, per_page: 20, search, status: status === 'all' ? undefined : status }),
+    queryKey: ['orders', page, search, status, dateFilter],
+    queryFn: () => ordersApi.list({
+      page,
+      per_page: dateFilter ? 200 : 20,
+      search,
+      status: status === 'all' ? undefined : status,
+      date: dateFilter || undefined,
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -158,6 +165,24 @@ export default function OrdersPage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
+        </div>
+        {/* Date filter */}
+        <div className="relative flex items-center">
+          <CalendarDays className="absolute left-3 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+            className="pl-9 pr-3 h-10 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring w-44"
+          />
+          {dateFilter && (
+            <button
+              onClick={() => { setDateFilter(''); setPage(1); }}
+              className="absolute right-2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
           <SelectTrigger className="w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
