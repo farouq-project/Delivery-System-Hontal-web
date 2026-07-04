@@ -356,7 +356,11 @@ export default function OrdersPage() {
       {pinTarget && (
         <PinDialog
           correctPin={editPin}
-          onSuccess={() => { setEditing(pinTarget); setPinTarget(null); }}
+          onSuccess={() => {
+            const order = pinTarget;
+            setPinTarget(null);
+            setTimeout(() => setEditing(order), 0);
+          }}
           onCancel={() => setPinTarget(null)}
         />
       )}
