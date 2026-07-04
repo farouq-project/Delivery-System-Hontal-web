@@ -338,7 +338,9 @@ export default function CustomersPage() {
             </div>
           </div>
           {!mapLoading && (
-            <CustomerMap customers={mapCustomers} onEdit={handleEdit} />
+            <div className="relative z-0">
+              <CustomerMap customers={mapCustomers} onEdit={handleEdit} />
+            </div>
           )}
         </div>
       )}
