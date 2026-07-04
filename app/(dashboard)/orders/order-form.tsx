@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi, customersApi } from '@/lib/api';
-import { Customer, DeliveryOrder } from '@/types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ordersApi, customersApi, driversApi } from '@/lib/api';
+import { Customer, DeliveryOrder, Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +44,7 @@ const schema = z.object({
   notes:                    z.string().optional().nullable(),
   cashier_name:             z.enum(['Mian', 'Sela', 'Epa', 'Tira']),
   payment_method:           z.enum(['cash', 'transfer', 'qris', 'bayar_di_toko']),
+  driver_id:                z.number().optional().nullable(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -80,6 +81,13 @@ export default function OrderForm({ onClose, order }: Props) {
 
   const cashierName = useCashierStore((s) => s.cashierName);
 
+  const { data: driversData } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => driversApi.list({ per_page: 100 }),
+    enabled: isEdit,
+  });
+  const drivers: Driver[] = driversData?.data?.data ?? [];
+
   const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: order ? {
@@ -99,6 +107,7 @@ export default function OrderForm({ onClose, order }: Props) {
       notes:                    order.notes ?? undefined,
       cashier_name:             (order.cashier_name ?? cashierName) as 'Mian' | 'Sela' | 'Epa' | 'Tira',
       payment_method:           (order.payment_method ?? 'cash') as PaymentMethod,
+      driver_id:                order.driver_id ?? null,
     } : {
       requested_delivery_date: new Date().toISOString().split('T')[0],
       requested_delivery_start: nowTime(),
@@ -159,13 +168,24 @@ export default function OrderForm({ onClose, order }: Props) {
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (isEdit) {
-        return ordersApi.update(order.id, {
+        await ordersApi.update(order.id, {
           ...data,
           delivery_notes: data.notes,
           cashier_name: data.cashier_name,
           delivery_latitude: coords?.lat,
           delivery_longitude: coords?.lng,
         });
+        // Handle driver assignment separately
+        const prevDriverId = order.driver_id ?? null;
+        const newDriverId = data.driver_id ?? null;
+        if (newDriverId !== prevDriverId) {
+          if (newDriverId) {
+            await ordersApi.assign(order.id, newDriverId);
+          } else {
+            await ordersApi.unassign(order.id);
+          }
+        }
+        return;
       }
 
       let customerId = data.customer_id;
@@ -355,6 +375,27 @@ export default function OrderForm({ onClose, order }: Props) {
               </SelectContent>
             </Select>
           </div>
+
+          {isEdit && (
+            <div className="space-y-2">
+              <Label>Driver</Label>
+              <Select
+                value={watch('driver_id') != null ? String(watch('driver_id')) : 'unassigned'}
+                onValueChange={(v) => setValue('driver_id', v === 'unassigned' ? null : Number(v))}
+              >
+                <SelectTrigger><SelectValue placeholder="Select driver…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">— Unassigned —</SelectItem>
+                  {drivers.map((d) => (
+                    <SelectItem key={d.id} value={String(d.id)}>
+                      {d.driver_name}
+                      <span className="ml-2 text-xs text-gray-400">({d.status.replace('_', ' ')})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Delivery Date</Label>
