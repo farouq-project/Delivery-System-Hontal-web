@@ -162,6 +162,7 @@ export default function OrdersPage() {
           <Input
             placeholder="Search orders..."
             className="pl-9"
+            autoComplete="off"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />

@@ -43,6 +43,7 @@ export default function PinDialog({ onSuccess, onCancel, correctPin }: Props) {
               inputMode="numeric"
               maxLength={6}
               autoFocus
+              autoComplete="new-password"
               value={pin}
               onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setError(false); }}
               onKeyDown={(e) => { if (e.key === 'Enter') verify(); }}
