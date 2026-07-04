@@ -175,11 +175,12 @@ export default function OrderForm({ onClose, order }: Props) {
           delivery_latitude: coords?.lat,
           delivery_longitude: coords?.lng,
         });
-        // Handle driver assignment separately
+        // Handle driver reassignment separately
         const prevDriverId = order.driver_id ?? null;
         const newDriverId = data.driver_id ?? null;
         if (newDriverId !== prevDriverId) {
           if (newDriverId) {
+            // assign() now cleans up old RouteStop on the backend, so call it directly
             await ordersApi.assign(order.id, newDriverId);
           } else {
             await ordersApi.unassign(order.id);
@@ -214,6 +215,7 @@ export default function OrderForm({ onClose, order }: Props) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] });
       qc.invalidateQueries({ queryKey: ['klotters'] });
+      qc.invalidateQueries({ queryKey: ['routes'] });
       qc.invalidateQueries({ queryKey: ['reports'] });
       onClose();
     },
