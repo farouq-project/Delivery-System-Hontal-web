@@ -206,6 +206,7 @@ export default function OrderForm({ onClose, order }: Props) {
       <DialogContent
         className="max-w-lg max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>

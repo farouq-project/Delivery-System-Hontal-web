@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,15 +39,18 @@ export default function PinDialog({ onSuccess, onCancel, correctPin }: Props) {
           <div className="space-y-1">
             <Label>PIN</Label>
             <Input
-              type="password"
+              type="text"
               inputMode="numeric"
               maxLength={6}
               autoFocus
-              autoComplete="new-password"
+              autoComplete="off"
+              data-form-type="other"
+              data-lpignore="true"
               value={pin}
               onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setError(false); }}
               onKeyDown={(e) => { if (e.key === 'Enter') verify(); }}
               placeholder="Enter PIN"
+              style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
             />
             {error && <p className="text-xs text-red-500">Incorrect PIN. Try again.</p>}
           </div>
