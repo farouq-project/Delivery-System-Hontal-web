@@ -49,7 +49,7 @@ export default function DeliverModal({ stopId, onClose }: Props) {
   const mutation = useMutation({
     mutationFn: async () => {
       const fd = new FormData();
-      fd.append('signature_name', 'Customer');
+      fd.append('recipient_name', 'Customer');
       if (photo) {
         const jpeg = await toJpeg(photo);
         fd.append('photo', jpeg);

@@ -250,7 +250,7 @@ export default function UsersPage() {
         <Button onClick={handleNew}><Plus className="h-4 w-4" /> Add User</Button>
       </div>
 
-      {authUser?.role === 'merchant_owner' && <DepotSettingsPanel />}
+      {(authUser?.role === 'owner' || authUser?.role === 'merchant_owner') && <DepotSettingsPanel />}
 
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">

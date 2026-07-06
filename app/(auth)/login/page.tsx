@@ -49,8 +49,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="text-4xl mb-2">🚚</div>
-          <CardTitle className="text-2xl">Hontal Delivery</CardTitle>
-          <p className="text-gray-500 text-sm">Operations Platform</p>
+          <CardTitle className="text-2xl">Kencana Lima Kirim</CardTitle>
+          <p className="text-gray-500 text-sm">Platform Pengiriman</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -59,7 +59,7 @@ export default function LoginPage() {
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="dispatcher@segar.id" {...register('email')} />
+              <Input id="email" type="email" placeholder="email@kencanalima.id" {...register('email')} />
               {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
@@ -68,15 +68,9 @@ export default function LoginPage() {
               {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Logging in...' : 'Login'}
+              {isSubmitting ? 'Masuk...' : 'Masuk'}
             </Button>
           </form>
-          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-500">
-            <p className="font-medium mb-1">Demo credentials:</p>
-            <p>dispatcher@segar.id / password</p>
-            <p>owner@segar.id / password</p>
-            <p>driver1@segar.id / password</p>
-          </div>
         </CardContent>
       </Card>
     </div>

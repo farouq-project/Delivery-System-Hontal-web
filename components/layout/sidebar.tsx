@@ -38,7 +38,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const { user, clearAuth } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
 
-  const canManageUsers = ['super_admin', 'developer', 'merchant_owner'].includes(user?.role ?? '');
+  const canManageUsers = ['owner'].includes(user?.role ?? '');
   const items = canManageUsers ? [...navItems, ...adminNavItems] : navItems;
 
   const handleLogout = async () => {
@@ -66,8 +66,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           {!collapsed && (
             <div>
-              <h1 className="font-bold text-lg">Hontal</h1>
-              <p className="text-xs text-gray-400">Delivery Platform</p>
+              <h1 className="font-bold text-lg">KL Kirim</h1>
+              <p className="text-xs text-gray-400">Kencana Lima Pengiriman</p>
             </div>
           )}
           <button onClick={() => setCollapsed(!collapsed)} className="hidden md:block p-1 rounded hover:bg-gray-700">

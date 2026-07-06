@@ -98,7 +98,7 @@ function DriverApp() {
       <div className="bg-blue-600 text-white px-4 py-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="font-bold text-lg">Hontal Driver</h1>
+            <h1 className="font-bold text-lg">KL Driver</h1>
             <p className="text-blue-100 text-sm">{user?.name}</p>
           </div>
           <div className="flex items-center gap-1">
