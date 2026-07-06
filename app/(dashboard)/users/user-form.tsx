@@ -18,9 +18,11 @@ import { getErrorMessage } from '@/lib/utils';
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: 'Super Admin',
   developer: 'Developer',
+  owner: 'Owner',
   merchant_owner: 'Merchant Owner',
   dispatcher: 'Dispatcher',
   driver: 'Driver',
+  kasir: 'Kasir',
 };
 
 const schema = z.object({
@@ -28,7 +30,7 @@ const schema = z.object({
   email:       z.string().email(),
   phone:       z.string().optional(),
   password:    z.string().min(8, 'Min 8 characters').optional().or(z.literal('')),
-  role:        z.enum(['super_admin', 'developer', 'merchant_owner', 'dispatcher', 'driver']),
+  role:        z.enum(['super_admin', 'developer', 'owner', 'merchant_owner', 'dispatcher', 'driver', 'kasir']),
   merchant_id: z.number().optional().nullable(),
   is_active:   z.boolean().optional(),
   can_logout:  z.boolean().optional(),
@@ -41,7 +43,7 @@ export default function UserForm({ user, onClose }: Props) {
   const qc = useQueryClient();
   const { user: authUser } = useAuthStore();
   const isPlatformAdmin = authUser?.role === 'super_admin' || authUser?.role === 'developer';
-  const isOwnerEditing  = authUser?.role === 'merchant_owner' && user?.role === 'merchant_owner';
+  const isOwnerEditing  = ['owner', 'merchant_owner'].includes(authUser?.role ?? '') && ['owner', 'merchant_owner'].includes(user?.role ?? '');
   const [editPin, setEditPin] = useState('');
 
   const assignableRoles: UserRole[] = isPlatformAdmin

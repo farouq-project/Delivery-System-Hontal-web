@@ -1,4 +1,4 @@
-export type UserRole = 'super_admin' | 'developer' | 'merchant_owner' | 'dispatcher' | 'driver';
+export type UserRole = 'super_admin' | 'developer' | 'owner' | 'merchant_owner' | 'dispatcher' | 'driver' | 'kasir';
 
 export interface User {
   id: number;
@@ -9,7 +9,7 @@ export interface User {
   phone?: string | null;
   role: UserRole;
   is_active: boolean;
-  can_logout: boolean;
+  can_logout?: boolean;
   last_login_at?: string | null;
   merchant?: Merchant;
 }
