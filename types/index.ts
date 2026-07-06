@@ -9,6 +9,7 @@ export interface User {
   phone?: string | null;
   role: UserRole;
   is_active: boolean;
+  can_logout: boolean;
   last_login_at?: string | null;
   merchant?: Merchant;
 }

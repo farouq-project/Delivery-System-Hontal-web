@@ -31,6 +31,7 @@ const schema = z.object({
   role:        z.enum(['super_admin', 'developer', 'merchant_owner', 'dispatcher', 'driver']),
   merchant_id: z.number().optional().nullable(),
   is_active:   z.boolean().optional(),
+  can_logout:  z.boolean().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -56,7 +57,8 @@ export default function UserForm({ user, onClose }: Props) {
       role: user.role,
       merchant_id: user.merchant_id ?? undefined,
       is_active: user.is_active,
-    } : { role: assignableRoles[0], is_active: true },
+      can_logout: user.can_logout ?? true,
+    } : { role: assignableRoles[0], is_active: true, can_logout: true },
   });
 
   const role = watch('role');
@@ -148,6 +150,25 @@ export default function UserForm({ user, onClose }: Props) {
                 placeholder="e.g. 152"
               />
               <p className="text-xs text-gray-400">Required to edit assigned orders. Only the merchant owner can change this.</p>
+            </div>
+          )}
+          {role === 'driver' && (
+            <div className="flex items-center justify-between py-1">
+              <div>
+                <p className="text-sm font-medium">Allow Logout</p>
+                <p className="text-xs text-gray-400">Uncheck to prevent this driver from logging out</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setValue('can_logout', !watch('can_logout'))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  watch('can_logout') ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  watch('can_logout') ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
             </div>
           )}
           {mutation.isError && (

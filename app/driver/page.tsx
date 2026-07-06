@@ -74,7 +74,7 @@ function DriverApp() {
 
   const stops = data?.data?.data?.stops ?? [];
   const driverInfo = data?.data?.data?.driver;
-  const hideLogout = data?.data?.data?.hide_driver_logout ?? true;
+  const hideLogout = !(user?.can_logout ?? true);
   const pending = stops.filter((s: { order: { status: string } }) => s.order?.status !== 'delivered' && s.order?.status !== 'failed');
   const done    = stops.filter((s: { order: { status: string } }) => s.order?.status === 'delivered' || s.order?.status === 'failed');
 
