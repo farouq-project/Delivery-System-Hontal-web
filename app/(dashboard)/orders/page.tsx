@@ -31,9 +31,9 @@ import { useAuthStore } from '@/store/auth';
 export default function OrdersPage() {
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
-  const isOwner        = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
-  // Merchant Owner + Dispatcher can edit assigned/delivered orders (PIN protected)
-  const canEditAssigned = ['merchant_owner', 'super_admin', 'developer', 'dispatcher'].includes(authUser?.role ?? '');
+  const isOwner        = ['owner', 'merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+  // All dashboard roles can edit assigned/delivered orders (PIN protected)
+  const canEditAssigned = ['owner', 'merchant_owner', 'super_admin', 'developer', 'dispatcher', 'kasir'].includes(authUser?.role ?? '');
   const canViewPOD      = canEditAssigned;
   const cashierName = useCashierStore((s) => s.cashierName);
   const setCashierName = useCashierStore((s) => s.setCashierName);
@@ -44,7 +44,8 @@ export default function OrdersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]   = useState<DeliveryOrder | null>(null);
   const [viewing, setViewing]   = useState<DeliveryOrder | null>(null);
-  const [pinTarget, setPinTarget] = useState<DeliveryOrder | null>(null);
+  const [pinTarget, setPinTarget]       = useState<DeliveryOrder | null>(null);
+  const [pinDeleteTarget, setPinDeleteTarget] = useState<DeliveryOrder | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [podPhoto, setPodPhoto] = useState<{ url: string; notes?: string } | null>(null);
 
@@ -322,11 +323,17 @@ export default function OrdersPage() {
                       </Button>
                     )}
                     {(['pending', 'assigned', 'cancelled'].includes(o.status) ||
-                      (o.status === 'delivered' && isOwner)) && (
+                      o.status === 'delivered') && (
                       <Button
                         size="sm" variant="ghost"
                         className="text-red-500 hover:text-red-700"
-                        onClick={() => { if (confirm('Delete this order?')) deleteMutation.mutate(o.id); }}
+                        onClick={() => {
+                          if (o.status === 'delivered') {
+                            setPinDeleteTarget(o);
+                          } else {
+                            if (confirm('Delete this order?')) deleteMutation.mutate(o.id);
+                          }
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -362,6 +369,17 @@ export default function OrdersPage() {
             setTimeout(() => setEditing(order), 0);
           }}
           onCancel={() => setPinTarget(null)}
+        />
+      )}
+      {pinDeleteTarget && (
+        <PinDialog
+          correctPin={editPin}
+          onSuccess={() => {
+            const order = pinDeleteTarget;
+            setPinDeleteTarget(null);
+            setTimeout(() => deleteMutation.mutate(order.id), 0);
+          }}
+          onCancel={() => setPinDeleteTarget(null)}
         />
       )}
 

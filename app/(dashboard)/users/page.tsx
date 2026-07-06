@@ -47,13 +47,21 @@ function DepotSettingsPanel() {
   const [saveSuccess, setSaveSuccess]     = useState(false);
   const [toggleSuccess, setToggleSuccess] = useState(false);
 
+  const [toggleError, setToggleError] = useState('');
+
   const toggleLogoutMutation = useMutation({
     mutationFn: (value: boolean) => settingsApi.update({ hide_driver_logout: value }),
     onSuccess: async (_, value) => {
       setHideDriverLogout(value);
+      setToggleError('');
       await refetchSettings();
       setToggleSuccess(true);
       setTimeout(() => setToggleSuccess(false), 2000);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setToggleError(msg ?? 'Failed to save. Try again.');
+      setTimeout(() => setToggleError(''), 3000);
     },
   });
 
@@ -180,6 +188,7 @@ function DepotSettingsPanel() {
           </div>
           <div className="flex items-center gap-2">
             {toggleSuccess && <span className="text-xs text-green-600">Saved!</span>}
+            {toggleError   && <span className="text-xs text-red-500">{toggleError}</span>}
             <button
               type="button"
               onClick={() => toggleLogoutMutation.mutate(!hideDriverLogout)}
