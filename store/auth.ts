@@ -30,7 +30,9 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: () => !!get().token,
       isDispatcher: () => {
         const role = get().user?.role;
-        return role === 'owner' || role === 'dispatcher' || role === 'kasir';
+        return role === 'owner' || role === 'merchant_owner' ||
+               role === 'dispatcher' || role === 'kasir' ||
+               role === 'super_admin' || role === 'developer';
       },
       isDriver: () => get().user?.role === 'driver',
     }),
