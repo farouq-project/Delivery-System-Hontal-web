@@ -38,7 +38,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const { user, clearAuth } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
 
-  const canManageUsers = ['owner'].includes(user?.role ?? '');
+  const canManageUsers = ['owner', 'merchant_owner', 'super_admin', 'developer'].includes(user?.role ?? '');
   const items = canManageUsers ? [...navItems, ...adminNavItems] : navItems;
 
   const handleLogout = async () => {
