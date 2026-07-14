@@ -179,6 +179,55 @@ export const customerDomainApi = {
   deleteTag:    (id: number) => api.delete(`/customer-domain/tags/${id}`),
 };
 
+// Merchant Platform (Phase 3) — settings/platform/*
+export const merchantPlatformApi = {
+  // Business Profile
+  getProfile:         () => api.get('/settings/platform/profile'),
+  updateProfile:      (data: Record<string, unknown>) => api.patch('/settings/platform/profile', data),
+
+  // Operational
+  getOperational:     () => api.get('/settings/platform/operational'),
+  updateOperational:  (data: Record<string, unknown>) => api.patch('/settings/platform/operational', data),
+
+  // Business Hours
+  getHours:           () => api.get('/settings/platform/hours'),
+  updateHours:        (data: Record<string, unknown>) => api.patch('/settings/platform/hours', data),
+
+  // Invoice
+  getInvoice:         () => api.get('/settings/platform/invoice'),
+  updateInvoice:      (data: Record<string, unknown>) => api.patch('/settings/platform/invoice', data),
+
+  // Tracking
+  getTracking:        () => api.get('/settings/platform/tracking'),
+  updateTracking:     (data: Record<string, unknown>) => api.patch('/settings/platform/tracking', data),
+
+  // Notifications
+  getNotifications:   () => api.get('/settings/platform/notifications'),
+  updateNotifications:(data: Record<string, unknown>) => api.patch('/settings/platform/notifications', data),
+
+  // Payment Methods
+  getPaymentMethods:  () => api.get('/settings/platform/payment-methods'),
+  storePaymentMethod: (data: Record<string, unknown>) => api.post('/settings/platform/payment-methods', data),
+  updatePaymentMethod:(id: number, data: Record<string, unknown>) => api.patch(`/settings/platform/payment-methods/${id}`, data),
+  reorderPaymentMethods:(ids: number[]) => api.patch('/settings/platform/payment-methods/reorder', { ids }),
+
+  // Cashiers (use existing SettingsController endpoints)
+  getCashiers:        () => api.get('/settings/cashiers'),
+  storeCashier:       (name: string) => api.post('/settings/cashiers', { name }),
+  destroyCashier:     (id: number) => api.delete(`/settings/cashiers/${id}`),
+
+  // Clusters (use existing SettingsController endpoints)
+  getClusters:        () => api.get('/settings/clusters'),
+  storeCluster:       (name: string) => api.post('/settings/clusters', { name }),
+  destroyCluster:     (id: number) => api.delete(`/settings/clusters/${id}`),
+
+  // Branches
+  getBranches:        () => api.get('/settings/platform/branches'),
+  storeBranch:        (data: Record<string, unknown>) => api.post('/settings/platform/branches', data),
+  updateBranch:       (id: number, data: Record<string, unknown>) => api.patch(`/settings/platform/branches/${id}`, data),
+  destroyBranch:      (id: number) => api.delete(`/settings/platform/branches/${id}`),
+};
+
 // Driver App
 export const driverApi = {
   me: () => api.get('/driver/me'),

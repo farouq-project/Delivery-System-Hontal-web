@@ -298,3 +298,81 @@ export interface ExecutiveDashboardData {
   recent_activity: DashboardActivity[];
   requires_attention: DashboardAttentionItem[];
 }
+
+// ─── Merchant Platform (Phase 3) ──────────────────────────────────
+
+export interface MerchantProfile {
+  company_name: string;
+  slug: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  timezone: string;
+  logo_path: string | null;
+  tax_number: string | null;
+  invoice_footer: string | null;
+  brand_color: string | null;
+}
+
+export interface OperationalSettings {
+  depot_address: string | null;
+  depot_latitude: number | null;
+  depot_longitude: number | null;
+  routing_algorithm: string;
+  max_stops_per_driver: number;
+  klotter_size: number;
+  max_delivery_radius_km: number | null;
+  auto_dispatch: boolean;
+  auto_geocode_enabled: boolean;
+}
+
+export interface BusinessHours {
+  working_hours_start: string;
+  working_hours_end: string;
+  working_days: string[];
+  holiday_mode_enabled: boolean;
+}
+
+export interface InvoiceSettings {
+  invoice_prefix: string;
+  invoice_date_format: string;
+  invoice_footer: string | null;
+}
+
+export interface TrackingSettings {
+  tracking_expiry_hours: number;
+  public_tracking_enabled: boolean;
+  show_estimated_arrival: boolean;
+  driver_location_visible: boolean;
+}
+
+export interface NotificationSettings {
+  whatsapp_notifications_enabled: boolean;
+  email_notifications_enabled: boolean;
+  push_notifications_enabled: boolean;
+}
+
+export interface MerchantPaymentMethod {
+  id: number;
+  merchant_id: number;
+  method_key: string;
+  label: string;
+  is_enabled: boolean;
+  is_default: boolean;
+  sort_order: number;
+}
+
+export interface MerchantBranch {
+  id: number;
+  merchant_id: number;
+  name: string;
+  address: string | null;
+  depot_latitude: number | null;
+  depot_longitude: number | null;
+  working_hours_start: string | null;
+  working_hours_end: string | null;
+  working_days: string[] | null;
+  max_stops_per_driver: number | null;
+  is_active: boolean;
+  sort_order: number;
+}

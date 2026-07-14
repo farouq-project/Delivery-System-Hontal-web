@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Truck, PackageOpen,
-  Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList
+  Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -24,7 +24,8 @@ const navItems = [
 ];
 
 const adminNavItems = [
-  { href: '/users', label: 'Users', icon: UserCog },
+  { href: '/users',    label: 'Users',    icon: UserCog },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 interface SidebarProps {
