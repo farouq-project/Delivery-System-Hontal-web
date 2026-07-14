@@ -11,9 +11,11 @@ import ExecutiveDashboard from '@/components/executive-dashboard';
 const OWNER_ROLES = ['merchant_owner', 'developer', 'super_admin'];
 
 function DispatcherDashboard() {
+  const today = new Date().toISOString().slice(0, 10);
+
   const { data: ordersData } = useQuery({
-    queryKey: ['orders', 'summary'],
-    queryFn: () => ordersApi.list({ per_page: 1 }),
+    queryKey: ['orders', 'summary', today],
+    queryFn: () => ordersApi.list({ per_page: 1, created_date: today }),
   });
 
   const { data: driversData } = useQuery({
