@@ -2,29 +2,33 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customersApi } from '@/lib/api';
+import { customersApi, featuresApi } from '@/lib/api';
 import { Customer } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { VIP_COLORS, formatCurrency } from '@/lib/utils';
 import {
   Plus, Search, Edit, Trash2, Upload,
-  ArrowUp, ArrowDown, ArrowUpDown, Map, TableIcon, Copy,
+  ArrowUp, ArrowDown, ArrowUpDown, Map, TableIcon, Copy, Eye,
 } from 'lucide-react';
 import CustomerForm from './customer-form';
 import CustomerImportDialog from './customer-import';
 import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/auth';
+import Link from 'next/link';
 
 const CustomerMap = dynamic(() => import('./customer-map'), {
   ssr: false,
   loading: () => <div className="flex-1 bg-gray-100 flex items-center justify-center text-gray-400 h-96">Loading map...</div>,
 });
 
-type SortField = 'customer_name' | 'default_latitude' | 'default_longitude' | 'total_belanja' | 'avg_belanja_per_month';
-type SortDir   = 'asc' | 'desc';
-type CoordsFilter   = 'all' | '1' | '0';
-type ClusterFilter  = 'all' | '1' | '0';
+type SortField     = 'customer_name' | 'default_latitude' | 'default_longitude' | 'total_belanja' | 'avg_belanja_per_month';
+type SortDir       = 'asc' | 'desc';
+type CoordsFilter  = 'all' | '1' | '0';
+type ClusterFilter = 'all' | '1' | '0';
+type StatusFilter  = 'all' | 'active' | 'inactive';
+type HealthFilter  = 'all' | 'healthy' | 'active' | 'at_risk' | 'dormant' | 'lost';
+type SegmentFilter = 'all' | 'vip' | 'high_value' | 'returning' | 'new' | 'dormant';
 
 const CLUSTER_NAMES = [
   'Banyak','Candra','Guru','Jingga','Kama','Kidang','Kumala','Larang',
@@ -71,6 +75,10 @@ export default function CustomersPage() {
   const [sortBy, setSortBy]             = useState<SortField>('customer_name');
   const [sortDir, setSortDir]           = useState<SortDir>('asc');
   const [viewMode, setViewMode]         = useState<'table' | 'map'>('table');
+  // Customer Domain filters (feature-gated)
+  const [healthFilter, setHealthFilter]   = useState<HealthFilter>('all');
+  const [segmentFilter, setSegmentFilter] = useState<SegmentFilter>('all');
+  const [statusFilter, setStatusFilter]   = useState<StatusFilter>('all');
 
   const toggleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -81,6 +89,15 @@ export default function CustomersPage() {
     }
     setPage(1);
   };
+
+  // Feature flags — determines if Customer Domain filters are shown
+  const { data: featuresRes } = useQuery({
+    queryKey: ['features'],
+    queryFn:  featuresApi.list,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const domainEnabled: boolean = featuresRes?.data?.data?.customer_domain ?? false;
 
   // Table query — paginated, filtered, sorted
   const updateClusterMutation = useMutation({
@@ -102,7 +119,7 @@ export default function CustomersPage() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['customers', page, search, perPage, coordsFilter, clusterFilter, sortBy, sortDir],
+    queryKey: ['customers', page, search, perPage, coordsFilter, clusterFilter, sortBy, sortDir, healthFilter, segmentFilter, statusFilter],
     queryFn: () => customersApi.list({
       page,
       search,
@@ -111,6 +128,9 @@ export default function CustomersPage() {
       cluster_filter: clusterFilter === 'all' ? undefined : clusterFilter,
       sort_by: sortBy,
       sort_dir: sortDir,
+      ...(domainEnabled && healthFilter  !== 'all' ? { health_filter:  healthFilter  } : {}),
+      ...(domainEnabled && segmentFilter !== 'all' ? { segment_filter: segmentFilter } : {}),
+      ...(domainEnabled && statusFilter  !== 'all' ? { status_filter:  statusFilter  } : {}),
     }),
     enabled: viewMode === 'table',
   });
@@ -221,7 +241,7 @@ export default function CustomersPage() {
           <div className="relative flex-1 min-w-48 max-w-sm">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search by name, phone..."
+              placeholder="Name, phone, address, invoice, tags…"
               className="pl-9"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -280,8 +300,68 @@ export default function CustomersPage() {
               </button>
             ))}
           </div>
+        </div>
+      )}
 
-          {selectedIds.size > 0 && isOwner && (
+      {/* Customer Domain filters — only shown when feature flag enabled */}
+      {viewMode === 'table' && domainEnabled && (
+        <div className="flex flex-wrap gap-3 mb-4 items-center">
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-gray-500 mr-1">Status:</span>
+            {(['all', 'active', 'inactive'] as StatusFilter[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => { setStatusFilter(v); setPage(1); }}
+                className={`px-2.5 py-1 rounded border font-medium transition-colors ${
+                  statusFilter === v
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                }`}
+              >
+                {v === 'all' ? 'All' : v.charAt(0).toUpperCase() + v.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-gray-500 mr-1">Health:</span>
+            {(['all', 'healthy', 'active', 'at_risk', 'dormant', 'lost'] as HealthFilter[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => { setHealthFilter(v); setPage(1); }}
+                className={`px-2.5 py-1 rounded border font-medium transition-colors ${
+                  healthFilter === v
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                }`}
+              >
+                {v === 'all' ? 'All' : v.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-gray-500 mr-1">Segment:</span>
+            {(['all', 'vip', 'high_value', 'returning', 'new', 'dormant'] as SegmentFilter[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => { setSegmentFilter(v); setPage(1); }}
+                className={`px-2.5 py-1 rounded border font-medium transition-colors ${
+                  segmentFilter === v
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                }`}
+              >
+                {v === 'all' ? 'All' : v === 'high_value' ? 'High Value' : v.charAt(0).toUpperCase() + v.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'table' && selectedIds.size > 0 && (
+        <div className="flex flex-wrap gap-3 mb-4 items-center">
+          {isOwner && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500">Change cluster ({selectedIds.size}):</span>
               <select
@@ -475,8 +555,13 @@ export default function CustomersPage() {
                         </td>
                       )}
                       <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(c)}>
+                        <div className="flex justify-end gap-1">
+                          <Link href={`/customers/${c.id}`}>
+                            <Button size="sm" variant="ghost" title="View customer workspace">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button size="sm" variant="ghost" onClick={() => handleEdit(c)} title="Edit customer">
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button

@@ -147,6 +147,11 @@ export const routesApi = {
     api.delete(`/routes/${routeId}/stops/${stopId}`),
 };
 
+// Feature flags for current merchant
+export const featuresApi = {
+  list: () => api.get('/features'),
+};
+
 // Customer Domain (Phase 2A) — routes live at /api/v1/customer-domain/
 export const customerDomainApi = {
   profile:      (customerId: number) =>
