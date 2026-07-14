@@ -72,9 +72,12 @@ function DriverApp() {
     },
   });
 
-  const stops = data?.data?.data?.stops ?? [];
-  const driverInfo = data?.data?.data?.driver;
-  const hideLogout = !!(data?.data?.data?.hide_driver_logout) || !(user?.can_logout ?? true);
+  const todayData  = data?.data?.data;
+  const stops      = todayData?.stops ?? [];
+  const driverInfo = todayData?.driver;
+  // Use live value from API (refreshed every 60s); fall back to auth store while loading
+  const canLogout  = todayData !== undefined ? !!(todayData?.can_logout ?? true) : (user?.can_logout ?? true);
+  const hideLogout = !canLogout;
   const pending = stops.filter((s: { order: { status: string } }) => s.order?.status !== 'delivered' && s.order?.status !== 'failed');
   const done    = stops.filter((s: { order: { status: string } }) => s.order?.status === 'delivered' || s.order?.status === 'failed');
 
