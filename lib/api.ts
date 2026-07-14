@@ -108,6 +108,7 @@ export const reportsApi = {
 export const settingsApi = {
   get: () => api.get('/settings'),
   update: (data: Record<string, unknown>) => api.patch('/settings', data),
+  getPaymentMethods: () => api.get('/settings/payment-methods'),
   vipIndex: () => api.get('/vip-configs'),
   vipUpdate: (configs: Array<{ vip_level: string; score_value: number }>) =>
     api.patch('/vip-configs', { configs }),

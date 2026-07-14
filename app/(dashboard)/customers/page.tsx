@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customersApi, featuresApi } from '@/lib/api';
+import { customersApi, featuresApi, merchantPlatformApi } from '@/lib/api';
 import { Customer } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,12 +29,6 @@ type ClusterFilter = 'all' | '1' | '0';
 type StatusFilter  = 'all' | 'active' | 'inactive';
 type HealthFilter  = 'all' | 'healthy' | 'active' | 'at_risk' | 'dormant' | 'lost';
 type SegmentFilter = 'all' | 'vip' | 'high_value' | 'returning' | 'new' | 'dormant';
-
-const CLUSTER_NAMES = [
-  'Banyak','Candra','Guru','Jingga','Kama','Kidang','Kumala','Larang',
-  'Loka','Mayang','Naga','Naya','Pita','Purba','Rambut','Ratna',
-  'Sima','Subang','Taru','Teja','Titis','Wangsa',
-];
 
 const CLUSTER_COLORS: Record<string, string> = {
   Banyak:'bg-red-100 text-red-700', Candra:'bg-orange-100 text-orange-700',
@@ -98,6 +92,16 @@ export default function CustomersPage() {
     retry: false,
   });
   const domainEnabled: boolean = featuresRes?.data?.data?.customer_domain ?? false;
+
+  const { data: clustersData } = useQuery({
+    queryKey: ['clusters'],
+    queryFn: merchantPlatformApi.getClusters,
+    staleTime: 5 * 60 * 1000,
+    enabled: isOwner,
+  });
+  const clusterNames: string[] = (clustersData?.data?.data ?? []).map(
+    (c: { name: string }) => c.name
+  );
 
   // Table query — paginated, filtered, sorted
   const updateClusterMutation = useMutation({
@@ -377,7 +381,7 @@ export default function CustomersPage() {
                 }}
               >
                 <option value="" disabled>Select…</option>
-                {CLUSTER_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                {clusterNames.map((n) => <option key={n} value={n}>{n}</option>)}
                 <option value="no cluster">no cluster</option>
               </select>
             </div>
@@ -517,7 +521,7 @@ export default function CustomersPage() {
                               }}
                             >
                               <option value="">— none —</option>
-                              {CLUSTER_NAMES.map(n => (
+                              {clusterNames.map(n => (
                                 <option key={n} value={n}>{n}</option>
                               ))}
                             </select>

@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi, settingsApi } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { ordersApi } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { STATUS_COLORS, formatCurrency, formatTime, formatDate, VIP_COLORS } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
-import { Layers, Settings2, Clock } from 'lucide-react';
+import Link from 'next/link';
+import { Layers, Clock } from 'lucide-react';
 
 type PaymentKey = 'cash' | 'transfer' | 'qris' | 'bayar_di_toko';
 
@@ -52,10 +52,8 @@ interface DriverKlotters {
 }
 
 export default function KlotterPage() {
-  const qc = useQueryClient();
   const { user } = useAuthStore();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [showSettings, setShowSettings] = useState(false);
 
   const canManageSettings = ['super_admin', 'developer', 'merchant_owner'].includes(user?.role ?? '');
 
@@ -68,15 +66,6 @@ export default function KlotterPage() {
   const drivers: DriverKlotters[] = result?.drivers ?? [];
   const klotterSize: number = result?.klotter_size ?? 7;
 
-  const [klotterSizeInput, setKlotterSizeInput] = useState<string>('');
-
-  const updateSettings = useMutation({
-    mutationFn: (size: number) => settingsApi.update({ klotter_size: size }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['klotters'] });
-      setShowSettings(false);
-    },
-  });
 
   return (
     <div className="p-4 md:p-6">
@@ -88,36 +77,12 @@ export default function KlotterPage() {
         <div className="flex items-center gap-3">
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-44" />
           {canManageSettings && (
-            <Button variant="outline" onClick={() => { setKlotterSizeInput(String(klotterSize)); setShowSettings((s) => !s); }}>
-              <Settings2 className="h-4 w-4" /> Klotter Size
-            </Button>
+            <Link href="/settings">
+              <Button variant="outline" size="sm">Configure in Settings →</Button>
+            </Link>
           )}
         </div>
       </div>
-
-      {showSettings && (
-        <div className="bg-white rounded-lg border p-4 mb-6 flex items-end gap-3">
-          <div className="space-y-1">
-            <Label>Klotter Size (orders per batch)</Label>
-            <Input
-              type="number"
-              min={1}
-              className="w-32"
-              value={klotterSizeInput}
-              onChange={(e) => setKlotterSizeInput(e.target.value)}
-            />
-          </div>
-          <Button
-            onClick={() => {
-              const size = parseInt(klotterSizeInput, 10);
-              if (size > 0) updateSettings.mutate(size);
-            }}
-            disabled={updateSettings.isPending}
-          >
-            {updateSettings.isPending ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      )}
 
       {isLoading ? (
         <p className="text-center py-8 text-gray-400">Loading...</p>

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi, settingsApi } from '@/lib/api';
+import { ordersApi, settingsApi, merchantPlatformApi } from '@/lib/api';
 import { DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,9 +24,10 @@ import { Plus, Search, Eye, Pencil, Trash2, Camera, X, CalendarDays } from 'luci
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
 import PinDialog from '@/components/pin-dialog';
-import { useCashierStore, CASHIER_NAMES } from '@/store/cashier';
-import { CashierName } from '@/types';
+import { useCashierStore } from '@/store/cashier';
 import { useAuthStore } from '@/store/auth';
+
+interface ApiCashier { id: number; name: string; is_active: boolean; }
 
 export default function OrdersPage() {
   const qc = useQueryClient();
@@ -54,6 +55,19 @@ export default function OrdersPage() {
     queryFn: () => settingsApi.get(),
   });
   const editPin: string = settingsData?.data?.data?.order_edit_pin ?? '152';
+
+  const { data: cashiersData } = useQuery({
+    queryKey: ['cashiers'],
+    queryFn: merchantPlatformApi.getCashiers,
+    staleTime: 5 * 60 * 1000,
+  });
+  const apiCashiers: ApiCashier[] = cashiersData?.data?.data ?? [];
+
+  useEffect(() => {
+    if (apiCashiers.length > 0 && !apiCashiers.some((c) => c.name === cashierName)) {
+      setCashierName(apiCashiers[0].name);
+    }
+  }, [apiCashiers, cashierName, setCashierName]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders', page, search, status, dateFilter],
@@ -145,11 +159,11 @@ export default function OrdersPage() {
 
         {/* Right: selector + new order */}
         <div className="flex items-center gap-3 justify-end">
-          <Select value={cashierName} onValueChange={(v) => setCashierName(v as CashierName)}>
+          <Select value={cashierName} onValueChange={setCashierName}>
             <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {CASHIER_NAMES.map((name) => (
-                <SelectItem key={name} value={name}>{name}</SelectItem>
+              {apiCashiers.map((c) => (
+                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -209,8 +223,8 @@ export default function OrdersPage() {
             >
               <SelectTrigger className="w-28 h-8 text-xs"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
-                {CASHIER_NAMES.map((n) => (
-                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                {apiCashiers.map((c) => (
+                  <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

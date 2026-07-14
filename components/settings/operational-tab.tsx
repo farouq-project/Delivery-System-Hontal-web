@@ -22,6 +22,7 @@ export function OperationalTab() {
     routing_algorithm: 'balanced', max_stops_per_driver: '20',
     klotter_size: '10', max_delivery_radius_km: '',
     auto_dispatch: false, auto_geocode_enabled: false,
+    hide_driver_logout: false, order_edit_pin: '',
   });
   const [saved, setSaved] = useState(false);
 
@@ -37,6 +38,8 @@ export function OperationalTab() {
         max_delivery_radius_km: settings.max_delivery_radius_km != null ? String(settings.max_delivery_radius_km) : '',
         auto_dispatch:          settings.auto_dispatch        ?? false,
         auto_geocode_enabled:   settings.auto_geocode_enabled ?? false,
+        hide_driver_logout:     settings.hide_driver_logout   ?? false,
+        order_edit_pin:         settings.order_edit_pin       ?? '',
       });
     }
   }, [settings]);
@@ -62,6 +65,8 @@ export function OperationalTab() {
       max_delivery_radius_km: form.max_delivery_radius_km ? Number(form.max_delivery_radius_km) : null,
       auto_dispatch:          form.auto_dispatch,
       auto_geocode_enabled:   form.auto_geocode_enabled,
+      hide_driver_logout:     form.hide_driver_logout,
+      order_edit_pin:         form.order_edit_pin || null,
     });
   };
 
@@ -150,6 +155,38 @@ export function OperationalTab() {
                 className="h-4 w-4 rounded border-gray-300" />
               <span className="text-sm">Auto-geocode customer addresses on import</span>
             </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Driver App & Security</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={form.hide_driver_logout}
+              onChange={e => setForm(f => ({ ...f, hide_driver_logout: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300" />
+            <div>
+              <span className="text-sm font-medium">Hide logout button in driver app</span>
+              <p className="text-xs text-gray-400">When enabled, drivers cannot log out from their mobile app</p>
+            </div>
+          </label>
+          <div className="space-y-1">
+            <Label htmlFor="order_edit_pin">Order Edit PIN</Label>
+            <Input
+              id="order_edit_pin"
+              type="text"
+              inputMode="numeric"
+              pattern="\d{3,6}"
+              maxLength={6}
+              value={form.order_edit_pin}
+              onChange={e => setForm(f => ({ ...f, order_edit_pin: e.target.value.replace(/\D/g, '') }))}
+              placeholder="3–6 digits (e.g. 1234)"
+              className="w-40"
+            />
+            <p className="text-xs text-gray-400">Required to edit or delete delivered orders</p>
           </div>
         </CardContent>
       </Card>

@@ -2,13 +2,10 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CashierName } from '@/types';
-
-export const CASHIER_NAMES: CashierName[] = ['Mian', 'Sela', 'Epa', 'Tira'];
 
 interface CashierState {
-  cashierName: CashierName;
-  setCashierName: (name: CashierName) => void;
+  cashierName: string;
+  setCashierName: (name: string) => void;
 }
 
 export const useCashierStore = create<CashierState>()(

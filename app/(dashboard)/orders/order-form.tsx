@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ordersApi, customersApi, driversApi } from '@/lib/api';
+import { ordersApi, customersApi, driversApi, settingsApi } from '@/lib/api';
 import { Customer, DeliveryOrder, Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { ProductSuggestInput } from '@/components/product-suggest-input';
 import { Search, Plus, Trash2 } from 'lucide-react';
-import { PaymentMethod } from '@/types';
 import { useCashierStore } from '@/store/cashier';
 
 const itemSchema = z.object({
@@ -23,13 +22,6 @@ const itemSchema = z.object({
   quantity: z.number().min(0).optional().nullable(),
   notes:    z.string().optional().nullable(),
 });
-
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'cash',          label: 'Cash' },
-  { value: 'transfer',      label: 'Transfer' },
-  { value: 'qris',          label: 'QRIS' },
-  { value: 'bayar_di_toko', label: 'Bayar di Toko' },
-];
 
 const schema = z.object({
   customer_id:              z.number().optional().nullable(),
@@ -42,8 +34,8 @@ const schema = z.object({
   requested_delivery_start: z.string().optional().nullable(),
   requested_delivery_end:   z.string().optional().nullable(),
   notes:                    z.string().optional().nullable(),
-  cashier_name:             z.enum(['Mian', 'Sela', 'Epa', 'Tira']),
-  payment_method:           z.enum(['cash', 'transfer', 'qris', 'bayar_di_toko']),
+  cashier_name:             z.string().min(1),
+  payment_method:           z.string().min(1),
   driver_id:                z.number().optional().nullable(),
 });
 type FormData = z.infer<typeof schema>;
@@ -88,6 +80,14 @@ export default function OrderForm({ onClose, order }: Props) {
   });
   const drivers: Driver[] = driversData?.data?.data ?? [];
 
+  const { data: paymentMethodsData } = useQuery({
+    queryKey: ['paymentMethods'],
+    queryFn: settingsApi.getPaymentMethods,
+    staleTime: 5 * 60 * 1000,
+  });
+  const paymentMethods: { id: number; method_key: string; label: string }[] =
+    paymentMethodsData?.data?.data ?? [];
+
   const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: order ? {
@@ -105,8 +105,8 @@ export default function OrderForm({ onClose, order }: Props) {
       requested_delivery_start: order.requested_delivery_start?.slice(11, 16) || undefined,
       requested_delivery_end:   order.requested_delivery_end?.slice(11, 16) || undefined,
       notes:                    order.notes ?? undefined,
-      cashier_name:             (order.cashier_name ?? cashierName) as 'Mian' | 'Sela' | 'Epa' | 'Tira',
-      payment_method:           (order.payment_method ?? 'cash') as PaymentMethod,
+      cashier_name:             order.cashier_name ?? cashierName,
+      payment_method:           order.payment_method ?? 'cash',
       driver_id:                order.driver_id ?? null,
     } : {
       requested_delivery_date: new Date().toISOString().split('T')[0],
@@ -368,12 +368,22 @@ export default function OrderForm({ onClose, order }: Props) {
 
           <div className="space-y-2">
             <Label>Payment Method</Label>
-            <Select value={paymentMethod} onValueChange={(v) => setValue('payment_method', v as PaymentMethod)}>
+            <Select value={paymentMethod} onValueChange={(v) => setValue('payment_method', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {PAYMENT_METHODS.map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
+                {paymentMethods.length > 0
+                  ? paymentMethods.map((m) => (
+                      <SelectItem key={m.id} value={m.method_key}>{m.label}</SelectItem>
+                    ))
+                  : (
+                    <>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="qris">QRIS</SelectItem>
+                      <SelectItem value="bayar_di_toko">Bayar di Toko</SelectItem>
+                    </>
+                  )
+                }
               </SelectContent>
             </Select>
           </div>

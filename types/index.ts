@@ -70,9 +70,9 @@ export interface Driver {
 
 export type OrderStatus = 'pending' | 'assigned' | 'in_transit' | 'delivered' | 'failed' | 'cancelled';
 
-export type CashierName = 'Mian' | 'Sela' | 'Epa' | 'Tira';
+export type CashierName = string;
 
-export type PaymentMethod = 'cash' | 'transfer' | 'qris' | 'bayar_di_toko';
+export type PaymentMethod = string;
 
 export interface OrderItem {
   name: string;
@@ -324,6 +324,8 @@ export interface OperationalSettings {
   max_delivery_radius_km: number | null;
   auto_dispatch: boolean;
   auto_geocode_enabled: boolean;
+  hide_driver_logout: boolean;
+  order_edit_pin: string | null;
 }
 
 export interface BusinessHours {
