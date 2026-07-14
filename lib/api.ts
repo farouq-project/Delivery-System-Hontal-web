@@ -147,6 +147,28 @@ export const routesApi = {
     api.delete(`/routes/${routeId}/stops/${stopId}`),
 };
 
+// Customer Domain (Phase 2A) — routes live at /api/v1/customer-domain/
+export const customerDomainApi = {
+  profile:      (customerId: number) =>
+    api.get(`/customer-domain/customers/${customerId}/profile`),
+  timeline:     (customerId: number, params?: Record<string, unknown>) =>
+    api.get(`/customer-domain/customers/${customerId}/timeline`, { params }),
+  metrics:      (customerId: number) =>
+    api.get(`/customer-domain/customers/${customerId}/metrics`),
+  customerTags: (customerId: number) =>
+    api.get(`/customer-domain/customers/${customerId}/tags`),
+  assignTag:    (customerId: number, tagId: number) =>
+    api.post(`/customer-domain/customers/${customerId}/tags/${tagId}`),
+  removeTag:    (customerId: number, tagId: number) =>
+    api.delete(`/customer-domain/customers/${customerId}/tags/${tagId}`),
+  tags:         () => api.get('/customer-domain/tags'),
+  createTag:    (data: { name: string; color?: string }) =>
+    api.post('/customer-domain/tags', data),
+  updateTag:    (id: number, data: { name?: string; color?: string; is_active?: boolean }) =>
+    api.put(`/customer-domain/tags/${id}`, data),
+  deleteTag:    (id: number) => api.delete(`/customer-domain/tags/${id}`),
+};
+
 // Driver App
 export const driverApi = {
   me: () => api.get('/driver/me'),

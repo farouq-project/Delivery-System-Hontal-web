@@ -173,3 +173,68 @@ export interface PaginatedResponse<T> {
 export interface ApiResponse<T> {
   data: T;
 }
+
+// ─── Customer Domain (Phase 2A) ───────────────────────────────────
+
+export type HealthStatus = 'healthy' | 'active' | 'at_risk' | 'dormant' | 'lost';
+export type CustomerSegmentKey = 'vip' | 'high_value' | 'returning' | 'new' | 'dormant';
+
+export interface CustomerTag {
+  id: number;
+  merchant_id: number;
+  name: string;
+  color: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerProfile {
+  id: number;
+  customer_id: number;
+  merchant_id: number;
+  first_order_at: string | null;
+  last_order_at: string | null;
+  total_orders: number;
+  total_deliveries: number;
+  total_failed: number;
+  total_spending: number;
+  avg_order_value: number;
+  avg_delivery_time_hours: number | null;
+  preferred_payment: string | null;
+  preferred_delivery_time: string | null;
+  health_status: HealthStatus;
+  segment: CustomerSegmentKey;
+  last_health_check_at: string | null;
+  last_segment_check_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerTimeline {
+  id: number;
+  customer_id: number;
+  merchant_id: number;
+  event_type: string;
+  event_data: Record<string, unknown> | null;
+  actor_id: number | null;
+  actor_role: string | null;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface CustomerMetrics {
+  total_spending: number;
+  avg_order_value: number;
+  avg_delivery_time_hours: number | null;
+  total_deliveries: number;
+  total_orders: number;
+  total_failed: number;
+  success_rate: number | null;
+  first_order_at: string | null;
+  last_order_at: string | null;
+  preferred_payment: string | null;
+  preferred_delivery_time: string | null;
+  health_status: HealthStatus;
+  segment: CustomerSegmentKey;
+}
