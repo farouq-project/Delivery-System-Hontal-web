@@ -5,8 +5,12 @@ import { ordersApi, driversApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PackageOpen, Truck, CheckCircle, Clock } from 'lucide-react';
 import { LiveDriver } from '@/types';
+import { useAuthStore } from '@/store/auth';
+import ExecutiveDashboard from '@/components/executive-dashboard';
 
-export default function DashboardPage() {
+const OWNER_ROLES = ['merchant_owner', 'developer', 'super_admin'];
+
+function DispatcherDashboard() {
   const { data: ordersData } = useQuery({
     queryKey: ['orders', 'summary'],
     queryFn: () => ordersApi.list({ per_page: 1 }),
@@ -24,10 +28,10 @@ export default function DashboardPage() {
   const availableDrivers = drivers.filter((d) => d.status === 'available').length;
 
   const stats = [
-    { label: "Today's Orders", value: totalOrders, icon: PackageOpen, color: 'text-blue-600' },
-    { label: 'On Delivery',    value: activeDrivers, icon: Truck,       color: 'text-cyan-600' },
-    { label: 'Available',      value: availableDrivers, icon: CheckCircle, color: 'text-green-600' },
-    { label: 'Total Drivers',  value: drivers.length, icon: Clock,       color: 'text-purple-600' },
+    { label: "Today's Orders", value: totalOrders,       icon: PackageOpen, color: 'text-blue-600' },
+    { label: 'On Delivery',    value: activeDrivers,      icon: Truck,       color: 'text-cyan-600' },
+    { label: 'Available',      value: availableDrivers,   icon: CheckCircle, color: 'text-green-600' },
+    { label: 'Total Drivers',  value: drivers.length,     icon: Clock,       color: 'text-purple-600' },
   ];
 
   return (
@@ -100,4 +104,14 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+export default function DashboardPage() {
+  const user = useAuthStore((s) => s.user);
+
+  if (OWNER_ROLES.includes(user?.role ?? '')) {
+    return <ExecutiveDashboard />;
+  }
+
+  return <DispatcherDashboard />;
 }

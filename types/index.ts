@@ -238,3 +238,63 @@ export interface CustomerMetrics {
   health_status: HealthStatus;
   segment: CustomerSegmentKey;
 }
+
+// ─── Executive Dashboard (Phase 2B) ──────────────────────────────
+
+export interface DashboardOperationsToday {
+  revenue: number;
+  orders: number;
+  deliveries_completed: number;
+  active_drivers: number;
+  success_rate: number | null;
+}
+
+export interface DashboardBusinessMonth {
+  revenue: number;
+  orders: number;
+  avg_order_value: number;
+  repeat_customers: number;
+  new_customers: number;
+  customer_growth_pct: number;
+}
+
+export interface DashboardCustomerHealth {
+  total: number;
+  new_this_month: number;
+  repeat: number | null;
+  dormant: number | null;
+  growth_pct: number;
+}
+
+export interface DashboardClusterRow {
+  cluster: string;
+  total_orders: number;
+  revenue: number;
+  deliveries: number;
+  success_rate: number | null;
+}
+
+export interface DashboardActivity {
+  id: number;
+  order_number: string;
+  customer_name: string;
+  status: string;
+  driver_name: string | null;
+  occurred_at: string;
+}
+
+export interface DashboardAttentionItem {
+  type: string;
+  label: string;
+  count: number;
+  severity: 'error' | 'warning' | 'info';
+}
+
+export interface ExecutiveDashboardData {
+  operations_today: DashboardOperationsToday;
+  business_this_month: DashboardBusinessMonth;
+  customer_health: DashboardCustomerHealth;
+  cluster_summary: DashboardClusterRow[];
+  recent_activity: DashboardActivity[];
+  requires_attention: DashboardAttentionItem[];
+}

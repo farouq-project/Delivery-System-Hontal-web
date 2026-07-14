@@ -152,6 +152,11 @@ export const featuresApi = {
   list: () => api.get('/features'),
 };
 
+// Executive Dashboard (Phase 2B)
+export const executiveDashboardApi = {
+  summary: () => api.get('/dashboard/executive'),
+};
+
 // Customer Domain (Phase 2A) — routes live at /api/v1/customer-domain/
 export const customerDomainApi = {
   profile:      (customerId: number) =>
