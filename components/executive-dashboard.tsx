@@ -8,8 +8,8 @@ import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { AttentionPanel } from '@/components/dashboard/attention-panel';
 import type { ExecutiveDashboardData } from '@/types';
 
-const formatRp = (val: number) =>
-  'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(val));
+const formatRp = (val: number | null | undefined) =>
+  'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(val ?? 0));
 
 const formatPct = (val: number | null | undefined) =>
   val != null ? `${val}%` : '—';

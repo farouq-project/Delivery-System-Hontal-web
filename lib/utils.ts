@@ -16,8 +16,8 @@ export function getErrorMessage(error: unknown): string | null {
   return data.message ?? null;
 }
 
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+export function formatCurrency(value: number | null | undefined): string {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value ?? 0);
 }
 
 export function formatDate(date: string | null | undefined, fmt = 'dd MMM yyyy'): string {
