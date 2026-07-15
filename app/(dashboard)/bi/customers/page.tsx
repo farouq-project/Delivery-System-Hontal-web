@@ -35,7 +35,7 @@ export default function BiCustomersPage() {
   return (
     <div className="p-4 md:p-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Customers</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
         <p className="text-sm text-gray-500 mt-0.5">Customer base health and engagement metrics</p>
       </div>
 
@@ -112,7 +112,7 @@ export default function BiCustomersPage() {
           <SectionHeader title="Requires Attention" />
           <AttentionPanel items={customerAttention} title="" />
           {d.dormant == null && (
-            <p className="mt-3 text-xs text-gray-400 italic">
+            <p className="mt-3 text-xs text-gray-500 italic">
               Dormant and lost counts require the Customer Domain feature to be enabled.
             </p>
           )}

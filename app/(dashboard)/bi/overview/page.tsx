@@ -32,7 +32,7 @@ export default function BiOverviewPage() {
   return (
     <div className="p-4 md:p-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Business Overview</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Business Overview</h1>
         <p className="text-sm text-gray-500 mt-0.5">60-second snapshot of your business health</p>
       </div>
 

@@ -61,7 +61,7 @@ export default function BiLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-full">
       {/* Sub-navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-10">
+      <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
         <div className="px-4 md:px-6">
           <div className="flex items-center gap-1 overflow-x-auto py-0 scrollbar-none">
             {subNav.map(({ href, label, icon: Icon }) => {

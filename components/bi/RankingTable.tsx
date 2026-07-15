@@ -29,17 +29,17 @@ export function RankingTable<T extends Record<string, unknown>>({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-900/60">
-            <tr className="border-b border-gray-200 dark:border-gray-600">
-              <th className="px-3 py-2.5 text-left text-xs font-bold text-gray-600 dark:text-gray-200 w-8">#</th>
+          <thead className="bg-gray-50">
+            <tr className="border-b border-gray-200">
+              <th className="px-3 py-2.5 text-left text-xs font-bold text-gray-700 w-8">#</th>
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
                   className={cn(
-                    'px-2 py-2.5 text-xs font-bold text-gray-600 dark:text-gray-200',
+                    'px-2 py-2.5 text-xs font-bold text-gray-700',
                     col.align === 'right' ? 'text-right' : 'text-left'
                   )}
                 >
@@ -48,12 +48,12 @@ export function RankingTable<T extends Record<string, unknown>>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+          <tbody className="divide-y divide-gray-100">
             {rows.map((row, i) => {
               const href = linkFn?.(row);
               return (
-                <tr key={String(row[keyField])} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                  <td className="px-3 py-2.5 text-xs text-gray-400 dark:text-gray-500 font-medium">{i + 1}</td>
+                <tr key={String(row[keyField])} className="hover:bg-gray-50">
+                  <td className="px-3 py-2.5 text-xs text-gray-400 font-medium">{i + 1}</td>
                   {columns.map((col) => {
                     const cell = col.render
                       ? col.render(row[col.key], row)
@@ -64,13 +64,13 @@ export function RankingTable<T extends Record<string, unknown>>({
                       <td
                         key={String(col.key)}
                         className={cn(
-                          'px-2 py-2.5 text-gray-800 dark:text-gray-100',
+                          'px-2 py-2.5 text-gray-900',
                           col.align === 'right' ? 'text-right' : 'text-left',
                           isFirst && 'font-semibold'
                         )}
                       >
                         {isFirst && href ? (
-                          <Link href={href} className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline">{cell}</Link>
+                          <Link href={href} className="hover:text-blue-600 hover:underline">{cell}</Link>
                         ) : cell}
                       </td>
                     );
