@@ -69,13 +69,13 @@ export default function BiDriversPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-900/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 w-8">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300">Driver</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300">Status</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Completed</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Failed</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Revenue</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Success Rate</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-200 w-8">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-200">Driver</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-200">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 dark:text-gray-200">Completed</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 dark:text-gray-200">Failed</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 dark:text-gray-200">Revenue</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 dark:text-gray-200">Success Rate</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">

@@ -49,8 +49,8 @@ export function StatCard({
         <Icon className={cn('h-5 w-5 mt-1 shrink-0', iconColor)} />
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-gray-500 dark:text-gray-300 font-semibold uppercase tracking-wide truncate">{title}</p>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{value}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-200 font-bold uppercase tracking-widest truncate">{title}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
         {delta != null && DeltaIcon && (
           <p className={cn('flex items-center gap-1 text-xs mt-1', deltaColor)}>
             <DeltaIcon className="h-3 w-3" />
