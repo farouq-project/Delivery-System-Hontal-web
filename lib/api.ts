@@ -86,8 +86,8 @@ export const ordersApi = {
     api.post('/orders/bulk-delete', { order_ids: orderIds }),
   bulkUnassign: (orderIds: number[]) =>
     api.post('/orders/bulk-unassign', { order_ids: orderIds }),
-  updateStatus: (id: number, status: string, notes?: string) =>
-    api.post(`/orders/${id}/status`, { status, notes }),
+  updateStatus: (id: number, status: string, reason?: string) =>
+    api.post(`/orders/${id}/status`, { status, reason }),
   history: (id: number) => api.get(`/orders/${id}/history`),
   geocode: (address: string) => api.post('/geocode/address', { address }),
   nextNumber: () => api.get('/orders/next-number'),

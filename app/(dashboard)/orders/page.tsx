@@ -20,7 +20,7 @@ function calcDuration(createdAt: string | null, deliveredAt: string | null): str
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
-import { Plus, Search, Eye, Pencil, Trash2, Camera, X, CalendarDays } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2, Camera, X, CalendarDays, RefreshCw } from 'lucide-react';
 import OrderForm from './order-form';
 import OrderDetail from './order-detail';
 import PinDialog from '@/components/pin-dialog';
@@ -40,8 +40,12 @@ export default function OrdersPage() {
   const setCashierName = useCashierStore((s) => s.setCashierName);
   const [search, setSearch]     = useState('');
   const [status, setStatus]     = useState('all');
-  const [dateFilter, setDateFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]     = useState('');
   const [page, setPage]         = useState(1);
+  const [statusTarget, setStatusTarget]     = useState<DeliveryOrder | null>(null);
+  const [editingStatus, setEditingStatus]   = useState('');
+  const [statusNotes, setStatusNotes]       = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]   = useState<DeliveryOrder | null>(null);
   const [viewing, setViewing]   = useState<DeliveryOrder | null>(null);
@@ -70,14 +74,26 @@ export default function OrdersPage() {
   }, [apiCashiers, cashierName, setCashierName]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['orders', page, search, status, dateFilter],
+    queryKey: ['orders', page, search, status, dateFrom, dateTo],
     queryFn: () => ordersApi.list({
       page,
-      per_page: dateFilter ? 200 : 20,
+      per_page: (dateFrom || dateTo) ? 200 : 20,
       search,
       status: status === 'all' ? undefined : status,
-      date: dateFilter || undefined,
+      date_from: dateFrom || undefined,
+      date_to:   dateTo   || undefined,
     }),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status, reason }: { id: number; status: string; reason?: string }) =>
+      ordersApi.updateStatus(id, status, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      setStatusTarget(null);
+      setEditingStatus('');
+      setStatusNotes('');
+    },
   });
 
   const deleteMutation = useMutation({
@@ -182,24 +198,45 @@ export default function OrdersPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        {/* Date filter */}
-        <div className="relative flex items-center">
-          <CalendarDays className="absolute left-3 h-4 w-4 text-gray-400 pointer-events-none" />
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
-            className="pl-9 pr-3 h-10 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring w-44"
-          />
-          {dateFilter && (
-            <button
-              onClick={() => { setDateFilter(''); setPage(1); }}
-              className="absolute right-2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        {/* Date range filter (owner) */}
+        {isOwner ? (
+          <div className="flex items-center gap-1 bg-white border border-input rounded-md px-3 h-10">
+            <CalendarDays className="h-4 w-4 text-gray-400 shrink-0" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              className="text-sm bg-transparent focus:outline-none w-36"
+            />
+            <span className="text-gray-400 text-xs">–</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              className="text-sm bg-transparent focus:outline-none w-36"
+            />
+            {(dateFrom || dateTo) && (
+              <button onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }} className="text-gray-400 hover:text-gray-600 ml-1">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="relative flex items-center">
+            <CalendarDays className="absolute left-3 h-4 w-4 text-gray-400 pointer-events-none" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setDateTo(''); setPage(1); }}
+              className="pl-9 pr-3 h-10 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring w-44"
+            />
+            {dateFrom && (
+              <button onClick={() => { setDateFrom(''); setPage(1); }} className="absolute right-2 text-gray-400 hover:text-gray-600">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
         <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
           <SelectTrigger className="w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
@@ -313,6 +350,15 @@ export default function OrdersPage() {
                     <Button size="sm" variant="ghost" onClick={() => setViewing(o)}>
                       <Eye className="h-4 w-4" />
                     </Button>
+                    {isOwner && (
+                      <Button
+                        size="sm" variant="ghost"
+                        title="Change status"
+                        onClick={() => { setStatusTarget(o); setEditingStatus(o.status); setStatusNotes(''); }}
+                      >
+                        <RefreshCw className="h-4 w-4 text-indigo-500" />
+                      </Button>
+                    )}
                     {(o.status === 'pending' ||
                       (['assigned', 'delivered'].includes(o.status) && canEditAssigned)) && (
                       <Button
@@ -395,6 +441,59 @@ export default function OrdersPage() {
           }}
           onCancel={() => setPinDeleteTarget(null)}
         />
+      )}
+
+      {statusTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setStatusTarget(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg">Change Order Status</h3>
+              <button onClick={() => setStatusTarget(null)} className="p-1 rounded hover:bg-gray-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-1">Order <span className="font-mono font-medium text-gray-800">#{statusTarget.order_number}</span></p>
+            <p className="text-xs text-gray-400 mb-5">{statusTarget.customer_name}</p>
+
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">New Status</label>
+            <Select value={editingStatus} onValueChange={setEditingStatus}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="assigned">Assigned</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <label className="block text-sm font-medium text-gray-700 mt-4 mb-1.5">Reason <span className="text-gray-400 font-normal">(optional)</span></label>
+            <textarea
+              value={statusNotes}
+              onChange={(e) => setStatusNotes(e.target.value)}
+              rows={2}
+              placeholder="Reason for status change..."
+              className="w-full border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+            />
+
+            {statusMutation.isError && (
+              <p className="text-xs text-red-500 mt-2">Failed to update status. Please try again.</p>
+            )}
+
+            <div className="flex justify-end gap-3 mt-5">
+              <Button variant="outline" onClick={() => setStatusTarget(null)}>Cancel</Button>
+              <Button
+                onClick={() => statusMutation.mutate({ id: statusTarget.id, status: editingStatus, reason: statusNotes || undefined })}
+                disabled={statusMutation.isPending || editingStatus === statusTarget.status}
+              >
+                {statusMutation.isPending ? 'Saving…' : 'Update Status'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {podPhoto && (
