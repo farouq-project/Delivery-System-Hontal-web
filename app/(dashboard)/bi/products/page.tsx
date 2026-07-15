@@ -25,7 +25,7 @@ export default function BiProductsPage() {
     return (
       <div className="p-4 md:p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Products</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-sm text-gray-500 mt-0.5">Product sales analytics</p>
         </div>
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex gap-3 max-w-lg">
@@ -47,7 +47,7 @@ export default function BiProductsPage() {
   return (
     <div className="p-4 md:p-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Products</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Products</h1>
         <p className="text-sm text-gray-500 mt-0.5">Product performance ranked by order volume and revenue</p>
       </div>
 

@@ -33,7 +33,7 @@ export default function BiOperationsPage() {
   return (
     <div className="p-4 md:p-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Operations</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Operations</h1>
         <p className="text-sm text-gray-500 mt-0.5">Current operational status — live figures</p>
       </div>
 
@@ -95,13 +95,13 @@ export default function BiOperationsPage() {
         <div>
           <SectionHeader title="Offline Drivers" description="Active drivers currently not online" />
           {offlineDrivers.length === 0 ? (
-            <p className="text-sm text-gray-400">All active drivers are online.</p>
+            <p className="text-sm text-gray-500">All active drivers are online.</p>
           ) : (
             <div className="space-y-2">
               {offlineDrivers.map((d) => (
-                <div key={d.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{d.driver_name}</p>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">Offline</span>
+                <div key={d.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <p className="text-sm font-medium text-gray-800">{d.driver_name}</p>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">Offline</span>
                 </div>
               ))}
             </div>
