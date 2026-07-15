@@ -37,7 +37,7 @@ interface AttentionPanelProps {
 export function AttentionPanel({ items, title = 'Requires Attention' }: AttentionPanelProps) {
   return (
     <div>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{title}</h3>
+      <h3 className="text-sm font-semibold text-gray-700 mb-3">{title}</h3>
       {items.length === 0 ? (
         <EmptyState
           title="All clear"

@@ -28,64 +28,66 @@ export function ComparisonTable({
     : 0;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="pb-2 pr-4 text-left text-xs font-medium text-gray-400">{labelKey}</th>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={cn(
-                  'pb-2 px-2 text-xs font-medium text-gray-400',
-                  col.align === 'right' ? 'text-right' : 'text-left'
-                )}
-              >
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-          {rows.map((row, i) => {
-            const isTop = highlightFirst && i === 0;
-            const progress = columns[1]
-              ? Math.round((Number(row[columns[1].key]) / maxVal) * 100)
-              : 0;
-
-            return (
-              <tr key={String(row[labelKey])} className={cn(isTop && 'bg-blue-50/50 dark:bg-blue-900/10')}>
-                <td className="py-2 pr-4">
-                  <p className={cn('font-medium text-gray-900 dark:text-gray-100', isTop && 'text-blue-700 dark:text-blue-400')}>
-                    {String(row[labelKey])}
-                  </p>
-                  {highlightFirst && columns[1] && (
-                    <div className="mt-1 h-1 rounded-full bg-gray-100 dark:bg-gray-700 w-full">
-                      <div
-                        className="h-1 rounded-full bg-blue-400"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr className="border-b border-gray-200">
+              <th className="px-3 py-2.5 text-left text-xs font-bold text-gray-700">{labelKey}</th>
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  className={cn(
+                    'px-2 py-2.5 text-xs font-bold text-gray-700',
+                    col.align === 'right' ? 'text-right' : 'text-left'
                   )}
-                </td>
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={cn(
-                      'py-2 px-2 text-gray-700 dark:text-gray-300',
-                      col.align === 'right' ? 'text-right' : 'text-left'
+                >
+                  {col.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {rows.map((row, i) => {
+              const isTop = highlightFirst && i === 0;
+              const progress = columns[1]
+                ? Math.round((Number(row[columns[1].key]) / maxVal) * 100)
+                : 0;
+
+              return (
+                <tr key={String(row[labelKey])} className={cn('hover:bg-gray-50', isTop && 'bg-blue-50/40')}>
+                  <td className="px-3 py-2.5">
+                    <p className={cn('font-semibold text-gray-900', isTop && 'text-blue-700')}>
+                      {String(row[labelKey])}
+                    </p>
+                    {highlightFirst && columns[1] && (
+                      <div className="mt-1 h-1 rounded-full bg-gray-100 w-full">
+                        <div
+                          className="h-1 rounded-full bg-blue-400"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
                     )}
-                  >
-                    {col.render
-                      ? col.render(row[col.key], row)
-                      : String(row[col.key] ?? '—')}
                   </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  {columns.map((col) => (
+                    <td
+                      key={col.key}
+                      className={cn(
+                        'px-2 py-2.5 text-gray-800',
+                        col.align === 'right' ? 'text-right' : 'text-left'
+                      )}
+                    >
+                      {col.render
+                        ? col.render(row[col.key], row)
+                        : String(row[col.key] ?? '—')}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
