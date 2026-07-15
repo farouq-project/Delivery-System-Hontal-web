@@ -64,24 +64,24 @@ export default function BiDriversPage() {
         {ranking.length === 0 ? (
           <EmptyState description="No driver delivery data recorded yet." />
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-900/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 w-8">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Driver</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Status</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Completed</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Failed</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Revenue</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Success Rate</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 w-8">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300">Driver</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Completed</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Failed</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Revenue</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Success Rate</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {ranking.map((row, i) => (
                     <tr key={String(row.driver_id)} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="px-4 py-3 text-xs text-gray-400">{i + 1}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{i + 1}</td>
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                         {String(row.driver_name)}
                       </td>
@@ -95,7 +95,7 @@ export default function BiDriversPage() {
                         {fmtNum(Number(row.completed))}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className={Number(row.failed) > 0 ? 'text-red-500' : 'text-gray-400'}>
+                        <span className={Number(row.failed) > 0 ? 'text-red-500' : 'text-gray-400 dark:text-gray-400'}>
                           {fmtNum(Number(row.failed))}
                         </span>
                       </td>

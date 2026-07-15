@@ -40,22 +40,22 @@ export function StatCard({
 
   const content = (
     <div className={cn(
-      'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700',
-      'border-l-4 p-4 flex items-start gap-3',
+      'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600',
+      'border-l-4 p-4 flex items-start gap-3 shadow-sm',
       borderColor,
       href && 'cursor-pointer hover:shadow-md transition-shadow'
     )}>
       {Icon && (
-        <Icon className={cn('h-6 w-6 mt-0.5 shrink-0', iconColor)} />
+        <Icon className={cn('h-5 w-5 mt-1 shrink-0', iconColor)} />
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide truncate">{title}</p>
-        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-0.5">{value}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-300 font-semibold uppercase tracking-wide truncate">{title}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{value}</p>
         {delta != null && DeltaIcon && (
           <p className={cn('flex items-center gap-1 text-xs mt-1', deltaColor)}>
             <DeltaIcon className="h-3 w-3" />
             {formatDelta(delta)}
-            {deltaLabel && <span className="text-gray-400">{deltaLabel}</span>}
+            {deltaLabel && <span className="text-gray-400 dark:text-gray-400">{deltaLabel}</span>}
           </p>
         )}
       </div>

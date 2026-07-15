@@ -32,13 +32,13 @@ export function RankingTable<T extends Record<string, unknown>>({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="pb-2 pr-3 text-left text-xs font-medium text-gray-400 w-8">#</th>
+          <tr className="border-b border-gray-200 dark:border-gray-600">
+            <th className="pb-2 pr-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 w-8">#</th>
             {columns.map((col) => (
               <th
                 key={String(col.key)}
                 className={cn(
-                  'pb-2 px-2 text-xs font-medium text-gray-400',
+                  'pb-2 px-2 text-xs font-semibold text-gray-500 dark:text-gray-300',
                   col.align === 'right' ? 'text-right' : 'text-left'
                 )}
               >
@@ -52,7 +52,7 @@ export function RankingTable<T extends Record<string, unknown>>({
             const href = linkFn?.(row);
             return (
               <tr key={String(row[keyField])} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <td className="py-2 pr-3 text-xs text-gray-400 font-medium">{i + 1}</td>
+                <td className="py-2 pr-3 text-xs text-gray-500 dark:text-gray-400 font-medium">{i + 1}</td>
                 {columns.map((col) => {
                   const cell = col.render
                     ? col.render(row[col.key], row)

@@ -51,24 +51,24 @@ export default function BiAreasPage() {
         {areas.length === 0 ? (
           <EmptyState description="No cluster data. Assign clusters to customers to enable area analytics." />
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-900/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 w-8">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Area / Cluster</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Revenue</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Orders</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Delivered</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Success Rate</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400">Customers</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 w-8">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300">Area / Cluster</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Revenue</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Orders</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Delivered</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Success Rate</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300">Customers</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {areas.map((row, i) => (
                     <tr key={String(row.cluster)} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="px-4 py-3 text-xs text-gray-400">{i + 1}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{i + 1}</td>
                       <td className="px-4 py-3">
                         <Link
                           href={`/customers?cluster=${encodeURIComponent(String(row.cluster))}`}

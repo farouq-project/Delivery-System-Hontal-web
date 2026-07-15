@@ -37,7 +37,7 @@ export function InsightCard({
           <span className={cn('text-2xl font-bold', text)}>{count}</span>
           <span className={cn('text-sm font-medium', text)}>{title}</span>
         </div>
-        {description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>}
+        {description && <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{description}</p>}
       </div>
       {href && (
         <Link
