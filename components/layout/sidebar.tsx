@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Truck, PackageOpen,
-  Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList, Settings
+  Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList, Settings,
+  BarChart2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -28,6 +29,16 @@ const adminNavItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
+const biNavItems = [
+  { href: '/bi/overview',    label: 'BI Overview',  icon: BarChart2 },
+  { href: '/bi/customers',   label: 'Customers',    icon: Users },
+  { href: '/bi/operations',  label: 'Operations',   icon: PackageOpen },
+  { href: '/bi/drivers',     label: 'Drivers',      icon: Truck },
+  { href: '/bi/branches',    label: 'Branches',     icon: Layers },
+  { href: '/bi/products',    label: 'Products',     icon: ClipboardList },
+  { href: '/bi/areas',       label: 'Areas',        icon: Map },
+];
+
 interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -40,6 +51,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const canManageUsers = ['owner', 'merchant_owner', 'super_admin', 'developer'].includes(user?.role ?? '');
+  const canUseBi       = ['merchant_owner', 'super_admin', 'developer'].includes(user?.role ?? '');
   const items = canManageUsers ? [...navItems, ...adminNavItems] : navItems;
 
   const handleLogout = async () => {
@@ -96,6 +108,33 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               {!collapsed && label}
             </Link>
           ))}
+
+          {canUseBi && (
+            <>
+              {!collapsed && (
+                <p className="px-3 pt-4 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Business Intelligence
+                </p>
+              )}
+              {collapsed && <div className="border-t border-gray-700 my-2" />}
+              {biNavItems.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onMobileClose}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                    pathname.startsWith(href)
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  )}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && label}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
 
         <div className="p-4 border-t border-gray-700">

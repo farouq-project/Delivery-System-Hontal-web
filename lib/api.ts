@@ -229,6 +229,18 @@ export const merchantPlatformApi = {
   destroyBranch:      (id: number) => api.delete(`/settings/platform/branches/${id}`),
 };
 
+// Business Intelligence (Phase 4.1)
+export const biApi = {
+  overview:   () => api.get('/bi/overview'),
+  customers:  () => api.get('/bi/customers'),
+  operations: () => api.get('/bi/operations'),
+  drivers:    () => api.get('/bi/drivers'),
+  branches:   () => api.get('/bi/branches'),
+  products:   () => api.get('/bi/products'),
+  areas:      () => api.get('/bi/areas'),
+  attention:  () => api.get('/bi/attention'),
+};
+
 // Driver App
 export const driverApi = {
   me: () => api.get('/driver/me'),
