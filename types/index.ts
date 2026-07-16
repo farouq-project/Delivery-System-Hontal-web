@@ -299,24 +299,27 @@ export interface ExecutiveDashboardData {
   requires_attention: DashboardAttentionItem[];
 }
 
-// ─── Platform (Phase 5.2) — Super Admin ───────────────────────────
+// ─── Platform (Phase 5.2 / 5.2A) — Super Admin ───────────────────
 
 export interface PlatformPlan {
   id: number;
   name: string;
   slug: string;
   description: string | null;
-  monthly_price: number;       // IDR, integer
+  monthly_price: number;
+  trial_days: number;
   delivery_limit: number | null;
   branch_limit: number | null;
   driver_limit: number | null;
+  customer_limit: number | null;
   features: string[] | null;
   is_active: boolean;
   display_order: number;
+  deleted_at: string | null;
   subscriber_count?: number;
 }
 
-export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'converted';
+export type ApplicationStatus = 'pending' | 'review' | 'approved' | 'rejected' | 'cancelled' | 'converted';
 
 export interface MerchantApplication {
   id: number;
@@ -330,6 +333,8 @@ export interface MerchantApplication {
   estimated_monthly_deliveries: number | null;
   selected_plan: string | null;
   notes: string | null;
+  rejection_reason: string | null;
+  internal_notes: string | null;
   status: ApplicationStatus;
   approved_by: number | null;
   approved_at: string | null;
@@ -338,7 +343,7 @@ export interface MerchantApplication {
   approved_by_user?: { id: number; name: string } | null;
 }
 
-export type SubscriptionStatus = 'trial' | 'active' | 'suspended' | 'expired' | 'cancelled';
+export type SubscriptionStatus = 'trial' | 'active' | 'paused' | 'suspended' | 'expired' | 'cancelled';
 
 export interface MerchantSubscription {
   id: number;
@@ -348,6 +353,8 @@ export interface MerchantSubscription {
   started_at: string | null;
   expires_at: string | null;
   trial_ends_at: string | null;
+  paused_at: string | null;
+  resumed_at: string | null;
   billing_cycle: 'monthly' | 'annual' | null;
   next_invoice_date: string | null;
   created_at: string;
@@ -362,14 +369,61 @@ export interface AdminMerchantSummary {
   created_at: string;
   owner: { name: string; email: string; last_login_at: string | null } | null;
   subscription: {
+    id: number;
     status: SubscriptionStatus;
     plan_name: string | null;
+    plan_slug: string | null;
     trial_ends_at: string | null;
     expires_at: string | null;
   } | null;
   branches_count: number;
   monthly_deliveries: number;
   monthly_revenue: number;
+}
+
+export interface MerchantFeatureFlag {
+  key: string;
+  label: string;
+  is_enabled: boolean;
+}
+
+export interface MerchantUsageMetric {
+  used: number;
+  limit: number | null;
+}
+
+export interface MerchantUsage {
+  plan: { name: string; slug: string } | null;
+  subscription_status: SubscriptionStatus | null;
+  deliveries: MerchantUsageMetric;
+  drivers: MerchantUsageMetric;
+  branches: MerchantUsageMetric;
+  customers: MerchantUsageMetric;
+}
+
+export interface MerchantActivityLogEntry {
+  id: number;
+  merchant_id: number;
+  event_type: string;
+  description: string;
+  context: Record<string, unknown> | null;
+  actor_id: number | null;
+  created_at: string;
+  actor?: { id: number; name: string; email: string } | null;
+}
+
+export interface MerchantBillingRecord {
+  id: number;
+  merchant_id: number;
+  subscription_id: number | null;
+  invoice_number: string | null;
+  invoice_amount: number | null;
+  due_date: string | null;
+  payment_status: string;
+  last_payment_at: string | null;
+  outstanding_balance: number;
+  renewal_date: string | null;
+  billing_notes: string | null;
 }
 
 // ─── Merchant Platform (Phase 3) ──────────────────────────────────

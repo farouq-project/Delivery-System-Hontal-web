@@ -4,12 +4,13 @@ import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
-import type { AdminMerchantSummary, SubscriptionStatus } from '@/types';
+import type { AdminMerchantSummary, SubscriptionStatus, PlatformPlan } from '@/types';
 import { Search } from 'lucide-react';
 
 const STATUS_CHIP: Record<SubscriptionStatus, string> = {
   trial:     'bg-amber-100 text-amber-700',
-  active:    'bg-green-100 text-green-700',
+  active:    'bg-emerald-100 text-emerald-700',
+  paused:    'bg-indigo-100 text-indigo-700',
   suspended: 'bg-red-100 text-red-700',
   expired:   'bg-gray-100 text-gray-500',
   cancelled: 'bg-gray-100 text-gray-500',
@@ -30,21 +31,34 @@ export default function AdminMerchantsPage() {
   const [page, setPage]          = useState(1);
   const [search, setSearch]      = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [planFilter, setPlanFilter]     = useState('');
+  const [sort, setSort]                 = useState('created');
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'merchants', page, debouncedSearch],
+    queryKey: ['admin', 'merchants', page, debouncedSearch, statusFilter, planFilter, sort],
     queryFn: () => adminApi.listMerchants({
       page,
       search: debouncedSearch || undefined,
+      subscription_status: statusFilter || undefined,
+      plan: planFilter || undefined,
+      sort: sort !== 'created' ? sort : undefined,
       per_page: 20,
     }),
     staleTime: 30_000,
   });
 
+  const { data: plansData } = useQuery({
+    queryKey: ['admin', 'plans'],
+    queryFn: () => adminApi.listPlans(),
+    staleTime: 120_000,
+  });
+
   const merchants: AdminMerchantSummary[] = data?.data?.data ?? [];
   const lastPage = data?.data?.last_page ?? 1;
   const total    = data?.data?.total ?? 0;
+  const plans: PlatformPlan[] = plansData?.data?.data ?? [];
 
   return (
     <div className="p-6">
@@ -53,12 +67,12 @@ export default function AdminMerchantsPage() {
         <p className="text-sm text-gray-500 mt-1">{total > 0 ? `${total} merchant${total !== 1 ? 's' : ''} on the platform` : 'Merchant directory'}</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search merchants…"
+            placeholder="Search by company, owner, email, phone, ID…"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -66,9 +80,39 @@ export default function AdminMerchantsPage() {
               clearTimeout(debounceTimer.current);
               debounceTimer.current = setTimeout(() => setDebouncedSearch(e.target.value), 400);
             }}
-            className="pl-9 border border-gray-300 rounded-md px-3 py-2 text-sm w-64"
+            className="pl-9 pr-3 border border-gray-300 rounded-md py-2 text-sm w-72"
           />
         </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="">All statuses</option>
+          {['trial', 'active', 'paused', 'suspended', 'expired', 'cancelled'].map((s) => (
+            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+          ))}
+        </select>
+        {plans.length > 0 && (
+          <select
+            value={planFilter}
+            onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+          >
+            <option value="">All plans</option>
+            {plans.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+          </select>
+        )}
+        <select
+          value={sort}
+          onChange={(e) => { setSort(e.target.value); setPage(1); }}
+          className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+        >
+          <option value="created">Newest first</option>
+          <option value="name">Alphabetical</option>
+          <option value="revenue">Highest revenue</option>
+          <option value="deliveries">Most deliveries</option>
+        </select>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">

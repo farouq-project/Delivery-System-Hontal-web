@@ -229,7 +229,7 @@ export const merchantPlatformApi = {
   destroyBranch:      (id: number) => api.delete(`/settings/platform/branches/${id}`),
 };
 
-// ─── Super Admin Platform (Phase 5.2) ──────────────────────────────────────
+// ─── Super Admin Platform (Phase 5.2 / 5.2A) ──────────────────────────────
 
 export const adminApi = {
   // Applications
@@ -239,8 +239,10 @@ export const adminApi = {
     api.get(`/admin/applications/${id}`),
   approveApplication: (id: number) =>
     api.patch(`/admin/applications/${id}/approve`),
-  rejectApplication: (id: number, notes?: string) =>
-    api.patch(`/admin/applications/${id}/reject`, { notes }),
+  rejectApplication: (id: number, rejection_reason: string) =>
+    api.patch(`/admin/applications/${id}/reject`, { rejection_reason }),
+  requestInfoApplication: (id: number, notes?: string) =>
+    api.patch(`/admin/applications/${id}/request-info`, { notes }),
   updateApplicationNotes: (id: number, notes: string) =>
     api.patch(`/admin/applications/${id}/notes`, { notes }),
   deleteApplication: (id: number) =>
@@ -257,17 +259,51 @@ export const adminApi = {
     api.get(`/admin/merchants/${id}/users`, { params }),
   getMerchantDeliverySummary: (id: number) =>
     api.get(`/admin/merchants/${id}/delivery-summary`),
+  getMerchantFeatures: (id: number) =>
+    api.get(`/admin/merchants/${id}/features`),
+  updateMerchantFeature: (id: number, featureKey: string, enabled: boolean) =>
+    api.patch(`/admin/merchants/${id}/features/${featureKey}`, { enabled }),
+  getMerchantUsage: (id: number) =>
+    api.get(`/admin/merchants/${id}/usage`),
+  getMerchantActivity: (id: number, params?: Record<string, unknown>) =>
+    api.get(`/admin/merchants/${id}/activity`, { params }),
+  resetMerchantUserPassword: (merchantId: number, userId: number) =>
+    api.patch(`/admin/merchants/${merchantId}/users/${userId}/reset-password`),
+  deactivateMerchantUser: (merchantId: number, userId: number) =>
+    api.patch(`/admin/merchants/${merchantId}/users/${userId}/deactivate`),
+  reactivateMerchantUser: (merchantId: number, userId: number) =>
+    api.patch(`/admin/merchants/${merchantId}/users/${userId}/reactivate`),
 
-  // Plans
-  listPlans: () => api.get('/admin/plans'),
+  // Plans (CRUD + lifecycle)
+  listPlans: (params?: Record<string, unknown>) => api.get('/admin/plans', { params }),
   getPlan: (id: number) => api.get(`/admin/plans/${id}`),
+  createPlan: (data: Record<string, unknown>) => api.post('/admin/plans', data),
+  updatePlan: (id: number, data: Record<string, unknown>) => api.patch(`/admin/plans/${id}`, data),
   togglePlan: (id: number) => api.patch(`/admin/plans/${id}/toggle`),
+  duplicatePlan: (id: number) => api.post(`/admin/plans/${id}/duplicate`),
+  archivePlan: (id: number) => api.patch(`/admin/plans/${id}/archive`),
+  restorePlan: (id: number) => api.patch(`/admin/plans/${id}/restore`),
+  deletePlan: (id: number) => api.delete(`/admin/plans/${id}`),
 
-  // Subscriptions
+  // Subscriptions (view + lifecycle)
   listSubscriptions: (params?: Record<string, unknown>) =>
     api.get('/admin/subscriptions', { params }),
   getSubscription: (id: number) =>
     api.get(`/admin/subscriptions/${id}`),
+  changePlan: (subId: number, planId: number) =>
+    api.patch(`/admin/subscriptions/${subId}/change-plan`, { plan_id: planId }),
+  pauseSubscription: (subId: number) =>
+    api.patch(`/admin/subscriptions/${subId}/pause`),
+  resumeSubscription: (subId: number) =>
+    api.patch(`/admin/subscriptions/${subId}/resume`),
+  extendTrial: (subId: number, days: number) =>
+    api.patch(`/admin/subscriptions/${subId}/extend-trial`, { days }),
+  activateSubscription: (subId: number) =>
+    api.patch(`/admin/subscriptions/${subId}/activate`),
+  expireSubscription: (subId: number) =>
+    api.patch(`/admin/subscriptions/${subId}/expire`),
+  cancelSubscription: (subId: number) =>
+    api.patch(`/admin/subscriptions/${subId}/cancel`),
 };
 
 // Public API — no auth token, different base path
