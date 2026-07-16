@@ -299,6 +299,79 @@ export interface ExecutiveDashboardData {
   requires_attention: DashboardAttentionItem[];
 }
 
+// ─── Platform (Phase 5.2) — Super Admin ───────────────────────────
+
+export interface PlatformPlan {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  monthly_price: number;       // IDR, integer
+  delivery_limit: number | null;
+  branch_limit: number | null;
+  driver_limit: number | null;
+  features: string[] | null;
+  is_active: boolean;
+  display_order: number;
+  subscriber_count?: number;
+}
+
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'converted';
+
+export interface MerchantApplication {
+  id: number;
+  company_name: string;
+  owner_name: string;
+  email: string;
+  phone: string;
+  city: string | null;
+  business_type: string | null;
+  branch_count: number | null;
+  estimated_monthly_deliveries: number | null;
+  selected_plan: string | null;
+  notes: string | null;
+  status: ApplicationStatus;
+  approved_by: number | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  approved_by_user?: { id: number; name: string } | null;
+}
+
+export type SubscriptionStatus = 'trial' | 'active' | 'suspended' | 'expired' | 'cancelled';
+
+export interface MerchantSubscription {
+  id: number;
+  merchant_id: number;
+  plan_id: number | null;
+  status: SubscriptionStatus;
+  started_at: string | null;
+  expires_at: string | null;
+  trial_ends_at: string | null;
+  billing_cycle: 'monthly' | 'annual' | null;
+  next_invoice_date: string | null;
+  created_at: string;
+  plan?: PlatformPlan | null;
+  merchant?: { id: number; company_name: string; email: string } | null;
+}
+
+export interface AdminMerchantSummary {
+  id: number;
+  company_name: string;
+  email: string;
+  created_at: string;
+  owner: { name: string; email: string; last_login_at: string | null } | null;
+  subscription: {
+    status: SubscriptionStatus;
+    plan_name: string | null;
+    trial_ends_at: string | null;
+    expires_at: string | null;
+  } | null;
+  branches_count: number;
+  monthly_deliveries: number;
+  monthly_revenue: number;
+}
+
 // ─── Merchant Platform (Phase 3) ──────────────────────────────────
 
 export interface MerchantProfile {

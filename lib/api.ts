@@ -229,6 +229,60 @@ export const merchantPlatformApi = {
   destroyBranch:      (id: number) => api.delete(`/settings/platform/branches/${id}`),
 };
 
+// ─── Super Admin Platform (Phase 5.2) ──────────────────────────────────────
+
+export const adminApi = {
+  // Applications
+  listApplications: (params?: Record<string, unknown>) =>
+    api.get('/admin/applications', { params }),
+  getApplication: (id: number) =>
+    api.get(`/admin/applications/${id}`),
+  approveApplication: (id: number) =>
+    api.patch(`/admin/applications/${id}/approve`),
+  rejectApplication: (id: number, notes?: string) =>
+    api.patch(`/admin/applications/${id}/reject`, { notes }),
+  updateApplicationNotes: (id: number, notes: string) =>
+    api.patch(`/admin/applications/${id}/notes`, { notes }),
+  deleteApplication: (id: number) =>
+    api.delete(`/admin/applications/${id}`),
+
+  // Merchant directory
+  listMerchants: (params?: Record<string, unknown>) =>
+    api.get('/admin/merchants', { params }),
+  getMerchant: (id: number) =>
+    api.get(`/admin/merchants/${id}`),
+  updateMerchantStatus: (id: number, status: string) =>
+    api.patch(`/admin/merchants/${id}/status`, { status }),
+  getMerchantUsers: (id: number, params?: Record<string, unknown>) =>
+    api.get(`/admin/merchants/${id}/users`, { params }),
+  getMerchantDeliverySummary: (id: number) =>
+    api.get(`/admin/merchants/${id}/delivery-summary`),
+
+  // Plans
+  listPlans: () => api.get('/admin/plans'),
+  getPlan: (id: number) => api.get(`/admin/plans/${id}`),
+  togglePlan: (id: number) => api.patch(`/admin/plans/${id}/toggle`),
+
+  // Subscriptions
+  listSubscriptions: (params?: Record<string, unknown>) =>
+    api.get('/admin/subscriptions', { params }),
+  getSubscription: (id: number) =>
+    api.get(`/admin/subscriptions/${id}`),
+};
+
+// Public API — no auth token, different base path
+import axios from 'axios';
+const publicHttp = axios.create({
+  baseURL: (process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? 'http://localhost:8000') + '/api/public',
+  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+});
+
+export const publicApi = {
+  registerInterest: (data: Record<string, unknown>) =>
+    publicHttp.post('/register-interest', data),
+  plans: () => publicHttp.get('/plans'),
+};
+
 // Business Intelligence (Phase 4.1)
 export const biApi = {
   overview:   () => api.get('/bi/overview'),

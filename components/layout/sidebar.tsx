@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Truck, PackageOpen,
   Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList, Settings,
-  BarChart2
+  BarChart2, Building2, FileText, CreditCard, Activity, Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -39,6 +39,15 @@ const biNavItems = [
   { href: '/bi/areas',       label: 'Areas',        icon: Map },
 ];
 
+const platformNavItems = [
+  { href: '/admin/applications',  label: 'Applications', icon: FileText },
+  { href: '/admin/merchants',     label: 'Merchants',    icon: Building2 },
+  { href: '/admin/plans',         label: 'Plans',        icon: CreditCard },
+  { href: '/admin/subscriptions', label: 'Subscriptions',icon: ClipboardList },
+  { href: '/admin/health',        label: 'System Health',icon: Activity },
+  { href: '/admin/logs',          label: 'Audit Logs',   icon: Shield },
+];
+
 interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -52,6 +61,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
   const canManageUsers = ['owner', 'merchant_owner', 'super_admin', 'developer'].includes(user?.role ?? '');
   const canUseBi       = ['merchant_owner', 'super_admin', 'developer'].includes(user?.role ?? '');
+  const isSuperAdmin   = user?.role === 'super_admin';
   const items = canManageUsers ? [...navItems, ...adminNavItems] : navItems;
 
   const handleLogout = async () => {
@@ -126,6 +136,33 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                     'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                     pathname.startsWith(href)
                       ? 'bg-indigo-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  )}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && label}
+                </Link>
+              ))}
+            </>
+          )}
+
+          {isSuperAdmin && (
+            <>
+              {!collapsed && (
+                <p className="px-3 pt-4 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Platform
+                </p>
+              )}
+              {collapsed && <div className="border-t border-gray-700 my-2" />}
+              {platformNavItems.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onMobileClose}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                    pathname.startsWith(href)
+                      ? 'bg-emerald-600 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   )}
                 >
