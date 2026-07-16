@@ -109,6 +109,16 @@ export default function OrdersPage() {
     },
   });
 
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: number[]; status: string }) => {
+      await Promise.allSettled(ids.map((id) => ordersApi.updateStatus(id, status)));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      setSelectedIds(new Set());
+    },
+  });
+
   const bulkCashierMutation = useMutation({
     mutationFn: ({ ids, name }: { ids: number[]; name: string }) =>
       ordersApi.bulkUpdateCashier(ids, name),
@@ -249,23 +259,48 @@ export default function OrdersPage() {
           </SelectContent>
         </Select>
         {selectedIds.size > 0 && isOwner && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">Change cashier:</span>
-            <Select
-              onValueChange={(v) => {
-                if (confirm(`Change cashier to "${v}" for ${selectedIds.size} order(s)?`)) {
-                  bulkCashierMutation.mutate({ ids: Array.from(selectedIds), name: v });
-                }
-              }}
-            >
-              <SelectTrigger className="w-28 h-8 text-xs"><SelectValue placeholder="Select…" /></SelectTrigger>
-              <SelectContent>
-                {apiCashiers.map((c) => (
-                  <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Change status:</span>
+              <Select
+                onValueChange={(v) => {
+                  if (confirm(`Change status to "${v.replace('_', ' ')}" for ${selectedIds.size} order(s)?`)) {
+                    bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status: v });
+                  }
+                }}
+                disabled={bulkStatusMutation.isPending}
+              >
+                <SelectTrigger className="w-36 h-8 text-xs">
+                  <SelectValue placeholder={bulkStatusMutation.isPending ? 'Updating…' : 'Select…'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Change cashier:</span>
+              <Select
+                onValueChange={(v) => {
+                  if (confirm(`Change cashier to "${v}" for ${selectedIds.size} order(s)?`)) {
+                    bulkCashierMutation.mutate({ ids: Array.from(selectedIds), name: v });
+                  }
+                }}
+              >
+                <SelectTrigger className="w-28 h-8 text-xs"><SelectValue placeholder="Select…" /></SelectTrigger>
+                <SelectContent>
+                  {apiCashiers.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
         )}
         {selectedIds.size > 0 && (
           <Button
