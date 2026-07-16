@@ -79,8 +79,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           {!collapsed && (
             <div>
-              <h1 className="font-bold text-lg">KL Kirim</h1>
-              <p className="text-xs text-gray-400">Kencana Lima Pengiriman</p>
+              <h1 className="font-bold text-lg">Hontal</h1>
+              <p className="text-xs text-gray-400">{user?.merchant?.company_name ?? 'Delivery Platform'}</p>
             </div>
           )}
           <button onClick={() => setCollapsed(!collapsed)} className="hidden md:block p-1 rounded hover:bg-gray-700">
