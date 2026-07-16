@@ -30,7 +30,7 @@ export default function AdminMerchantsPage() {
   const [page, setPage]          = useState(1);
   const [search, setSearch]      = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'merchants', page, debouncedSearch],
