@@ -14,16 +14,18 @@ const queryClient = new QueryClient({
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, isDispatcher } = useAuthStore();
+  const { isAuthenticated, isDispatcher, user } = useAuthStore();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace('/login');
+    } else if (user?.role === 'super_admin') {
+      router.replace('/admin/applications');
     } else if (!isDispatcher()) {
       router.replace('/driver');
     }
-  }, []);
+  }, [user]);
 
   if (!isAuthenticated()) return null;
 

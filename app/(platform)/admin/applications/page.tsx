@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import type { MerchantApplication, ApplicationStatus } from '@/types';
-import { CheckCircle, XCircle, Eye, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 const STATUS_CHIP: Record<ApplicationStatus, string> = {
   pending:   'bg-amber-100 text-amber-700',

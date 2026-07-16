@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
@@ -27,18 +27,13 @@ function fmtDate(s: string | null) {
 
 export default function AdminMerchantsPage() {
   const router = useRouter();
-  const [page, setPage]   = useState(1);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [page, setPage]          = useState(1);
+  const [search, setSearch]      = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  const debounce = useCallback((value: string) => {
-    const timer = setTimeout(() => setDebouncedSearch(value), 400);
-    return () => clearTimeout(timer);
-  }, []);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'merchants', page, debouncedSearch, status],
+    queryKey: ['admin', 'merchants', page, debouncedSearch],
     queryFn: () => adminApi.listMerchants({
       page,
       search: debouncedSearch || undefined,
@@ -58,7 +53,6 @@ export default function AdminMerchantsPage() {
         <p className="text-sm text-gray-500 mt-1">{total > 0 ? `${total} merchant${total !== 1 ? 's' : ''} on the platform` : 'Merchant directory'}</p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -69,7 +63,8 @@ export default function AdminMerchantsPage() {
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
-              debounce(e.target.value);
+              clearTimeout(debounceTimer.current);
+              debounceTimer.current = setTimeout(() => setDebouncedSearch(e.target.value), 400);
             }}
             className="pl-9 border border-gray-300 rounded-md px-3 py-2 text-sm w-64"
           />

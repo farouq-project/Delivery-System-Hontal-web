@@ -45,7 +45,7 @@ export default function AdminPlansPage() {
                   </span>
                 )}
               </div>
-              <p className="text-2xl font-bold text-blue-600 mb-4">
+              <p className="text-2xl font-bold text-emerald-600 mb-4">
                 {fmtIdr(plan.monthly_price)}
                 {plan.monthly_price > 0 && <span className="text-sm font-normal text-gray-400">/mo</span>}
               </p>

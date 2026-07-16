@@ -271,7 +271,6 @@ export const adminApi = {
 };
 
 // Public API — no auth token, different base path
-import axios from 'axios';
 const publicHttp = axios.create({
   baseURL: (process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? 'http://localhost:8000') + '/api/public',
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },

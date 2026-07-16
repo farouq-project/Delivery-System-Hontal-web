@@ -79,7 +79,6 @@ export default function MerchantDetailPage() {
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="mb-6">
         <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
           <ArrowLeft className="h-4 w-4" />
@@ -98,7 +97,6 @@ export default function MerchantDetailPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200 mb-6 overflow-x-auto">
         {tabs.map((t) => (
           <button
@@ -106,7 +104,7 @@ export default function MerchantDetailPage() {
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
               tab === t.key
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-emerald-600 text-emerald-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -116,7 +114,6 @@ export default function MerchantDetailPage() {
         ))}
       </div>
 
-      {/* Tab: Overview */}
       {tab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-3">
@@ -153,7 +150,6 @@ export default function MerchantDetailPage() {
         </div>
       )}
 
-      {/* Tab: Subscription */}
       {tab === 'subscription' && (
         <div className="max-w-lg space-y-5">
           <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-3">
@@ -200,7 +196,6 @@ export default function MerchantDetailPage() {
         </div>
       )}
 
-      {/* Tab: Users */}
       {tab === 'users' && (
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           <table className="w-full text-sm">
@@ -232,7 +227,6 @@ export default function MerchantDetailPage() {
         </div>
       )}
 
-      {/* Tab: Delivery Summary */}
       {tab === 'delivery' && (
         <div className="space-y-6 max-w-2xl">
           <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
@@ -262,7 +256,6 @@ export default function MerchantDetailPage() {
         </div>
       )}
 
-      {/* Tab: Settings (read-only) */}
       {tab === 'settings' && (
         <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm max-w-lg">
           <h2 className="font-bold text-gray-900 mb-4">Operational Settings</h2>
@@ -281,7 +274,6 @@ export default function MerchantDetailPage() {
         </div>
       )}
 
-      {/* Tab: Activity (placeholder) */}
       {tab === 'activity' && (
         <div className="bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center gap-3 text-center shadow-sm max-w-md">
           <Activity className="h-10 w-10 text-gray-300" />
