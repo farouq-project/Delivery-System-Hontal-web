@@ -122,13 +122,15 @@ export default function UsersPage() {
                 <Button size="sm" variant="ghost" onClick={() => handleEdit(u)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  size="sm" variant="ghost"
-                  className="text-red-500 hover:text-red-700"
-                  onClick={() => { if (confirm(`Delete user ${u.name}?`)) deleteMutation.mutate(u.id); }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {authUser?.role !== 'merchant_owner' && (
+                  <Button
+                    size="sm" variant="ghost"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => { if (confirm(`Delete user ${u.name}?`)) deleteMutation.mutate(u.id); }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -175,13 +177,15 @@ export default function UsersPage() {
                     <Button size="sm" variant="ghost" onClick={() => handleEdit(u)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm" variant="ghost"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => { if (confirm(`Delete user ${u.name}?`)) deleteMutation.mutate(u.id); }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {authUser?.role !== 'merchant_owner' && (
+                      <Button
+                        size="sm" variant="ghost"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => { if (confirm(`Delete user ${u.name}?`)) deleteMutation.mutate(u.id); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>
