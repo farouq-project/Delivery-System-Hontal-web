@@ -9,11 +9,13 @@ import { DRIVER_STATUS_COLORS } from '@/lib/utils';
 import { Edit, Trash2, Signal } from 'lucide-react';
 import DriverForm from './driver-form';
 import { formatDate } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function DriversPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Driver | null>(null);
+  const [deleting, setDeleting] = useState<Driver | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['drivers'],
@@ -63,7 +65,8 @@ export default function DriversPage() {
                   <td className="px-4 py-3 font-medium whitespace-nowrap">{d.driver_name}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{d.phone}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    {d.vehicle_type} · <span className="font-medium">{d.vehicle_plate}</span>
+                    <span className="capitalize">{d.vehicle_type}</span> · <span className="font-medium">{d.vehicle_plate}</span>
+                    {d.vehicle_nickname && <span className="ml-1 text-xs text-gray-400">({d.vehicle_nickname})</span>}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${DRIVER_STATUS_COLORS[d.status]}`}>
@@ -89,7 +92,7 @@ export default function DriversPage() {
                       <Button
                         size="sm" variant="ghost"
                         className="text-red-500 hover:text-red-700"
-                        onClick={() => { if (confirm('Delete this driver?')) deleteMutation.mutate(d.id); }}
+                        onClick={() => setDeleting(d)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -105,6 +108,17 @@ export default function DriversPage() {
       {showForm && editing && (
         <DriverForm driver={editing} onClose={() => { setShowForm(false); setEditing(null); }} />
       )}
+
+      <ConfirmDialog
+        open={!!deleting}
+        title="Hapus Driver"
+        description={`Hapus driver "${deleting?.driver_name}"? Tindakan ini tidak bisa dibatalkan.`}
+        confirmLabel="Hapus"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => { if (deleting) deleteMutation.mutate(deleting.id); setDeleting(null); }}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   );
 }

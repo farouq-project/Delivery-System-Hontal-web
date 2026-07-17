@@ -10,6 +10,7 @@ import { STATUS_COLORS, VIP_COLORS, formatTime } from '@/lib/utils';
 import { Loader2, Trash2, RotateCcw, X, Lock, Unlock, Play, RefreshCw, Zap, TrendingDown, BarChart2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/auth';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const DispatchBoard = dynamic(() => import('./dispatch-board'), { ssr: false });
 
@@ -18,6 +19,8 @@ export default function DispatchPage() {
   const authUser = useAuthStore((s) => s.user);
   const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
   const today = new Date().toISOString().split('T')[0];
+  const [confirmDeleteDispatch, setConfirmDeleteDispatch] = useState(false);
+  const [confirmResetUnassigned, setConfirmResetUnassigned] = useState(false);
 
   const { data: routesData, isLoading: routesLoading } = useQuery({
     queryKey: ['routes', today],
@@ -222,11 +225,7 @@ export default function DispatchPage() {
               <Button
                 variant="outline"
                 className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                onClick={() => {
-                  if (confirm('Clear routing for unassigned orders? Assigned orders are unaffected.')) {
-                    resetUnassignedMutation.mutate(todayRoute.id);
-                  }
-                }}
+                onClick={() => setConfirmResetUnassigned(true)}
                 disabled={resetUnassignedMutation.isPending}
               >
                 <RotateCcw className="h-4 w-4" />
@@ -238,11 +237,7 @@ export default function DispatchPage() {
                 <Button
                   variant="outline"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => {
-                    if (confirm('Delete this dispatch permanently? Orders keep their current status.')) {
-                      deleteRouteMutation.mutate(todayRoute.id);
-                    }
-                  }}
+                  onClick={() => setConfirmDeleteDispatch(true)}
                   disabled={deleteRouteMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -534,6 +529,27 @@ export default function DispatchPage() {
       ) : (
         <DispatchBoard route={todayRoute} />
       )}
+
+      <ConfirmDialog
+        open={confirmDeleteDispatch}
+        title="Hapus Dispatch"
+        description="Hapus dispatch hari ini secara permanen? Semua pesanan akan tetap pada status saat ini."
+        confirmLabel="Hapus Dispatch"
+        variant="destructive"
+        loading={deleteRouteMutation.isPending}
+        onConfirm={() => { deleteRouteMutation.mutate(todayRoute!.id); setConfirmDeleteDispatch(false); }}
+        onCancel={() => setConfirmDeleteDispatch(false)}
+      />
+      <ConfirmDialog
+        open={confirmResetUnassigned}
+        title="Reset Pesanan Belum Ditugaskan"
+        description="Hapus routing untuk pesanan yang belum ditugaskan? Pesanan yang sudah ditugaskan tidak terpengaruh."
+        confirmLabel="Reset"
+        variant="default"
+        loading={resetUnassignedMutation.isPending}
+        onConfirm={() => { resetUnassignedMutation.mutate(todayRoute!.id); setConfirmResetUnassigned(false); }}
+        onCancel={() => setConfirmResetUnassigned(false)}
+      />
     </div>
   );
 }

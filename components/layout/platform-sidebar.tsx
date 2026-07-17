@@ -4,23 +4,25 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Building2, FileText, CreditCard, Activity, Shield, ClipboardList, LogOut,
-  LayoutDashboard, BarChart2, Search, Settings2
+  LayoutDashboard, BarChart2, Search, Settings2, FlaskConical, ContactRound
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { authApi } from '@/lib/api';
 
 const platformNav = [
-  { href: '/admin',               label: 'Dashboard',     icon: LayoutDashboard, exact: true },
-  { href: '/admin/applications',  label: 'Applications',  icon: FileText },
-  { href: '/admin/merchants',     label: 'Merchants',     icon: Building2 },
-  { href: '/admin/plans',         label: 'Plans',         icon: CreditCard },
-  { href: '/admin/subscriptions', label: 'Subscriptions', icon: ClipboardList },
+  { href: '/admin',               label: 'Dashboard',       icon: LayoutDashboard, exact: true },
+  { href: '/admin/applications',  label: 'Applications',    icon: FileText },
+  { href: '/admin/merchants',     label: 'Merchants',       icon: Building2 },
+  { href: '/admin/plans',         label: 'Plans',           icon: CreditCard },
+  { href: '/admin/subscriptions', label: 'Subscriptions',   icon: ClipboardList },
   { href: '/admin/health',        label: 'Merchant Health', icon: Activity },
-  { href: '/admin/logs',          label: 'Activity Feed', icon: Shield },
-  { href: '/admin/analytics',     label: 'API Analytics', icon: BarChart2 },
-  { href: '/admin/search',        label: 'Global Search', icon: Search },
-  { href: '/admin/settings',      label: 'Settings',      icon: Settings2 },
+  { href: '/admin/logs',          label: 'Activity Feed',   icon: Shield },
+  { href: '/admin/analytics',     label: 'API Analytics',   icon: BarChart2 },
+  { href: '/admin/search',        label: 'Global Search',   icon: Search },
+  { href: '/admin/settings',      label: 'Settings',        icon: Settings2 },
+  { href: '/admin/trial-wizard',  label: 'Trial Wizard',    icon: FlaskConical },
+  { href: '/admin/crm',           label: 'CRM Prospects',   icon: ContactRound },
 ];
 
 export function PlatformSidebar() {

@@ -76,8 +76,10 @@ export interface Driver {
   ulid: string;
   driver_name: string;
   phone: string;
-  vehicle_type: 'motorcycle' | 'car' | 'van';
+  vehicle_type: string;
   vehicle_plate: string;
+  vehicle_nickname?: string | null;
+  vehicle_image_path?: string | null;
   status: 'available' | 'on_delivery' | 'delivering' | 'break' | 'off_duty' | 'offline';
   current_lat: number | null;
   current_lng: number | null;

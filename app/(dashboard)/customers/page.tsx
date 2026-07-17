@@ -16,6 +16,7 @@ import CustomerImportDialog from './customer-import';
 import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const CustomerMap = dynamic(() => import('./customer-map'), {
   ssr: false,
@@ -62,6 +63,7 @@ export default function CustomersPage() {
   const [showForm, setShowForm]         = useState(false);
   const [showImport, setShowImport]     = useState(false);
   const [editing, setEditing]           = useState<Customer | null>(null);
+  const [confirmDeduplicate, setConfirmDeduplicate] = useState(false);
   const [selectedIds, setSelectedIds]   = useState<Set<number>>(new Set());
   const [coordsFilter, setCoordsFilter]     = useState<CoordsFilter>('all');
   const [clusterFilter, setClusterFilter]   = useState<ClusterFilter>('all');
@@ -198,11 +200,7 @@ export default function CustomersPage() {
       return next;
     });
 
-  const handleDeduplicate = () => {
-    if (confirm('Find and remove duplicate customers by name? The record with the most order history is kept. This cannot be undone.')) {
-      deduplicateMutation.mutate();
-    }
-  };
+  const handleDeduplicate = () => setConfirmDeduplicate(true);
 
   return (
     <div className="p-4 md:p-6">
@@ -598,6 +596,16 @@ export default function CustomersPage() {
 
       {showForm && <CustomerForm customer={editing} onClose={handleClose} />}
       {showImport && <CustomerImportDialog onClose={() => setShowImport(false)} />}
+      <ConfirmDialog
+        open={confirmDeduplicate}
+        title="Hapus Duplikat Pelanggan"
+        description="Temukan dan hapus pelanggan duplikat berdasarkan nama. Catatan dengan riwayat pesanan terbanyak akan dipertahankan. Tindakan ini tidak bisa dibatalkan."
+        confirmLabel="Hapus Duplikat"
+        variant="destructive"
+        loading={deduplicateMutation.isPending}
+        onConfirm={() => { deduplicateMutation.mutate(); setConfirmDeduplicate(false); }}
+        onCancel={() => setConfirmDeduplicate(false)}
+      />
     </div>
   );
 }

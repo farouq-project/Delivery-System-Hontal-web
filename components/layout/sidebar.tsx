@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/auth';
 import { authApi } from '@/lib/api';
 import { useState } from 'react';
 import { InstallButton } from './install-button';
+import { LanguageSwitcher } from '@/components/ui/language-switcher';
 
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
@@ -30,13 +31,13 @@ const adminNavItems = [
 ];
 
 const biNavItems = [
-  { href: '/bi/overview',    label: 'BI Overview',  icon: BarChart2 },
-  { href: '/bi/customers',   label: 'Customers',    icon: Users },
-  { href: '/bi/operations',  label: 'Operations',   icon: PackageOpen },
-  { href: '/bi/drivers',     label: 'Drivers',      icon: Truck },
-  { href: '/bi/branches',    label: 'Branches',     icon: Layers },
-  { href: '/bi/products',    label: 'Products',     icon: ClipboardList },
-  { href: '/bi/areas',       label: 'Areas',        icon: Map },
+  { href: '/bi/overview',    label: 'Ringkasan',          icon: BarChart2 },
+  { href: '/bi/customers',   label: 'Analitik Pelanggan', icon: Users },
+  { href: '/bi/operations',  label: 'Operasional',        icon: PackageOpen },
+  { href: '/bi/drivers',     label: 'Kinerja Pengemudi',  icon: Truck },
+  { href: '/bi/branches',    label: 'Cabang',             icon: Layers },
+  { href: '/bi/products',    label: 'Produk',             icon: ClipboardList },
+  { href: '/bi/areas',       label: 'Wilayah',            icon: Map },
 ];
 
 interface SidebarProps {
@@ -146,6 +147,11 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </div>
           )}
           <InstallButton collapsed={collapsed} />
+          {!collapsed && (
+            <div className="mb-2">
+              <LanguageSwitcher />
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"

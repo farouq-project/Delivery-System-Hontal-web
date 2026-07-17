@@ -100,10 +100,8 @@ export default function BiOverviewPage() {
             icon={ShoppingBag}
           />
           <StatCard
-            title="New Customers"
+            title="Pelanggan Baru"
             value={fmtNum(month.new_customers)}
-            delta={month.customer_growth_pct}
-            deltaLabel="vs last month"
             icon={Users}
             iconColor="text-teal-500"
             href="/bi/customers"
@@ -121,11 +119,10 @@ export default function BiOverviewPage() {
       {/* Customers */}
       <section>
         <SectionHeader title="Customer Health" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard title="Total Customers"    value={fmtNum(cust.total)}          icon={Users} href="/bi/customers" />
-          <StatCard title="New This Month"     value={fmtNum(cust.new_this_month)} delta={cust.growth_pct} deltaLabel="vs last" href="/bi/customers" />
-          <StatCard title="Dormant"            value={cust.dormant != null ? fmtNum(cust.dormant) : 'N/A'} variant="warning" href="/bi/customers" />
-          <StatCard title="Growth This Month"  value={fmtPct(cust.growth_pct)} />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <StatCard title="Total Pelanggan"  value={fmtNum(cust.total)}          icon={Users} href="/bi/customers" />
+          <StatCard title="Baru Bulan Ini"   value={fmtNum(cust.new_this_month)} icon={Users} iconColor="text-teal-500" href="/bi/customers" />
+          <StatCard title="Tidak Aktif"      value={cust.dormant != null ? fmtNum(cust.dormant) : '—'} variant="warning" href="/bi/customers" />
         </div>
       </section>
 

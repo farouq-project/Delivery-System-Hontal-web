@@ -13,10 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const schema = z.object({
-  driver_name:   z.string().min(2),
-  phone:         z.string().min(8),
-  vehicle_type:  z.enum(['motorcycle', 'car', 'van']),
-  vehicle_plate: z.string().min(3),
+  driver_name:      z.string().min(2),
+  phone:            z.string().min(8),
+  vehicle_type:     z.enum(['motorcycle', 'car', 'van', 'motor', 'pickup']),
+  vehicle_plate:    z.string().min(3),
+  vehicle_nickname: z.string().optional().nullable(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -28,10 +29,11 @@ export default function DriverForm({ driver, onClose }: Props) {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      driver_name: driver.driver_name,
-      phone: driver.phone,
-      vehicle_type: driver.vehicle_type,
-      vehicle_plate: driver.vehicle_plate,
+      driver_name:      driver.driver_name,
+      phone:            driver.phone,
+      vehicle_type:     (driver.vehicle_type as FormData['vehicle_type']) ?? 'motorcycle',
+      vehicle_plate:    driver.vehicle_plate,
+      vehicle_nickname: driver.vehicle_nickname ?? '',
     },
   });
 
@@ -66,9 +68,11 @@ export default function DriverForm({ driver, onClose }: Props) {
               <Select defaultValue={driver?.vehicle_type ?? 'motorcycle'} onValueChange={(v) => setValue('vehicle_type', v as FormData['vehicle_type'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="motor">Motor</SelectItem>
                   <SelectItem value="motorcycle">Motorcycle</SelectItem>
                   <SelectItem value="car">Car</SelectItem>
                   <SelectItem value="van">Van</SelectItem>
+                  <SelectItem value="pickup">Pickup</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -77,6 +81,10 @@ export default function DriverForm({ driver, onClose }: Props) {
               <Input {...register('vehicle_plate')} placeholder="D 1234 ABX" />
               {errors.vehicle_plate && <p className="text-xs text-red-500">{errors.vehicle_plate.message}</p>}
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Vehicle Nickname (optional)</Label>
+            <Input {...register('vehicle_nickname')} placeholder="Motor Biru" />
           </div>
           {mutation.isError && <p className="text-xs text-red-500">Save failed. Please try again.</p>}
           <div className="flex justify-end gap-3 pt-2">

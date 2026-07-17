@@ -332,6 +332,24 @@ export const adminApi = {
     api.get(`/admin/merchants/${id}/support`),
   updateMerchantSupportNotes: (id: number, data: { support_notes?: string | null; internal_notes?: string | null }) =>
     api.patch(`/admin/merchants/${id}/support-notes`, data),
+
+  // Trial Merchant provisioning (RC1)
+  createTrialMerchant: (data: Record<string, unknown>) =>
+    api.post('/admin/trial-merchants', data),
+  deleteTrialMerchant: (merchantId: number) =>
+    api.delete(`/admin/trial-merchants/${merchantId}`),
+
+  // CRM Prospects (RC1)
+  listCrmProspects: (params?: Record<string, unknown>) =>
+    api.get('/admin/crm', { params }),
+  getCrmStats: () =>
+    api.get('/admin/crm/stats'),
+  createCrmProspect: (data: Record<string, unknown>) =>
+    api.post('/admin/crm', data),
+  updateCrmProspect: (id: number, data: Record<string, unknown>) =>
+    api.patch(`/admin/crm/${id}`, data),
+  deleteCrmProspect: (id: number) =>
+    api.delete(`/admin/crm/${id}`),
 };
 
 // Public API — no auth token, different base path

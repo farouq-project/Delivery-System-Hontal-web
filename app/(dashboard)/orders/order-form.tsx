@@ -14,8 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { ProductSuggestInput } from '@/components/product-suggest-input';
-import { Search, Plus, Trash2 } from 'lucide-react';
+import { Search, Plus, Trash2, Link } from 'lucide-react';
 import { useCashierStore } from '@/store/cashier';
+import { parseMapsUrl } from '@/lib/maps-parser';
 
 const itemSchema = z.object({
   name:     z.string().min(1, 'Required'),
@@ -68,6 +69,8 @@ export default function OrderForm({ onClose, order }: Props) {
     order?.delivery_latitude ? { lat: order.delivery_latitude, lng: order.delivery_longitude! } : null
   );
   const [geocoding, setGeocoding] = useState(false);
+  const [mapsLink, setMapsLink] = useState('');
+  const [mapsError, setMapsError] = useState('');
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const skipNextSearch = useRef(false);
 
@@ -288,6 +291,27 @@ export default function OrderForm({ onClose, order }: Props) {
                   {geocoding ? '...' : 'Pin'}
                 </Button>
               </div>
+              {/* Google Maps link input */}
+              <div className="flex gap-2 items-center">
+                <Link className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <Input
+                  className="text-xs h-8"
+                  placeholder="Paste Google Maps link to extract coordinates…"
+                  value={mapsLink}
+                  onChange={(e) => {
+                    setMapsLink(e.target.value);
+                    setMapsError('');
+                    const parsed = parseMapsUrl(e.target.value);
+                    if (parsed) {
+                      setCoords({ lat: parsed.lat, lng: parsed.lng });
+                      setMapsError('');
+                    } else if (e.target.value.length > 10) {
+                      setMapsError('Could not read coordinates from this link');
+                    }
+                  }}
+                />
+              </div>
+              {mapsError && <p className="text-xs text-red-500">{mapsError}</p>}
               {coords && <p className="text-xs text-green-600">Pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>}
               {errors.delivery_address && <p className="text-xs text-red-500">{errors.delivery_address.message}</p>}
             </div>
