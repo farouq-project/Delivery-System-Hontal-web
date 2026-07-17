@@ -619,6 +619,38 @@ export interface SearchResult {
   url: string;
 }
 
+export type CrmPipelineStage = 'new' | 'contacted' | 'demo_scheduled' | 'negotiation' | 'won' | 'lost';
+
+export interface CrmProspect {
+  id: number;
+  business_name: string;
+  category: string | null;
+  city: string | null;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  instagram: string | null;
+  contact_person: string | null;
+  contact_role: string | null;
+  pipeline_stage: CrmPipelineStage;
+  notes: string | null;
+  last_contact_at: string | null;
+  next_followup_at: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmMessageTemplate {
+  id: number;
+  name: string;
+  content: string;
+  category: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MerchantSupportConsole {
   support_notes: string | null;
   internal_notes: string | null;

@@ -30,15 +30,6 @@ const adminNavItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const biNavItems = [
-  { href: '/bi/overview',    label: 'Ringkasan',          icon: BarChart2 },
-  { href: '/bi/customers',   label: 'Analitik Pelanggan', icon: Users },
-  { href: '/bi/operations',  label: 'Operasional',        icon: PackageOpen },
-  { href: '/bi/drivers',     label: 'Kinerja Pengemudi',  icon: Truck },
-  { href: '/bi/branches',    label: 'Cabang',             icon: Layers },
-  { href: '/bi/products',    label: 'Produk',             icon: ClipboardList },
-  { href: '/bi/areas',       label: 'Wilayah',            icon: Map },
-];
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -111,30 +102,19 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           ))}
 
           {canUseBi && (
-            <>
-              {!collapsed && (
-                <p className="px-3 pt-4 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Business Intelligence
-                </p>
+            <Link
+              href="/bi/overview"
+              onClick={onMobileClose}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                pathname.startsWith('/bi')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
               )}
-              {collapsed && <div className="border-t border-gray-700 my-2" />}
-              {biNavItems.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={onMobileClose}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-                    pathname.startsWith(href)
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  )}
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  {!collapsed && label}
-                </Link>
-              ))}
-            </>
+            >
+              <BarChart2 className="h-5 w-5 shrink-0" />
+              {!collapsed && 'Business Intelligence'}
+            </Link>
           )}
 
         </nav>

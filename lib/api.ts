@@ -350,6 +350,23 @@ export const adminApi = {
     api.patch(`/admin/crm/${id}`, data),
   deleteCrmProspect: (id: number) =>
     api.delete(`/admin/crm/${id}`),
+  importCrmProspects: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/admin/crm/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+
+  // CRM Message Templates (RC1 Hotfix)
+  listCrmTemplates: () =>
+    api.get('/admin/crm-templates'),
+  createCrmTemplate: (data: Record<string, unknown>) =>
+    api.post('/admin/crm-templates', data),
+  updateCrmTemplate: (id: number, data: Record<string, unknown>) =>
+    api.patch(`/admin/crm-templates/${id}`, data),
+  deleteCrmTemplate: (id: number) =>
+    api.delete(`/admin/crm-templates/${id}`),
+  previewCrmTemplate: (id: number, vars: Record<string, string>) =>
+    api.post(`/admin/crm-templates/${id}/preview`, vars),
 };
 
 // Public API — no auth token, different base path

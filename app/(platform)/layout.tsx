@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { PlatformSidebar } from '@/components/layout/platform-sidebar';
@@ -13,8 +13,10 @@ const queryClient = new QueryClient({
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!isAuthenticated()) {
       router.replace('/login');
     } else if (user && user.role !== 'super_admin') {
@@ -22,7 +24,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     }
   }, [user]);
 
-  if (!isAuthenticated()) return null;
+  if (!mounted || !isAuthenticated()) return null;
   if (user && user.role !== 'super_admin') return null;
 
   return (

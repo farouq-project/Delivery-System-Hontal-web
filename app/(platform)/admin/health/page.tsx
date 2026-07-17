@@ -17,13 +17,13 @@ function fmt(dateStr: string | null) {
 }
 
 export default function MerchantHealthPage() {
-  const { data, isLoading } = useQuery<{ data: MerchantHealthRecord[] }>({
+  const { data, isLoading } = useQuery<{ data: { data: MerchantHealthRecord[]; summary: Record<string, number> } }>({
     queryKey: ['admin', 'health'],
     queryFn: () => adminApi.getHealth(),
     staleTime: 60_000,
   });
 
-  const merchants = data?.data ?? [];
+  const merchants: MerchantHealthRecord[] = Array.isArray(data?.data?.data) ? data.data.data : [];
 
   return (
     <div className="p-6 max-w-6xl">
