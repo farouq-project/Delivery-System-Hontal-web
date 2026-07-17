@@ -474,6 +474,7 @@ export interface OperationalSettings {
   depot_latitude: number | null;
   depot_longitude: number | null;
   routing_algorithm: string;
+  routing_mode: string;
   max_stops_per_driver: number;
   klotter_size: number;
   max_delivery_radius_km: number | null;
@@ -483,6 +484,9 @@ export interface OperationalSettings {
   order_edit_pin: string | null;
   location_validation_radius: number;
   location_change_warning_radius: number;
+  batch_enforcement: boolean;
+  two_opt_enabled: boolean;
+  distance_matrix_cache_ttl: number | null;
 }
 
 export interface BusinessHours {
