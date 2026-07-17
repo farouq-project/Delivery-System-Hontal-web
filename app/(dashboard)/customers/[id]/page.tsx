@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customersApi, customerDomainApi } from '@/lib/api';
+import { customersApi, customerDomainApi, settingsApi } from '@/lib/api';
 import { formatCurrency, formatDate, formatTime, VIP_COLORS } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { CustomerSummaryCard } from '@/components/customer-summary-card';
@@ -11,10 +11,43 @@ import {
   ArrowLeft, User, Clock, BarChart2, LineChart, Megaphone,
   Heart, Tag, ShoppingBag, Truck, AlertCircle, CheckCircle,
   XCircle, Package, Phone, MapPin, Calendar, Star, Building2,
-  Activity,
+  Activity, Link2, Navigation,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { CustomerProfile, CustomerTimeline, CustomerTag } from '@/types';
+import type { CustomerProfile, CustomerTimeline, CustomerTag, LocationSource } from '@/types';
+
+// ─── Location helpers ─────────────────────────────────────────────
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const SOURCE_LABEL: Record<LocationSource, string> = {
+  google_maps_link:  'Google Maps Link',
+  manual_pin:        'Manual Pin',
+  address_geocoding: 'Address Geocoding',
+  unknown:           'Unknown',
+};
+
+type LocationStatus = 'verified' | 'needs_review' | 'unknown';
+
+const STATUS_CHIP: Record<LocationStatus, { label: string; className: string }> = {
+  verified:     { label: 'Verified',     className: 'bg-green-100 text-green-700' },
+  needs_review: { label: 'Needs Review', className: 'bg-amber-100 text-amber-700' },
+  unknown:      { label: 'Unknown',      className: 'bg-gray-100 text-gray-500' },
+};
+
+function statusFromSource(source?: LocationSource): LocationStatus {
+  if (source === 'google_maps_link' || source === 'manual_pin') return 'verified';
+  if (source === 'address_geocoding') return 'needs_review';
+  return 'unknown';
+}
 
 // ─── Constants ────────────────────────────────────────────────────
 
@@ -158,6 +191,13 @@ export default function CustomerDetailPage() {
   const { data: customerRes, isLoading: customerLoading } = useQuery({
     queryKey: ['customer', customerId],
     queryFn:  () => customersApi.get(customerId),
+  });
+
+  const { data: settingsRes } = useQuery({
+    queryKey: ['settings'],
+    queryFn:  () => settingsApi.get(),
+    staleTime: 300_000,
+    enabled:   activeTab === 'profile',
   });
 
   const { data: profileRes, isLoading: profileLoading } = useQuery({
@@ -353,6 +393,70 @@ export default function CustomerDetailPage() {
               />
             </div>
           </div>
+
+          {/* Location Information */}
+          {(() => {
+            const depot = settingsRes?.data?.data;
+            const depotLat  = depot?.depot_latitude ?? null;
+            const depotLng  = depot?.depot_longitude ?? null;
+            const depotRadius = depot?.location_validation_radius ?? 30;
+            const hasCoords = !!customer.default_latitude && !!customer.default_longitude;
+            const status    = statusFromSource(customer.location_source as LocationSource | undefined);
+            const chip      = STATUS_CHIP[status];
+
+            let depotDist: number | null = null;
+            if (hasCoords && depotLat && depotLng) {
+              depotDist = haversineKm(customer.default_latitude!, customer.default_longitude!, depotLat, depotLng);
+            }
+
+            return (
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">Location Information</h2>
+                <div className="bg-white rounded-lg border divide-y">
+                  <InfoRow
+                    icon={<Navigation className="h-4 w-4" />}
+                    label="Location Status"
+                    value={
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${chip.className}`}>
+                        {chip.label}
+                      </span>
+                    }
+                  />
+                  <InfoRow
+                    icon={<Link2 className="h-4 w-4" />}
+                    label="Source"
+                    value={SOURCE_LABEL[(customer.location_source as LocationSource) ?? 'unknown'] ?? 'Unknown'}
+                  />
+                  <InfoRow
+                    icon={<MapPin className="h-4 w-4" />}
+                    label="Coordinates"
+                    value={
+                      hasCoords
+                        ? `${customer.default_latitude!.toFixed(5)}, ${customer.default_longitude!.toFixed(5)}`
+                        : '—'
+                    }
+                  />
+                  {depotDist !== null && (
+                    <InfoRow
+                      icon={<Navigation className="h-4 w-4" />}
+                      label="Distance from Depot"
+                      value={
+                        <span className={depotDist > depotRadius ? 'text-amber-600 font-semibold' : ''}>
+                          {depotDist.toFixed(1)} km
+                          {depotDist > depotRadius && <span className="ml-1 text-xs">(outside {depotRadius} km radius)</span>}
+                        </span>
+                      }
+                    />
+                  )}
+                  <InfoRow
+                    icon={<Calendar className="h-4 w-4" />}
+                    label="Last Verified"
+                    value={customer.location_last_verified_at ? formatDate(customer.location_last_verified_at) : '—'}
+                  />
+                </div>
+              </div>
+            );
+          })()}
 
           {profileLoading ? (
             <p className="text-gray-400 text-sm py-4 text-center">Loading profile data...</p>

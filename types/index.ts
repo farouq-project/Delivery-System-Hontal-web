@@ -28,13 +28,24 @@ export interface Merchant {
 
 export interface MerchantSetting {
   depot_address: string;
-  depot_latitude: number;
-  depot_longitude: number;
+  depot_latitude: number | null;
+  depot_longitude: number | null;
   max_stops_per_driver: number;
   klotter_size: number;
   working_hours_start: string;
   working_hours_end: string;
   routing_algorithm: string;
+  location_validation_radius: number;
+  location_change_warning_radius: number;
+}
+
+export type LocationSource = 'google_maps_link' | 'manual_pin' | 'address_geocoding' | 'unknown';
+export type LocationConfidence = 'high' | 'medium' | 'low';
+
+export interface DepotDistance {
+  distance_km: number;
+  radius_km: number;
+  exceeds_radius: boolean;
 }
 
 export interface Customer {
@@ -45,6 +56,8 @@ export interface Customer {
   default_address: string;
   default_latitude: number | null;
   default_longitude: number | null;
+  location_source: LocationSource;
+  location_last_verified_at: string | null;
   vip_level: 'standard' | 'silver' | 'gold' | 'platinum';
   is_active: boolean;
   notes: string | null;
@@ -453,6 +466,8 @@ export interface OperationalSettings {
   auto_geocode_enabled: boolean;
   hide_driver_logout: boolean;
   order_edit_pin: string | null;
+  location_validation_radius: number;
+  location_change_warning_radius: number;
 }
 
 export interface BusinessHours {

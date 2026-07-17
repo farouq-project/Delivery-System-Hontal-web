@@ -1,18 +1,58 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ordersApi } from '@/lib/api';
 import { DeliveryOrder } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { STATUS_COLORS, formatCurrency, formatDate, formatTime } from '@/lib/utils';
+import { Copy, ExternalLink, Share2, Check } from 'lucide-react';
 
 interface Props { order: DeliveryOrder; onClose: () => void; }
 
+function buildTrackingUrl(ulid: string): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${origin}/track/${ulid}`;
+}
+
+function formatWhatsAppPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('0')) return '62' + digits.slice(1);
+  if (!digits.startsWith('62')) return '62' + digits;
+  return digits;
+}
+
 export default function OrderDetail({ order, onClose }: Props) {
+  const [copied, setCopied] = useState(false);
+
   const { data } = useQuery({
     queryKey: ['order-history', order.id],
     queryFn: () => ordersApi.history(order.id),
   });
+
+  const trackingUrl = buildTrackingUrl(order.ulid);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(trackingUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleOpenTracking = () => {
+    window.open(trackingUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleWhatsApp = () => {
+    const phone   = order.customer_phone ? formatWhatsAppPhone(order.customer_phone) : '';
+    const message = encodeURIComponent(
+      `Hello.\n\nYou can track your delivery here:\n${trackingUrl}\n\nThank you.`
+    );
+    const url = phone
+      ? `https://wa.me/${phone}?text=${message}`
+      : `https://wa.me/?text=${message}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   const history: { status: string; notes: string | null; created_at: string; changed_by: string }[] =
     data?.data?.data ?? [];
@@ -69,6 +109,41 @@ export default function OrderDetail({ order, onClose }: Props) {
                   ? `${formatTime(order.requested_delivery_start)} – ${formatTime(order.requested_delivery_end)}`
                   : 'Anytime'}
               </p>
+            </div>
+          </div>
+
+          {/* Tracking share */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Tracking</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-200 rounded-md hover:bg-gray-50 text-gray-600"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? 'Copied!' : 'Copy Link'}
+              </button>
+              <button
+                onClick={handleOpenTracking}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-200 rounded-md hover:bg-gray-50 text-gray-600"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open Tracking
+              </button>
+              <span title={!order.customer_phone ? 'No customer phone number.' : undefined}>
+                <button
+                  onClick={handleWhatsApp}
+                  disabled={!order.customer_phone}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-md ${
+                    order.customer_phone
+                      ? 'border-green-200 hover:bg-green-50 text-green-700'
+                      : 'border-gray-200 text-gray-300 cursor-not-allowed'
+                  }`}
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  WhatsApp
+                </button>
+              </span>
             </div>
           </div>
 

@@ -57,6 +57,8 @@ export const customersApi = {
     api.post('/customers/bulk-update-cluster', { customer_ids: ids, cluster }),
   deduplicate: () =>
     api.post('/customers/deduplicate'),
+  resolveMapsLink: (url: string) =>
+    api.post('/customers/resolve-maps-link', { url }),
 };
 
 // Drivers
@@ -273,6 +275,8 @@ export const adminApi = {
     api.patch(`/admin/merchants/${merchantId}/users/${userId}/deactivate`),
   reactivateMerchantUser: (merchantId: number, userId: number) =>
     api.patch(`/admin/merchants/${merchantId}/users/${userId}/reactivate`),
+  deleteMerchantUser: (merchantId: number, userId: number) =>
+    api.delete(`/admin/merchants/${merchantId}/users/${userId}`),
 
   // Plans (CRUD + lifecycle)
   listPlans: (params?: Record<string, unknown>) => api.get('/admin/plans', { params }),
