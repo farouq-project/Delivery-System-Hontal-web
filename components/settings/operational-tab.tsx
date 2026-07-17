@@ -19,27 +19,32 @@ export function OperationalTab() {
 
   const [form, setForm] = useState({
     depot_address: '', depot_latitude: '', depot_longitude: '',
-    routing_algorithm: 'balanced', max_stops_per_driver: '20',
-    klotter_size: '10', max_delivery_radius_km: '',
+    routing_algorithm: 'balanced', routing_mode: 'balanced',
+    max_stops_per_driver: '20', klotter_size: '10', max_delivery_radius_km: '',
     auto_dispatch: false, auto_geocode_enabled: false,
     hide_driver_logout: false, order_edit_pin: '',
+    batch_enforcement: true, two_opt_enabled: true, distance_matrix_cache_ttl: '',
   });
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (settings) {
       setForm({
-        depot_address:          settings.depot_address        ?? '',
-        depot_latitude:         settings.depot_latitude       != null ? String(settings.depot_latitude)       : '',
-        depot_longitude:        settings.depot_longitude      != null ? String(settings.depot_longitude)      : '',
-        routing_algorithm:      settings.routing_algorithm    ?? 'balanced',
-        max_stops_per_driver:   String(settings.max_stops_per_driver ?? 20),
-        klotter_size:           String(settings.klotter_size         ?? 10),
-        max_delivery_radius_km: settings.max_delivery_radius_km != null ? String(settings.max_delivery_radius_km) : '',
-        auto_dispatch:          settings.auto_dispatch        ?? false,
-        auto_geocode_enabled:   settings.auto_geocode_enabled ?? false,
-        hide_driver_logout:     settings.hide_driver_logout   ?? false,
-        order_edit_pin:         settings.order_edit_pin       ?? '',
+        depot_address:             settings.depot_address           ?? '',
+        depot_latitude:            settings.depot_latitude          != null ? String(settings.depot_latitude)          : '',
+        depot_longitude:           settings.depot_longitude         != null ? String(settings.depot_longitude)         : '',
+        routing_algorithm:         settings.routing_algorithm       ?? 'balanced',
+        routing_mode:              settings.routing_mode            ?? 'balanced',
+        max_stops_per_driver:      String(settings.max_stops_per_driver ?? 20),
+        klotter_size:              String(settings.klotter_size         ?? 10),
+        max_delivery_radius_km:    settings.max_delivery_radius_km  != null ? String(settings.max_delivery_radius_km) : '',
+        auto_dispatch:             settings.auto_dispatch           ?? false,
+        auto_geocode_enabled:      settings.auto_geocode_enabled    ?? false,
+        hide_driver_logout:        settings.hide_driver_logout      ?? false,
+        order_edit_pin:            settings.order_edit_pin          ?? '',
+        batch_enforcement:         settings.batch_enforcement       ?? true,
+        two_opt_enabled:           settings.two_opt_enabled         ?? true,
+        distance_matrix_cache_ttl: settings.distance_matrix_cache_ttl != null ? String(settings.distance_matrix_cache_ttl) : '',
       });
     }
   }, [settings]);
@@ -56,17 +61,21 @@ export function OperationalTab() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     mutation.mutate({
-      depot_address:          form.depot_address          || null,
-      depot_latitude:         form.depot_latitude         ? Number(form.depot_latitude)         : null,
-      depot_longitude:        form.depot_longitude        ? Number(form.depot_longitude)        : null,
-      routing_algorithm:      form.routing_algorithm,
-      max_stops_per_driver:   Number(form.max_stops_per_driver),
-      klotter_size:           Number(form.klotter_size),
-      max_delivery_radius_km: form.max_delivery_radius_km ? Number(form.max_delivery_radius_km) : null,
-      auto_dispatch:          form.auto_dispatch,
-      auto_geocode_enabled:   form.auto_geocode_enabled,
-      hide_driver_logout:     form.hide_driver_logout,
-      order_edit_pin:         form.order_edit_pin || null,
+      depot_address:             form.depot_address          || null,
+      depot_latitude:            form.depot_latitude         ? Number(form.depot_latitude)         : null,
+      depot_longitude:           form.depot_longitude        ? Number(form.depot_longitude)        : null,
+      routing_algorithm:         form.routing_algorithm,
+      routing_mode:              form.routing_mode,
+      max_stops_per_driver:      Number(form.max_stops_per_driver),
+      klotter_size:              Number(form.klotter_size),
+      max_delivery_radius_km:    form.max_delivery_radius_km ? Number(form.max_delivery_radius_km) : null,
+      auto_dispatch:             form.auto_dispatch,
+      auto_geocode_enabled:      form.auto_geocode_enabled,
+      hide_driver_logout:        form.hide_driver_logout,
+      order_edit_pin:            form.order_edit_pin || null,
+      batch_enforcement:         form.batch_enforcement,
+      two_opt_enabled:           form.two_opt_enabled,
+      distance_matrix_cache_ttl: form.distance_matrix_cache_ttl ? Number(form.distance_matrix_cache_ttl) : null,
     });
   };
 
@@ -154,6 +163,62 @@ export function OperationalTab() {
                 onChange={e => setForm(f => ({ ...f, auto_geocode_enabled: e.target.checked }))}
                 className="h-4 w-4 rounded border-gray-300" />
               <span className="text-sm">Auto-geocode customer addresses on import</span>
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Routing Engine V2</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="routing_mode">Routing Mode</Label>
+              <select
+                id="routing_mode"
+                value={form.routing_mode}
+                onChange={e => setForm(f => ({ ...f, routing_mode: e.target.value }))}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+              >
+                <option value="economy">Economy (Haversine only — fastest)</option>
+                <option value="balanced">Balanced (Haversine + 2-opt)</option>
+                <option value="optimized">Optimized (Haversine + 2-opt + Google ETAs)</option>
+              </select>
+              <p className="text-xs text-gray-400">Economy uses no Google API. Optimized uses Google only for final ETA refinement.</p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="dm_cache_ttl">Distance Matrix Cache TTL (seconds)</Label>
+              <Input
+                id="dm_cache_ttl"
+                type="number"
+                min="60"
+                max="86400"
+                value={form.distance_matrix_cache_ttl}
+                onChange={e => setForm(f => ({ ...f, distance_matrix_cache_ttl: e.target.value }))}
+                placeholder="600 (default)"
+              />
+            </div>
+          </div>
+          <div className="space-y-2 pt-1">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.batch_enforcement}
+                onChange={e => setForm(f => ({ ...f, batch_enforcement: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-300" />
+              <div>
+                <span className="text-sm font-medium">Batch enforcement</span>
+                <p className="text-xs text-gray-400">Separate orders into morning / afternoon / late batches before routing</p>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.two_opt_enabled}
+                onChange={e => setForm(f => ({ ...f, two_opt_enabled: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-300" />
+              <div>
+                <span className="text-sm font-medium">2-opt improvement</span>
+                <p className="text-xs text-gray-400">Post-process with 2-opt to reduce total route distance (disable for faster generation with large order counts)</p>
+              </div>
             </label>
           </div>
         </CardContent>

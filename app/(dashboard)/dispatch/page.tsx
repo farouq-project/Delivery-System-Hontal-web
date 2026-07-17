@@ -7,7 +7,7 @@ import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, VIP_COLORS, formatTime } from '@/lib/utils';
-import { Loader2, Trash2, RotateCcw, X, Lock, Unlock, Play, RefreshCw } from 'lucide-react';
+import { Loader2, Trash2, RotateCcw, X, Lock, Unlock, Play, RefreshCw, Zap, TrendingDown, BarChart2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/auth';
 
@@ -253,6 +253,40 @@ export default function DispatchPage() {
           )}
         </div>
       </div>
+
+      {/* Route Quality Insight Panel — shown after V2 generation */}
+      {todayRoute && todayRoute.quality_score !== null && (
+        <div className="border-b bg-indigo-50 px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
+          <div className="flex items-center gap-1.5 text-indigo-700 font-medium">
+            <BarChart2 className="h-4 w-4" />
+            Route Quality
+          </div>
+          <div className="flex items-center gap-1 text-gray-600">
+            <Zap className="h-3.5 w-3.5 text-indigo-400" />
+            <span className="capitalize">{todayRoute.routing_mode ?? 'balanced'} mode</span>
+          </div>
+          {todayRoute.optimization_saving_m !== null && todayRoute.optimization_saving_m > 0 && (
+            <div className="flex items-center gap-1 text-green-700">
+              <TrendingDown className="h-3.5 w-3.5" />
+              <span>Saved {(todayRoute.optimization_saving_m / 1000).toFixed(1)} km vs NN baseline</span>
+            </div>
+          )}
+          <div className="text-gray-600">
+            Score: <span className={`font-semibold ${(todayRoute.quality_score ?? 0) >= 10 ? 'text-green-700' : 'text-amber-600'}`}>
+              {todayRoute.quality_score?.toFixed(1)}%
+            </span>
+          </div>
+          {todayRoute.batch_count > 1 && (
+            <div className="text-gray-600">{todayRoute.batch_count} time batches</div>
+          )}
+          {todayRoute.google_calls > 0 && (
+            <div className="text-gray-500 text-xs">
+              {todayRoute.google_calls} Google call{todayRoute.google_calls !== 1 ? 's' : ''}
+              {todayRoute.cache_hits > 0 && ` · ${todayRoute.cache_hits} cached`}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Unassigned orders */}
       {pendingOrders.length > 0 && (

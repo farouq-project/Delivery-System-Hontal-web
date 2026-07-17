@@ -35,6 +35,10 @@ export interface MerchantSetting {
   working_hours_start: string;
   working_hours_end: string;
   routing_algorithm: string;
+  routing_mode: string;
+  two_opt_enabled: boolean;
+  batch_enforcement: boolean;
+  distance_matrix_cache_ttl: number | null;
   location_validation_radius: number;
   location_change_warning_radius: number;
 }
@@ -147,6 +151,8 @@ export interface RouteAssignment {
   status: string;
 }
 
+export type RoutingMode = 'economy' | 'balanced' | 'optimized';
+
 export interface Route {
   id: number;
   ulid: string;
@@ -155,9 +161,18 @@ export interface Route {
   generation_method: string;
   total_stops: number;
   total_drivers: number;
+  total_distance_m: number | null;
   locked_at: string | null;
   assignments: RouteAssignment[];
   created_at: string;
+  // V2 analytics
+  routing_mode: RoutingMode | null;
+  distance_before_optimization_m: number | null;
+  optimization_saving_m: number | null;
+  google_calls: number;
+  cache_hits: number;
+  quality_score: number | null;
+  batch_count: number;
 }
 
 export interface LiveDriver {
