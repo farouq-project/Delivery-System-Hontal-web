@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 
@@ -40,9 +40,7 @@ export function ConfirmDialog({
             <DialogTitle>{title}</DialogTitle>
           </div>
           {description && (
-            <DialogDescription className="text-left text-sm text-gray-600 mt-2">
-              {description}
-            </DialogDescription>
+            <p className="text-left text-sm text-gray-600 mt-2">{description}</p>
           )}
         </DialogHeader>
         <div className="flex justify-end gap-3 pt-2">
