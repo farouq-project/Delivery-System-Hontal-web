@@ -21,6 +21,8 @@ export default function DispatchPage() {
   const today = new Date().toISOString().split('T')[0];
   const [confirmDeleteDispatch, setConfirmDeleteDispatch] = useState(false);
   const [confirmResetUnassigned, setConfirmResetUnassigned] = useState(false);
+  const [confirmResetOrderId, setConfirmResetOrderId] = useState<number | null>(null);
+  const [confirmBulkUnassign, setConfirmBulkUnassign] = useState<'selected' | 'all' | null>(null);
 
   const { data: routesData, isLoading: routesLoading } = useQuery({
     queryKey: ['routes', today],
@@ -402,11 +404,7 @@ export default function DispatchPage() {
                     size="sm" variant="outline"
                     className="h-7 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                     disabled={bulkUnassignMutation.isPending}
-                    onClick={() => {
-                      if (confirm(`Unassign ${selectedAssignedIds.length} order(s)?`)) {
-                        bulkUnassignMutation.mutate(selectedAssignedIds);
-                      }
-                    }}
+                    onClick={() => setConfirmBulkUnassign('selected')}
                   >
                     <X className="h-3 w-3 mr-1" />
                     {bulkUnassignMutation.isPending ? 'Resetting...' : `Reset ${selectedAssignedIds.length} Selected`}
@@ -418,11 +416,7 @@ export default function DispatchPage() {
                   size="sm" variant="outline"
                   className="h-7 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                   disabled={bulkUnassignMutation.isPending}
-                  onClick={() => {
-                    if (confirm(`Reset ALL ${allAssignedOrders.length} assigned orders to pending?`)) {
-                      bulkUnassignMutation.mutate(allAssignedOrders.map(o => o.id));
-                    }
-                  }}
+                  onClick={() => setConfirmBulkUnassign('all')}
                 >
                   <RotateCcw className="h-3 w-3 mr-1" /> Reset All Assigned
                 </Button>
@@ -489,11 +483,7 @@ export default function DispatchPage() {
                         size="sm" variant="outline"
                         className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                         disabled={unassignOrderMutation.isPending}
-                        onClick={() => {
-                          if (confirm(`Reset ${o.order_number}?`)) {
-                            unassignOrderMutation.mutate(o.id);
-                          }
-                        }}
+                        onClick={() => setConfirmResetOrderId(o.id)}
                       >
                         Reset
                       </Button>
@@ -512,19 +502,33 @@ export default function DispatchPage() {
           <Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading route...
         </div>
       ) : !todayRoute ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4">
-          <Play className="h-16 w-16 opacity-20" />
-          <div className="text-center">
-            <p className="text-lg font-medium">No route generated yet</p>
-            <p className="text-sm">Click "Generate Route" to score and sequence today's orders.</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
+          <Play className="h-16 w-16 text-gray-200" />
+          <div className="text-center max-w-sm">
+            <p className="text-lg font-semibold text-gray-700">Belum ada rute hari ini</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Klik tombol di bawah untuk mengurutkan dan mengelompokkan pesanan secara otomatis.
+            </p>
           </div>
-          <Button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
-            {generateMutation.isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Routing...</>
-            ) : (
-              <><Play className="h-4 w-4" /> Generate Route</>
-            )}
-          </Button>
+          {pendingOrders.length === 0 ? (
+            <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-4 py-2">
+              Belum ada pesanan pending hari ini. Tambah pesanan di halaman <strong>Orders</strong> terlebih dahulu.
+            </p>
+          ) : (
+            <div className="text-center space-y-3">
+              <p className="text-xs text-gray-400">{pendingOrders.length} pesanan siap untuk dijadwalkan</p>
+              <Button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending} size="lg">
+                {generateMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Membuat Rute…</>
+                ) : (
+                  <><Play className="h-4 w-4 mr-2" /> Generate Route</>
+                )}
+              </Button>
+            </div>
+          )}
+          <div className="mt-2 text-xs text-gray-300 space-y-1 text-center">
+            <p>Alur kerja: Tambah Pesanan → Generate Route → Tugaskan Pengemudi → Lock → Mulai</p>
+          </div>
         </div>
       ) : (
         <DispatchBoard route={todayRoute} />
@@ -549,6 +553,36 @@ export default function DispatchPage() {
         loading={resetUnassignedMutation.isPending}
         onConfirm={() => { resetUnassignedMutation.mutate(todayRoute!.id); setConfirmResetUnassigned(false); }}
         onCancel={() => setConfirmResetUnassigned(false)}
+      />
+      <ConfirmDialog
+        open={!!confirmResetOrderId}
+        title="Reset Pesanan"
+        description="Pesanan ini akan dikembalikan ke status pending dan ditarik dari pengemudi."
+        confirmLabel="Reset"
+        variant="default"
+        loading={unassignOrderMutation.isPending}
+        onConfirm={() => { if (confirmResetOrderId) unassignOrderMutation.mutate(confirmResetOrderId); setConfirmResetOrderId(null); }}
+        onCancel={() => setConfirmResetOrderId(null)}
+      />
+      <ConfirmDialog
+        open={!!confirmBulkUnassign}
+        title={confirmBulkUnassign === 'all' ? 'Reset Semua Pesanan Ditugaskan' : `Reset ${selectedAssignedIds.length} Pesanan`}
+        description={confirmBulkUnassign === 'all'
+          ? `Semua ${allAssignedOrders.length} pesanan yang ditugaskan akan dikembalikan ke pending.`
+          : `${selectedAssignedIds.length} pesanan yang dipilih akan dikembalikan ke pending.`
+        }
+        confirmLabel="Reset"
+        variant="destructive"
+        loading={bulkUnassignMutation.isPending}
+        onConfirm={() => {
+          if (confirmBulkUnassign === 'all') {
+            bulkUnassignMutation.mutate(allAssignedOrders.map(o => o.id));
+          } else {
+            bulkUnassignMutation.mutate(selectedAssignedIds);
+          }
+          setConfirmBulkUnassign(null);
+        }}
+        onCancel={() => setConfirmBulkUnassign(null)}
       />
     </div>
   );
