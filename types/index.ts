@@ -520,3 +520,97 @@ export interface MerchantBranch {
   is_active: boolean;
   sort_order: number;
 }
+
+// ─── Phase 5.3: Platform Operations ───────────────────────────────────────────
+
+export interface PlatformDashboardStats {
+  merchants: {
+    total: number;
+    active: number;
+    trial: number;
+    paid: number;
+    suspended: number;
+    expired: number;
+    cancelled: number;
+  };
+  active_users: number;
+  orders_today: number;
+  deliveries_today: number;
+  orders_this_month: number;
+  google_api: {
+    requests_this_month: number;
+    estimated_units_this_month: number;
+    cache_hit_rate: number;
+  };
+  platform_health: 'healthy' | 'degraded' | 'maintenance';
+}
+
+export type MerchantHealthStatus = 'healthy' | 'needs_attention' | 'inactive';
+
+export interface MerchantHealthRecord {
+  id: number;
+  company_name: string;
+  email: string;
+  subscription_status: SubscriptionStatus | null;
+  last_login_at: string | null;
+  last_order_at: string | null;
+  monthly_orders: number;
+  active_drivers: number;
+  active_dispatchers: number;
+  delivery_success_rate: number;
+  customer_count: number;
+  health: MerchantHealthStatus;
+}
+
+export interface GoogleApiAnalyticsPeriod {
+  requests: number;
+  estimated_units: number;
+  cache_hits: number;
+  cache_hit_rate: number;
+}
+
+export interface GoogleApiTopConsumer {
+  merchant_id: number;
+  merchant_name: string;
+  requests: number;
+  estimated_units: number;
+}
+
+export interface GoogleApiAnalytics {
+  today: GoogleApiAnalyticsPeriod;
+  this_month: GoogleApiAnalyticsPeriod;
+  top_consumers: GoogleApiTopConsumer[];
+  daily_trend: { date: string; requests: number; estimated_units: number }[];
+}
+
+export interface PlatformSettingRow {
+  key: string;
+  value: string | number | boolean;
+  type: 'string' | 'integer' | 'boolean' | 'json';
+  description: string | null;
+}
+
+export interface SearchResult {
+  type: 'merchant' | 'user' | 'application' | 'subscription';
+  id: number;
+  label: string;
+  sub: string | null;
+  url: string;
+}
+
+export interface MerchantSupportConsole {
+  support_notes: string | null;
+  internal_notes: string | null;
+  recent_activity: {
+    id: number;
+    event_type: string;
+    description: string;
+    actor_name: string | null;
+    created_at: string;
+  }[];
+  api_usage_summary: {
+    requests_this_month: number;
+    estimated_units_this_month: number;
+    cache_hit_rate: number;
+  };
+}

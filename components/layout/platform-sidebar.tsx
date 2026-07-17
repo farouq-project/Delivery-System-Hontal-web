@@ -3,19 +3,24 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Building2, FileText, CreditCard, Activity, Shield, ClipboardList, LogOut
+  Building2, FileText, CreditCard, Activity, Shield, ClipboardList, LogOut,
+  LayoutDashboard, BarChart2, Search, Settings2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { authApi } from '@/lib/api';
 
 const platformNav = [
+  { href: '/admin',               label: 'Dashboard',     icon: LayoutDashboard, exact: true },
   { href: '/admin/applications',  label: 'Applications',  icon: FileText },
   { href: '/admin/merchants',     label: 'Merchants',     icon: Building2 },
   { href: '/admin/plans',         label: 'Plans',         icon: CreditCard },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: ClipboardList },
-  { href: '/admin/health',        label: 'System Health', icon: Activity },
-  { href: '/admin/logs',          label: 'Audit Logs',    icon: Shield },
+  { href: '/admin/health',        label: 'Merchant Health', icon: Activity },
+  { href: '/admin/logs',          label: 'Activity Feed', icon: Shield },
+  { href: '/admin/analytics',     label: 'API Analytics', icon: BarChart2 },
+  { href: '/admin/search',        label: 'Global Search', icon: Search },
+  { href: '/admin/settings',      label: 'Settings',      icon: Settings2 },
 ];
 
 export function PlatformSidebar() {
@@ -40,13 +45,13 @@ export function PlatformSidebar() {
         <p className="px-3 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Platform
         </p>
-        {platformNav.map(({ href, label, icon: Icon }) => (
+        {platformNav.map(({ href, label, icon: Icon, exact }) => (
           <Link
             key={href}
             href={href}
             className={cn(
               'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-              pathname.startsWith(href)
+              (exact ? pathname === href : pathname.startsWith(href))
                 ? 'bg-emerald-600 text-white'
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'
             )}

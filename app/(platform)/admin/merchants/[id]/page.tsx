@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
-import type { SubscriptionStatus, PlatformPlan, MerchantFeatureFlag, MerchantUsage, MerchantActivityLogEntry } from '@/types';
+import type { SubscriptionStatus, PlatformPlan, MerchantFeatureFlag, MerchantUsage, MerchantActivityLogEntry, MerchantSupportConsole } from '@/types';
 import { ArrowLeft, Building2, Users, Package, Settings, Activity, CreditCard, Zap, BarChart2, HeadphonesIcon } from 'lucide-react';
 
 type Tab = 'overview' | 'subscription' | 'usage' | 'billing' | 'users' | 'features' | 'settings' | 'activity' | 'support';
@@ -61,6 +61,11 @@ export default function MerchantDetailPage() {
   const [resetPwdUser, setResetPwdUser] = useState<{ id: number; name: string } | null>(null);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
+  // Support tab state
+  const [supportNotes, setSupportNotes] = useState('');
+  const [internalNotes, setInternalNotes] = useState('');
+  const [supportSaved, setSupportSaved] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'merchant', id],
     queryFn: () => adminApi.getMerchant(Number(id)),
@@ -109,10 +114,28 @@ export default function MerchantDetailPage() {
     staleTime: 60_000,
   });
 
+  const { data: supportData, isLoading: isLoadingSupport } = useQuery<{ data: MerchantSupportConsole }>({
+    queryKey: ['admin', 'merchant', id, 'support'],
+    queryFn: () => adminApi.getMerchantSupport(Number(id)).then(r => r.data),
+    enabled: tab === 'support',
+    staleTime: 30_000,
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['admin', 'merchant', id] });
     qc.invalidateQueries({ queryKey: ['admin', 'merchant', id, 'activity'] });
   };
+
+  const supportConsole: MerchantSupportConsole | undefined = supportData?.data;
+
+  useEffect(() => {
+    if (supportConsole) {
+      setSupportNotes(supportConsole.support_notes ?? '');
+      setInternalNotes(supportConsole.internal_notes ?? '');
+    }
+  // Only sync when support data first loads, not on every re-render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportData]);
 
   const changePlanMutation = useMutation({
     mutationFn: ({ subId, planId }: { subId: number; planId: number }) =>
@@ -161,6 +184,18 @@ export default function MerchantDetailPage() {
         ? adminApi.deactivateMerchantUser(Number(id), userId)
         : adminApi.reactivateMerchantUser(Number(id), userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'merchant', id, 'users'] }),
+  });
+
+  const supportNotesMutation = useMutation({
+    mutationFn: () => adminApi.updateMerchantSupportNotes(Number(id), {
+      support_notes:  supportNotes || null,
+      internal_notes: internalNotes || null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'merchant', id, 'support'] });
+      setSupportSaved(true);
+      setTimeout(() => setSupportSaved(false), 2500);
+    },
   });
 
   if (isLoading) return <div className="p-6 text-sm text-gray-400">Loading merchant…</div>;
@@ -528,10 +563,95 @@ export default function MerchantDetailPage() {
 
       {/* ── Support ── */}
       {tab === 'support' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center gap-3 text-center shadow-sm max-w-md">
-          <HeadphonesIcon className="h-10 w-10 text-gray-300" />
-          <p className="font-semibold text-gray-700">Support Tickets</p>
-          <p className="text-sm text-gray-400">Support ticket integration — Phase 6</p>
+        <div className="space-y-5 max-w-2xl">
+          {isLoadingSupport && (
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-sm text-gray-400 animate-pulse">
+              Loading support data…
+            </div>
+          )}
+
+          {supportConsole && (
+            <>
+              {/* Notes editor */}
+              <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-4">Support Notes</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Visible to support staff</label>
+                    <textarea
+                      rows={4}
+                      value={supportNotes}
+                      onChange={e => setSupportNotes(e.target.value)}
+                      placeholder="Add notes visible to support staff…"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Internal notes (super admin only)</label>
+                    <textarea
+                      rows={3}
+                      value={internalNotes}
+                      onChange={e => setInternalNotes(e.target.value)}
+                      placeholder="Internal notes not shared with merchant…"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm transition-opacity ${supportSaved ? 'text-emerald-600 opacity-100' : 'opacity-0'}`}>
+                      Notes saved.
+                    </p>
+                    <button
+                      onClick={() => supportNotesMutation.mutate()}
+                      disabled={supportNotesMutation.isPending}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-md text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {supportNotesMutation.isPending ? 'Saving…' : 'Save Notes'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* API Usage Summary */}
+              <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-3">API Usage (This Month)</h3>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs">Requests</p>
+                    <p className="text-lg font-semibold text-gray-900">{supportConsole.api_usage_summary.requests_this_month.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">Est. Units</p>
+                    <p className="text-lg font-semibold text-gray-900">{supportConsole.api_usage_summary.estimated_units_this_month.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">Cache Hit Rate</p>
+                    <p className="text-lg font-semibold text-gray-900">{supportConsole.api_usage_summary.cache_hit_rate}%</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              {supportConsole.recent_activity.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                  <p className="px-5 py-3 text-sm font-semibold text-gray-700 border-b border-gray-100">Recent Activity</p>
+                  <div className="divide-y divide-gray-100">
+                    {supportConsole.recent_activity.map((e) => (
+                      <div key={e.id} className="px-5 py-3 flex items-start justify-between gap-4">
+                        <div>
+                          <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{e.event_type}</span>
+                          {e.actor_name && <span className="text-xs text-gray-400 ml-2">by {e.actor_name}</span>}
+                          <p className="text-sm text-gray-700 mt-0.5">{e.description}</p>
+                        </div>
+                        <p className="text-xs text-gray-400 whitespace-nowrap">
+                          {new Date(e.created_at).toLocaleDateString('id-ID')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

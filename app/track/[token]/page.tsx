@@ -13,6 +13,8 @@ interface TrackingData {
   estimated_arrival?: string | null;
   driver_name?: string | null;
   notes?: string | null;
+  predicted_delivery_time?: string | null;
+  prediction_source?: 'customer_history' | 'merchant_average' | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -86,12 +88,17 @@ export default function TrackingPage() {
                 <span className={statusCfg.color}>{statusCfg.icon}</span>
                 <div>
                   <p className="font-semibold text-gray-900">{statusCfg.label}</p>
-                  {data.estimated_arrival && (
+                  {data.predicted_delivery_time ? (
+                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      Est. {new Date(data.predicted_delivery_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  ) : data.estimated_arrival ? (
                     <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
                       <Clock className="h-3.5 w-3.5" />
                       ETA {data.estimated_arrival}
                     </p>
-                  )}
+                  ) : null}
                   {data.driver_name && (
                     <p className="text-sm text-gray-500 mt-0.5">Driver: {data.driver_name}</p>
                   )}

@@ -308,6 +308,30 @@ export const adminApi = {
     api.patch(`/admin/subscriptions/${subId}/expire`),
   cancelSubscription: (subId: number) =>
     api.patch(`/admin/subscriptions/${subId}/cancel`),
+
+  // Platform Dashboard (Phase 5.3)
+  getDashboard: () =>
+    api.get('/admin/dashboard'),
+  getHealth: () =>
+    api.get('/admin/health'),
+  getActivity: (params?: Record<string, unknown>) =>
+    api.get('/admin/activity', { params }),
+  globalSearch: (q: string) =>
+    api.get('/admin/search', { params: { q } }),
+  getGoogleApiAnalytics: () =>
+    api.get('/admin/analytics/google-api'),
+
+  // Platform Settings (Phase 5.3)
+  getPlatformSettings: () =>
+    api.get('/admin/platform/settings'),
+  updatePlatformSettings: (settings: Record<string, unknown>) =>
+    api.patch('/admin/platform/settings', { settings }),
+
+  // Merchant Support Console (Phase 5.3)
+  getMerchantSupport: (id: number) =>
+    api.get(`/admin/merchants/${id}/support`),
+  updateMerchantSupportNotes: (id: number, data: { support_notes?: string | null; internal_notes?: string | null }) =>
+    api.patch(`/admin/merchants/${id}/support-notes`, data),
 };
 
 // Public API — no auth token, different base path
