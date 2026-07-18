@@ -619,7 +619,9 @@ export interface SearchResult {
   url: string;
 }
 
-export type CrmPipelineStage = 'new' | 'contacted' | 'demo_scheduled' | 'negotiation' | 'won' | 'lost';
+export type CrmPipelineStage =
+  | 'new' | 'contacted' | 'interested' | 'demo_scheduled'
+  | 'trial_running' | 'negotiation' | 'converted' | 'won' | 'lost';
 
 export interface CrmProspect {
   id: number;
@@ -628,6 +630,7 @@ export interface CrmProspect {
   city: string | null;
   address: string | null;
   phone: string | null;
+  email: string | null;
   website: string | null;
   instagram: string | null;
   contact_person: string | null;
@@ -639,6 +642,32 @@ export interface CrmProspect {
   created_by: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CrmActivity {
+  id: number;
+  type: 'note' | 'call' | 'whatsapp' | 'email' | 'demo';
+  content: string;
+  created_by: number | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+
+export interface AdminCustomer {
+  id: number;
+  ulid: string;
+  customer_name: string;
+  phone: string | null;
+  merchant_id: number;
+  merchant_name: string;
+  vip_level: string;
+  total_orders: number;
+  last_order_at: string | null;
+  default_address: string;
+  is_active: boolean;
+  health_status: string | null;
+  segment: string | null;
+  total_spending: number | null;
 }
 
 export interface CrmMessageTemplate {

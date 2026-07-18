@@ -22,7 +22,7 @@ const platformNav = [
   { href: '/admin/search',        label: 'Global Search',   icon: Search },
   { href: '/admin/settings',      label: 'Settings',        icon: Settings2 },
   { href: '/admin/trial-wizard',  label: 'Trial Wizard',    icon: FlaskConical },
-  { href: '/admin/crm',           label: 'CRM Prospects',   icon: ContactRound },
+  { href: '/admin/crm',           label: 'Sales CRM',       icon: ContactRound },
 ];
 
 export function PlatformSidebar() {

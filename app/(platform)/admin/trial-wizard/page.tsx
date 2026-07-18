@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -19,23 +20,26 @@ interface TrialResult {
   sample_orders: number;
 }
 
-export default function TrialWizardPage() {
+function TrialWizardInner() {
+  const searchParams = useSearchParams();
+
   const [form, setForm] = useState({
-    company_name: '',
-    owner_name: '',
-    owner_email: '',
-    password: 'demo1234',
-    phone: '',
-    trial_days: '30',
+    company_name: searchParams.get('company_name') ?? '',
+    owner_name:   searchParams.get('owner_name')   ?? '',
+    owner_email:  searchParams.get('owner_email')  ?? '',
+    password:     'demo1234',
+    phone:        searchParams.get('phone')        ?? '',
+    trial_days:   '30',
     with_samples: true,
   });
-  const [result, setResult] = useState<TrialResult | null>(null);
-  const [copied, setCopied] = useState('');
+  const [result, setResult]   = useState<TrialResult | null>(null);
+  const [copied, setCopied]   = useState('');
+  const fromProspect = searchParams.get('from_prospect');
 
   const mutation = useMutation({
     mutationFn: () => adminApi.createTrialMerchant({
       ...form,
-      trial_days: Number(form.trial_days),
+      trial_days:   Number(form.trial_days),
       with_samples: form.with_samples,
     }),
     onSuccess: (res) => setResult(res.data.data),
@@ -57,6 +61,11 @@ export default function TrialWizardPage() {
     </button>
   );
 
+  const resetForm = () => {
+    setResult(null);
+    setForm({ company_name: '', owner_name: '', owner_email: '', password: 'demo1234', phone: '', trial_days: '30', with_samples: true });
+  };
+
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
@@ -66,6 +75,12 @@ export default function TrialWizardPage() {
           <p className="text-sm text-gray-500">Provision a fully-configured trial merchant environment</p>
         </div>
       </div>
+
+      {fromProspect && !result && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-5 text-sm text-blue-800">
+          Pre-filled from CRM prospect #{fromProspect}. Review and adjust before creating.
+        </div>
+      )}
 
       {!result ? (
         <div className="bg-white rounded-xl border p-6 space-y-4">
@@ -165,9 +180,9 @@ export default function TrialWizardPage() {
 
           <div className="bg-white rounded-xl border divide-y">
             {[
-              { label: 'Owner', email: result.owner_email, id: 'owner' },
+              { label: 'Owner',      email: result.owner_email,      id: 'owner' },
               { label: 'Dispatcher', email: result.dispatcher_email, id: 'dispatcher' },
-              { label: 'Driver', email: result.driver_email, id: 'driver' },
+              { label: 'Driver',     email: result.driver_email,     id: 'driver' },
             ].map(({ label, email, id }) => (
               <div key={id} className="flex items-center justify-between px-4 py-3">
                 <div>
@@ -193,11 +208,19 @@ export default function TrialWizardPage() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" onClick={() => { setResult(null); setForm({ company_name: '', owner_name: '', owner_email: '', password: 'demo1234', phone: '', trial_days: '30', with_samples: true }); }}>
+          <Button variant="outline" className="w-full" onClick={resetForm}>
             Create Another
           </Button>
         </div>
       )}
     </div>
+  );
+}
+
+export default function TrialWizardPage() {
+  return (
+    <Suspense fallback={null}>
+      <TrialWizardInner />
+    </Suspense>
   );
 }

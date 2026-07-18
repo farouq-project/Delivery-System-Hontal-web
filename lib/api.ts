@@ -339,7 +339,7 @@ export const adminApi = {
   deleteTrialMerchant: (merchantId: number) =>
     api.delete(`/admin/trial-merchants/${merchantId}`),
 
-  // CRM Prospects (RC1)
+  // CRM Prospects
   listCrmProspects: (params?: Record<string, unknown>) =>
     api.get('/admin/crm', { params }),
   getCrmStats: () =>
@@ -355,8 +355,23 @@ export const adminApi = {
     fd.append('file', file);
     return api.post('/admin/crm/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
+  previewCrmImport: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/admin/crm/import/preview', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  downloadCrmTemplate: () =>
+    api.get('/admin/crm/template', { responseType: 'blob' }),
 
-  // CRM Message Templates (RC1 Hotfix)
+  // CRM Activities
+  listCrmActivities: (prospectId: number) =>
+    api.get(`/admin/crm/${prospectId}/activities`),
+  addCrmActivity: (prospectId: number, data: { type: string; content: string }) =>
+    api.post(`/admin/crm/${prospectId}/activities`, data),
+  deleteCrmActivity: (prospectId: number, activityId: number) =>
+    api.delete(`/admin/crm/${prospectId}/activities/${activityId}`),
+
+  // CRM Message Templates
   listCrmTemplates: () =>
     api.get('/admin/crm-templates'),
   createCrmTemplate: (data: Record<string, unknown>) =>
@@ -367,6 +382,10 @@ export const adminApi = {
     api.delete(`/admin/crm-templates/${id}`),
   previewCrmTemplate: (id: number, vars: Record<string, string>) =>
     api.post(`/admin/crm-templates/${id}/preview`, vars),
+
+  // Customer Intelligence (cross-merchant, super_admin only)
+  searchCustomers: (params?: Record<string, unknown>) =>
+    api.get('/admin/customers/search', { params }),
 };
 
 // Public API — no auth token, different base path
