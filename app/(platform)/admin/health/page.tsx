@@ -100,9 +100,13 @@ export default function MerchantHealthPage() {
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700">{m.monthly_orders}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className={m.delivery_success_rate >= 75 ? 'text-emerald-600 font-medium' : m.delivery_success_rate >= 40 ? 'text-amber-600' : 'text-red-500'}>
-                        {m.delivery_success_rate}%
-                      </span>
+                      {m.delivery_success_rate == null ? (
+                        <span className="text-gray-400">—</span>
+                      ) : (
+                        <span className={m.delivery_success_rate >= 75 ? 'text-emerald-600 font-medium' : m.delivery_success_rate >= 40 ? 'text-amber-600' : 'text-red-500'}>
+                          {m.delivery_success_rate}%
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600">{m.active_drivers}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">{fmt(m.last_login_at)}</td>
