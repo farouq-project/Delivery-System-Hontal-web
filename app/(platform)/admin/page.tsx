@@ -56,7 +56,7 @@ export default function PlatformDashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Platform Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">Live overview of all merchants and platform activity</p>
         </div>
-        {stats && <HealthBadge status={stats.platform_health} />}
+        {stats?.platform_health && <HealthBadge status={stats.platform_health} />}
       </div>
 
       {isLoading && (
@@ -76,15 +76,15 @@ export default function PlatformDashboardPage() {
       {stats && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <StatCard label="Total Merchants" value={stats.merchants.total} icon={Building2} />
-            <StatCard label="Active Users" value={stats.active_users.toLocaleString()} icon={Users} color="text-blue-600" />
-            <StatCard label="Orders Today" value={stats.orders_today.toLocaleString()} icon={ShoppingCart} color="text-indigo-600" />
-            <StatCard label="Deliveries Today" value={stats.deliveries_today.toLocaleString()} icon={Truck} color="text-violet-600" />
-            <StatCard label="Orders This Month" value={stats.orders_this_month.toLocaleString()} icon={BarChart2} color="text-amber-600" />
+            <StatCard label="Total Merchants" value={stats.merchants?.total ?? 0} icon={Building2} />
+            <StatCard label="Active Users" value={(stats.active_users ?? 0).toLocaleString()} icon={Users} color="text-blue-600" />
+            <StatCard label="Orders Today" value={(stats.orders_today ?? 0).toLocaleString()} icon={ShoppingCart} color="text-indigo-600" />
+            <StatCard label="Deliveries Today" value={(stats.deliveries_today ?? 0).toLocaleString()} icon={Truck} color="text-violet-600" />
+            <StatCard label="Orders This Month" value={(stats.orders_this_month ?? 0).toLocaleString()} icon={BarChart2} color="text-amber-600" />
             <StatCard
               label="API Requests / Month"
-              value={stats.google_api.requests_this_month.toLocaleString()}
-              sub={`Cache hit ${stats.google_api.cache_hit_rate}%`}
+              value={(stats.google_api?.requests_this_month ?? 0).toLocaleString()}
+              sub={`Cache hit ${stats.google_api?.cache_hit_rate ?? 0}%`}
               icon={Zap}
               color="text-rose-600"
             />
@@ -95,12 +95,12 @@ export default function PlatformDashboardPage() {
             <p className="text-sm font-semibold text-gray-700 mb-4">Merchant Breakdown</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 text-center">
               {[
-                { label: 'Trial',     value: stats.merchants.trial,     color: 'text-amber-600 bg-amber-50' },
-                { label: 'Paid',      value: stats.merchants.paid,      color: 'text-emerald-600 bg-emerald-50' },
-                { label: 'Active',    value: stats.merchants.active,    color: 'text-blue-600 bg-blue-50' },
-                { label: 'Suspended', value: stats.merchants.suspended, color: 'text-red-600 bg-red-50' },
-                { label: 'Expired',   value: stats.merchants.expired,   color: 'text-gray-600 bg-gray-50' },
-                { label: 'Cancelled', value: stats.merchants.cancelled, color: 'text-gray-400 bg-gray-50' },
+                { label: 'Trial',     value: stats.merchants?.trial     ?? 0, color: 'text-amber-600 bg-amber-50' },
+                { label: 'Paid',      value: stats.merchants?.paid      ?? 0, color: 'text-emerald-600 bg-emerald-50' },
+                { label: 'Active',    value: stats.merchants?.active    ?? 0, color: 'text-blue-600 bg-blue-50' },
+                { label: 'Suspended', value: stats.merchants?.suspended ?? 0, color: 'text-red-600 bg-red-50' },
+                { label: 'Expired',   value: stats.merchants?.expired   ?? 0, color: 'text-gray-600 bg-gray-50' },
+                { label: 'Cancelled', value: stats.merchants?.cancelled ?? 0, color: 'text-gray-400 bg-gray-50' },
               ].map(({ label, value, color }) => (
                 <div key={label} className={`rounded-lg p-3 ${color.split(' ')[1]}`}>
                   <p className={`text-xl font-bold ${color.split(' ')[0]}`}>{value}</p>
@@ -111,23 +111,25 @@ export default function PlatformDashboardPage() {
           </div>
 
           {/* Google API summary */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-            <p className="text-sm font-semibold text-gray-700 mb-4">Google API Summary (This Month)</p>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-gray-500">Requests</p>
-                <p className="text-lg font-semibold text-gray-900">{stats.google_api.requests_this_month.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Estimated Units</p>
-                <p className="text-lg font-semibold text-gray-900">{stats.google_api.estimated_units_this_month.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Cache Hit Rate</p>
-                <p className="text-lg font-semibold text-gray-900">{stats.google_api.cache_hit_rate}%</p>
+          {stats.google_api && (
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+              <p className="text-sm font-semibold text-gray-700 mb-4">Google API Summary (This Month)</p>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Requests</p>
+                  <p className="text-lg font-semibold text-gray-900">{(stats.google_api.requests_this_month ?? 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Estimated Units</p>
+                  <p className="text-lg font-semibold text-gray-900">{(stats.google_api.estimated_units_this_month ?? 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Cache Hit Rate</p>
+                  <p className="text-lg font-semibold text-gray-900">{stats.google_api.cache_hit_rate ?? 0}%</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>

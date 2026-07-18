@@ -35,6 +35,7 @@ export default function RegisterPage() {
     estimated_monthly_deliveries: '',
     notes: '',
   });
+  const [customBusinessType, setCustomBusinessType] = useState('');
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -43,8 +44,11 @@ export default function RegisterPage() {
     setError('');
     setSubmitting(true);
     try {
+      const effectiveBusinessType =
+        form.business_type === 'Lainnya' ? customBusinessType || 'Lainnya' : form.business_type;
       await publicApi.registerInterest({
         ...form,
+        business_type: effectiveBusinessType,
         branch_count: form.branch_count ? Number(form.branch_count) : undefined,
         estimated_monthly_deliveries: form.estimated_monthly_deliveries
           ? Number(form.estimated_monthly_deliveries)
@@ -160,6 +164,14 @@ export default function RegisterPage() {
                     <option value="">— Pilih —</option>
                     {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
+                  {form.business_type === 'Lainnya' && (
+                    <Input
+                      value={customBusinessType}
+                      onChange={(e) => setCustomBusinessType(e.target.value)}
+                      placeholder="Sebutkan jenis bisnis Anda…"
+                      autoFocus
+                    />
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="city">Kota</Label>

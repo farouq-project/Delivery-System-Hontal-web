@@ -6,7 +6,6 @@ import { useAuthStore } from '@/store/auth';
 import { featuresApi } from '@/lib/api';
 import { ProfileTab } from '@/components/settings/profile-tab';
 import { OperationalTab } from '@/components/settings/operational-tab';
-import { HoursTab } from '@/components/settings/hours-tab';
 import { InvoiceTab } from '@/components/settings/invoice-tab';
 import { PaymentMethodsTab } from '@/components/settings/payment-methods-tab';
 import { CashiersTab } from '@/components/settings/cashiers-tab';
@@ -20,7 +19,6 @@ const OWNER_ROLES = ['merchant_owner', 'developer', 'super_admin'];
 const TABS = [
   { id: 'profile',       label: 'Business Profile' },
   { id: 'operational',   label: 'Operational' },
-  { id: 'hours',         label: 'Business Hours' },
   { id: 'invoice',       label: 'Invoice' },
   { id: 'payments',      label: 'Payment Methods' },
   { id: 'cashiers',      label: 'Cashiers' },
@@ -74,7 +72,6 @@ export default function SettingsPage() {
     switch (activeTab) {
       case 'profile':       return <ProfileTab />;
       case 'operational':   return <OperationalTab />;
-      case 'hours':         return <HoursTab />;
       case 'invoice':       return <InvoiceTab />;
       case 'payments':      return <PaymentMethodsTab />;
       case 'cashiers':      return <CashiersTab />;

@@ -83,11 +83,6 @@ export default function ExecutiveDashboard() {
           <StatCard
             label="Repeat Customers"
             value={bm?.repeat_customers ?? null}
-            sub={
-              bm
-                ? `+${bm.new_customers} new · ${bm.customer_growth_pct >= 0 ? '+' : ''}${bm.customer_growth_pct}% vs last month`
-                : undefined
-            }
             loading={loading}
           />
         </div>
@@ -102,7 +97,6 @@ export default function ExecutiveDashboard() {
             <StatCard
               label="New This Month"
               value={ch?.new_this_month ?? null}
-              trend={ch?.growth_pct}
               loading={loading}
             />
             <StatCard
