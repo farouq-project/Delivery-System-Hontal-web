@@ -33,15 +33,15 @@ export default function GlobalSearchPage() {
     setTimer(t);
   }, [timer]);
 
-  const { data, isLoading } = useQuery<{ data: Record<string, SearchResult[]> }>({
+  const { data, isLoading } = useQuery<{ data: { data: Record<string, SearchResult[]> } }>({
     queryKey: ['admin', 'search', debouncedQ],
     queryFn: () => adminApi.globalSearch(debouncedQ),
     enabled: debouncedQ.length >= 2,
     staleTime: 10_000,
   });
 
-  const results: SearchResult[] = data?.data
-    ? (Object.values(data.data).flat() as SearchResult[])
+  const results: SearchResult[] = data?.data?.data
+    ? (Object.values(data.data.data).flat() as SearchResult[])
     : [];
 
   const grouped = results.reduce<Record<string, SearchResult[]>>((acc, r) => {

@@ -29,7 +29,7 @@ function StatCard({ label, value, sub, icon: Icon, color = 'text-emerald-600' }:
 function HealthBadge({ status }: { status: string }) {
   const cls = status === 'healthy'
     ? 'bg-emerald-100 text-emerald-700'
-    : status === 'degraded'
+    : status === 'warning'
     ? 'bg-amber-100 text-amber-700'
     : 'bg-red-100 text-red-700';
   return (
@@ -41,13 +41,13 @@ function HealthBadge({ status }: { status: string }) {
 }
 
 export default function PlatformDashboardPage() {
-  const { data, isLoading, isError } = useQuery<{ data: PlatformDashboardStats }>({
+  const { data, isLoading, isError } = useQuery<{ data: { data: PlatformDashboardStats } }>({
     queryKey: ['admin', 'dashboard'],
     queryFn: () => adminApi.getDashboard(),
     refetchInterval: 60_000,
   });
 
-  const stats = data?.data;
+  const stats = data?.data?.data;
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">

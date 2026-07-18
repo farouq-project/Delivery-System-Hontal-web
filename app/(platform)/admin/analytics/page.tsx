@@ -40,14 +40,14 @@ function PeriodCard({ title, requests, units, cacheHits, cacheHitRate }: {
 }
 
 export default function GoogleApiAnalyticsPage() {
-  const { data, isLoading, isError } = useQuery<{ data: GoogleApiAnalytics }>({
+  const { data, isLoading, isError } = useQuery<{ data: { data: GoogleApiAnalytics } }>({
     queryKey: ['admin', 'google-api-analytics'],
     queryFn: () => adminApi.getGoogleApiAnalytics(),
     staleTime: 60_000,
     refetchInterval: 120_000,
   });
 
-  const analytics = data?.data;
+  const analytics = data?.data?.data;
 
   return (
     <div className="p-6 max-w-5xl space-y-6">

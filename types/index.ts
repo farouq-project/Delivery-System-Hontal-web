@@ -563,7 +563,7 @@ export interface PlatformDashboardStats {
     estimated_units_this_month: number;
     cache_hit_rate: number;
   };
-  platform_health: 'healthy' | 'degraded' | 'maintenance';
+  platform_health: 'healthy' | 'warning' | 'maintenance';
 }
 
 export type MerchantHealthStatus = 'healthy' | 'needs_attention' | 'inactive';
@@ -578,7 +578,7 @@ export interface MerchantHealthRecord {
   monthly_orders: number;
   active_drivers: number;
   active_dispatchers: number;
-  delivery_success_rate: number;
+  delivery_success_rate: number | null;
   customer_count: number;
   health: MerchantHealthStatus;
 }
@@ -601,7 +601,7 @@ export interface GoogleApiAnalytics {
   today: GoogleApiAnalyticsPeriod;
   this_month: GoogleApiAnalyticsPeriod;
   top_consumers: GoogleApiTopConsumer[];
-  daily_trend: { date: string; requests: number; estimated_units: number }[];
+  daily_trend: { date: string; requests: number; estimated_units: number; cache_hits?: number }[];
 }
 
 export interface PlatformSettingRow {

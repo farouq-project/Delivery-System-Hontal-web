@@ -398,8 +398,8 @@ export const driverApi = {
   me: () => api.get('/driver/me'),
   today: () => api.get('/driver/today'),
   updateLocation: (lat: number, lng: number, accuracy?: number) =>
-    api.post('/driver/location', { latitude: lat, longitude: lng, accuracy_m: accuracy }),
-  updateStatus: (status: string) => api.post('/driver/status', { status }),
+    api.patch('/driver/location', { latitude: lat, longitude: lng, accuracy_m: accuracy }),
+  updateStatus: (status: string) => api.patch('/driver/status', { status }),
   deliver: (stopId: number, formData: FormData) =>
     api.post(`/driver/stops/${stopId}/deliver`, formData),
   fail: (stopId: number, reason: string) =>
