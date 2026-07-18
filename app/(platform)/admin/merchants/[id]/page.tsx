@@ -60,6 +60,7 @@ export default function MerchantDetailPage() {
   // User action state
   const [resetPwdUser, setResetPwdUser] = useState<{ id: number; name: string } | null>(null);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<{ id: number; name: string } | null>(null);
 
   // Support tab state
   const [supportNotes, setSupportNotes] = useState('');
@@ -184,6 +185,14 @@ export default function MerchantDetailPage() {
         ? adminApi.deactivateMerchantUser(Number(id), userId)
         : adminApi.reactivateMerchantUser(Number(id), userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'merchant', id, 'users'] }),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: number) => adminApi.deleteMerchantUser(Number(id), userId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'merchant', id, 'users'] });
+      setConfirmDeleteUser(null);
+    },
   });
 
   const supportNotesMutation = useMutation({
@@ -475,6 +484,13 @@ export default function MerchantDetailPage() {
                             Reactivate
                           </button>
                         )}
+                        <button
+                          onClick={() => setConfirmDeleteUser({ id: u.id, name: u.name })}
+                          disabled={deleteUserMutation.isPending}
+                          className="px-2 py-1 text-xs bg-gray-50 text-gray-500 border border-gray-200 rounded hover:bg-red-50 hover:text-red-700 hover:border-red-200 disabled:opacity-50 transition-colors"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -707,6 +723,34 @@ export default function MerchantDetailPage() {
                 className="flex-1 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
               >
                 {extendMutation.isPending ? 'Extending…' : 'Extend'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete user confirmation */}
+      {confirmDeleteUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-xl w-full max-w-xs p-6">
+            <p className="font-bold text-gray-900 mb-1">Delete User Permanently</p>
+            <p className="text-sm text-gray-500 mb-3">{confirmDeleteUser.name}</p>
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2 mb-4">
+              This action cannot be undone. The user account will be permanently deleted.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDeleteUser(null)}
+                className="flex-1 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteUserMutation.mutate(confirmDeleteUser.id)}
+                disabled={deleteUserMutation.isPending}
+                className="flex-1 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteUserMutation.isPending ? 'Deleting…' : 'Delete Permanently'}
               </button>
             </div>
           </div>

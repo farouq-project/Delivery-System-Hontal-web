@@ -40,7 +40,7 @@ function PeriodCard({ title, requests, units, cacheHits, cacheHitRate }: {
 }
 
 export default function GoogleApiAnalyticsPage() {
-  const { data, isLoading } = useQuery<{ data: GoogleApiAnalytics }>({
+  const { data, isLoading, isError } = useQuery<{ data: GoogleApiAnalytics }>({
     queryKey: ['admin', 'google-api-analytics'],
     queryFn: () => adminApi.getGoogleApiAnalytics(),
     staleTime: 60_000,
@@ -59,6 +59,12 @@ export default function GoogleApiAnalyticsPage() {
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[0, 1].map(i => <div key={i} className="bg-white border border-gray-200 rounded-lg p-5 h-36 animate-pulse" />)}
+        </div>
+      )}
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-5 text-red-700 text-sm">
+          Failed to load API analytics data. Check the API connection and try refreshing.
         </div>
       )}
 

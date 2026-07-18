@@ -56,6 +56,14 @@ export function InvoiceTab() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800 leading-relaxed">
+        <p className="font-semibold mb-1">Apa itu Invoice?</p>
+        <p>
+          Invoice adalah surat tagihan / bukti pengiriman yang dibuat otomatis untuk setiap pesanan pelanggan.
+          Nomor invoice, format tanggal, dan footer yang Anda atur di sini akan muncul pada dokumen yang dikirim ke pelanggan.
+          Fitur ini untuk internal bisnis Anda — pelanggan menerima invoice saat pesanan selesai dikirim.
+        </p>
+      </div>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Invoice Settings</CardTitle>

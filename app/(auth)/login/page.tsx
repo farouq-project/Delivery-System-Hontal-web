@@ -121,12 +121,20 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-gray-500">
-              Need help?{' '}
-              <a href={`mailto:${PLATFORM.supportEmail}`} className="text-blue-600 hover:text-blue-700">
-                Contact support
-              </a>
-            </p>
+            <div className="mt-6 text-center space-y-2">
+              <p className="text-sm text-gray-500">
+                Belum punya akun?{' '}
+                <a href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                  Daftar sebagai merchant
+                </a>
+              </p>
+              <p className="text-sm text-gray-500">
+                Need help?{' '}
+                <a href={`mailto:${PLATFORM.supportEmail}`} className="text-blue-600 hover:text-blue-700">
+                  Contact support
+                </a>
+              </p>
+            </div>
           </div>
         </div>
 

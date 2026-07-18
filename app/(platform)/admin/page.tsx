@@ -41,7 +41,7 @@ function HealthBadge({ status }: { status: string }) {
 }
 
 export default function PlatformDashboardPage() {
-  const { data, isLoading } = useQuery<{ data: PlatformDashboardStats }>({
+  const { data, isLoading, isError } = useQuery<{ data: PlatformDashboardStats }>({
     queryKey: ['admin', 'dashboard'],
     queryFn: () => adminApi.getDashboard(),
     refetchInterval: 60_000,
@@ -64,6 +64,12 @@ export default function PlatformDashboardPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-white border border-gray-200 rounded-lg p-5 h-24 animate-pulse" />
           ))}
+        </div>
+      )}
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-5 text-red-700 text-sm">
+          Failed to load dashboard data. Check the API connection and try refreshing.
         </div>
       )}
 

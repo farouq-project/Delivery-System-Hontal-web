@@ -66,6 +66,14 @@ export function HoursTab() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800 leading-relaxed">
+        <p className="font-semibold mb-1">Apa fungsi Business Hours?</p>
+        <p>
+          Jam operasional ini digunakan secara <strong>internal</strong> untuk penjadwalan rute pengiriman dan
+          koordinasi pengemudi. Pelanggan <strong>tidak</strong> melihat informasi ini — termasuk di halaman
+          tracking publik. Pengaturan Holiday Mode menutup sementara seluruh operasional pengiriman.
+        </p>
+      </div>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Business Hours</CardTitle>

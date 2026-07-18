@@ -7,7 +7,7 @@ import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { STATUS_COLORS, VIP_COLORS, formatTime } from '@/lib/utils';
-import { Loader2, Trash2, RotateCcw, X, Lock, Unlock, Play, RefreshCw, Zap, TrendingDown, BarChart2 } from 'lucide-react';
+import { Loader2, Trash2, RotateCcw, X, Lock, Unlock, Play, RefreshCw, Zap, TrendingDown, BarChart2, HelpCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/auth';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -20,6 +20,7 @@ export default function DispatchPage() {
   const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
   const today = new Date().toISOString().split('T')[0];
   const [confirmDeleteDispatch, setConfirmDeleteDispatch] = useState(false);
+  const [showRouteQualityHelp, setShowRouteQualityHelp] = useState(false);
   const [confirmResetUnassigned, setConfirmResetUnassigned] = useState(false);
   const [confirmResetOrderId, setConfirmResetOrderId] = useState<number | null>(null);
   const [confirmBulkUnassign, setConfirmBulkUnassign] = useState<'selected' | 'all' | null>(null);
@@ -253,33 +254,78 @@ export default function DispatchPage() {
 
       {/* Route Quality Insight Panel — shown after V2 generation */}
       {todayRoute && todayRoute.quality_score !== null && (
-        <div className="border-b bg-indigo-50 px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
-          <div className="flex items-center gap-1.5 text-indigo-700 font-medium">
-            <BarChart2 className="h-4 w-4" />
-            Route Quality
-          </div>
-          <div className="flex items-center gap-1 text-gray-600">
-            <Zap className="h-3.5 w-3.5 text-indigo-400" />
-            <span className="capitalize">{todayRoute.routing_mode ?? 'balanced'} mode</span>
-          </div>
-          {todayRoute.optimization_saving_m !== null && todayRoute.optimization_saving_m > 0 && (
-            <div className="flex items-center gap-1 text-green-700">
-              <TrendingDown className="h-3.5 w-3.5" />
-              <span>Saved {(todayRoute.optimization_saving_m / 1000).toFixed(1)} km vs NN baseline</span>
+        <div className="border-b bg-indigo-50">
+          <div className="px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
+            <div className="flex items-center gap-1.5 text-indigo-700 font-medium">
+              <BarChart2 className="h-4 w-4" />
+              Route Quality
+              <button
+                type="button"
+                onClick={() => setShowRouteQualityHelp(v => !v)}
+                className="ml-0.5 text-indigo-400 hover:text-indigo-600 transition-colors"
+                title="What do these metrics mean?"
+              >
+                <HelpCircle className="h-3.5 w-3.5" />
+              </button>
             </div>
-          )}
-          <div className="text-gray-600">
-            Score: <span className={`font-semibold ${(todayRoute.quality_score ?? 0) >= 10 ? 'text-green-700' : 'text-amber-600'}`}>
-              {todayRoute.quality_score?.toFixed(1)}%
-            </span>
+            <div className="flex items-center gap-1 text-gray-600">
+              <Zap className="h-3.5 w-3.5 text-indigo-400" />
+              <span className="capitalize">{todayRoute.routing_mode ?? 'balanced'} mode</span>
+            </div>
+            {todayRoute.optimization_saving_m !== null && todayRoute.optimization_saving_m > 0 && (
+              <div className="flex items-center gap-1 text-green-700">
+                <TrendingDown className="h-3.5 w-3.5" />
+                <span>Saved {(todayRoute.optimization_saving_m / 1000).toFixed(1)} km vs NN baseline</span>
+              </div>
+            )}
+            <div className="text-gray-600">
+              Score: <span className={`font-semibold ${(todayRoute.quality_score ?? 0) >= 10 ? 'text-green-700' : 'text-amber-600'}`}>
+                {todayRoute.quality_score?.toFixed(1)}%
+              </span>
+            </div>
+            {todayRoute.batch_count > 1 && (
+              <div className="text-gray-600">{todayRoute.batch_count} time batches</div>
+            )}
+            {todayRoute.google_calls > 0 && (
+              <div className="text-gray-500 text-xs">
+                {todayRoute.google_calls} Google call{todayRoute.google_calls !== 1 ? 's' : ''}
+                {todayRoute.cache_hits > 0 && ` · ${todayRoute.cache_hits} cached`}
+              </div>
+            )}
           </div>
-          {todayRoute.batch_count > 1 && (
-            <div className="text-gray-600">{todayRoute.batch_count} time batches</div>
-          )}
-          {todayRoute.google_calls > 0 && (
-            <div className="text-gray-500 text-xs">
-              {todayRoute.google_calls} Google call{todayRoute.google_calls !== 1 ? 's' : ''}
-              {todayRoute.cache_hits > 0 && ` · ${todayRoute.cache_hits} cached`}
+          {showRouteQualityHelp && (
+            <div className="px-4 sm:px-6 pb-3 pt-0.5 border-t border-indigo-100 bg-white/60 text-xs text-gray-700 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5 max-w-2xl">
+                <div>
+                  <span className="font-semibold text-indigo-700">Routing Mode</span>
+                  <p className="text-gray-600 mt-0.5">
+                    Strategi optimasi yang digunakan. <em>Balanced</em> = campuran jarak + VIP priority.
+                    <em> Distance</em> = murni jarak terpendek. <em>VIP</em> = pelanggan prioritas didahulukan.
+                  </p>
+                </div>
+                <div>
+                  <span className="font-semibold text-indigo-700">Saved X km vs NN baseline</span>
+                  <p className="text-gray-600 mt-0.5">
+                    Berapa kilometer yang dihemat dibanding algoritma paling dasar (Nearest Neighbor — selalu ke titik terdekat berikutnya).
+                    Semakin besar penghematan, semakin efisien rute yang dihasilkan.
+                  </p>
+                </div>
+                <div>
+                  <span className="font-semibold text-indigo-700">Score %</span>
+                  <p className="text-gray-600 mt-0.5">
+                    Skor kualitas keseluruhan rute hari ini (0–100%). Dihitung dari kombinasi penghematan jarak,
+                    pemenuhan time window, dan distribusi beban antar pengemudi.
+                    Skor ≥10% sudah cukup baik; &lt;5% berarti banyak pesanan tanpa preferensi waktu.
+                  </p>
+                </div>
+                <div>
+                  <span className="font-semibold text-indigo-700">Time Batches</span>
+                  <p className="text-gray-600 mt-0.5">
+                    Jumlah gelombang pengiriman berdasarkan time window. Batch terpisah berarti ada pesanan
+                    yang harus diantar di waktu yang berbeda (pagi/siang/sore).
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>

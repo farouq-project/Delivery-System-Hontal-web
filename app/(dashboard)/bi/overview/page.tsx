@@ -119,9 +119,8 @@ export default function BiOverviewPage() {
       {/* Customers */}
       <section>
         <SectionHeader title="Customer Health" />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <StatCard title="Total Pelanggan"  value={fmtNum(cust.total)}          icon={Users} href="/bi/customers" />
-          <StatCard title="Baru Bulan Ini"   value={fmtNum(cust.new_this_month)} icon={Users} iconColor="text-teal-500" href="/bi/customers" />
           <StatCard title="Tidak Aktif"      value={cust.dormant != null ? fmtNum(cust.dormant) : '—'} variant="warning" href="/bi/customers" />
         </div>
       </section>
