@@ -599,7 +599,7 @@ export default function CustomersPage() {
       <ConfirmDialog
         open={confirmDeduplicate}
         title="Hapus Duplikat Pelanggan"
-        description="Temukan dan hapus pelanggan duplikat berdasarkan nama. Catatan dengan riwayat pesanan terbanyak akan dipertahankan. Tindakan ini tidak bisa dibatalkan."
+        description="Temukan dan gabungkan pelanggan duplikat berdasarkan nama. Semua pesanan, riwayat, dan tag dari semua catatan duplikat akan digabung ke satu profil. Data terbaik (GPS akurasi tertinggi, level VIP tertinggi, nomor telepon, dll.) dipertahankan. Tindakan ini tidak bisa dibatalkan."
         confirmLabel="Hapus Duplikat"
         variant="destructive"
         loading={deduplicateMutation.isPending}
