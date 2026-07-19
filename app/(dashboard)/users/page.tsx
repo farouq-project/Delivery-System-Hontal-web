@@ -38,7 +38,8 @@ export default function UsersPage() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: (id: number) => usersApi.resetPassword(id),
+    mutationFn: ({ id, password }: { id: number; password?: string }) =>
+      usersApi.resetPassword(id, password),
   });
 
   const users: User[] = data?.data?.data ?? [];
@@ -53,9 +54,21 @@ export default function UsersPage() {
   const handleClose = () => { setShowForm(false); setEditing(null); };
 
   const handleResetPassword = async (u: User) => {
-    if (!confirm(`Reset password for ${u.name}? A new random password will be generated.`)) return;
-    const res = await resetPasswordMutation.mutateAsync(u.id);
-    alert(`New password for ${u.name}: ${res.data.data.password}`);
+    const input = window.prompt(
+      `Reset password for ${u.name}.\n\nEnter a new password (min 8 chars), or leave blank to generate a random one:`
+    );
+    if (input === null) return;
+    const password = input.trim() || undefined;
+    if (password && password.length < 8) {
+      alert('Password must be at least 8 characters.');
+      return;
+    }
+    try {
+      const res = await resetPasswordMutation.mutateAsync({ id: u.id, password });
+      alert(`Password for ${u.name} has been reset.\nNew password: ${res.data.data.password}`);
+    } catch {
+      alert('Failed to reset password. Please try again.');
+    }
   };
 
   return (

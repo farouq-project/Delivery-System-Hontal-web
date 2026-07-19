@@ -24,6 +24,7 @@ export function OperationalTab() {
     auto_dispatch: false, auto_geocode_enabled: false,
     hide_driver_logout: false, order_edit_pin: '',
     batch_enforcement: true, two_opt_enabled: true, distance_matrix_cache_ttl: '',
+    location_validation_radius: '30',
   });
   const [saved, setSaved] = useState(false);
 
@@ -42,9 +43,10 @@ export function OperationalTab() {
         auto_geocode_enabled:      settings.auto_geocode_enabled    ?? false,
         hide_driver_logout:        settings.hide_driver_logout      ?? false,
         order_edit_pin:            settings.order_edit_pin          ?? '',
-        batch_enforcement:         settings.batch_enforcement       ?? true,
-        two_opt_enabled:           settings.two_opt_enabled         ?? true,
-        distance_matrix_cache_ttl: settings.distance_matrix_cache_ttl != null ? String(settings.distance_matrix_cache_ttl) : '',
+        batch_enforcement:           settings.batch_enforcement       ?? true,
+        two_opt_enabled:             settings.two_opt_enabled         ?? true,
+        distance_matrix_cache_ttl:   settings.distance_matrix_cache_ttl != null ? String(settings.distance_matrix_cache_ttl) : '',
+        location_validation_radius:  settings.location_validation_radius != null ? String(settings.location_validation_radius) : '30',
       });
     }
   }, [settings]);
@@ -73,9 +75,10 @@ export function OperationalTab() {
       auto_geocode_enabled:      form.auto_geocode_enabled,
       hide_driver_logout:        form.hide_driver_logout,
       order_edit_pin:            form.order_edit_pin || null,
-      batch_enforcement:         form.batch_enforcement,
-      two_opt_enabled:           form.two_opt_enabled,
-      distance_matrix_cache_ttl: form.distance_matrix_cache_ttl ? Number(form.distance_matrix_cache_ttl) : null,
+      batch_enforcement:           form.batch_enforcement,
+      two_opt_enabled:             form.two_opt_enabled,
+      distance_matrix_cache_ttl:   form.distance_matrix_cache_ttl ? Number(form.distance_matrix_cache_ttl) : null,
+      location_validation_radius:  form.location_validation_radius ? Number(form.location_validation_radius) : 30,
     });
   };
 
@@ -135,6 +138,13 @@ export function OperationalTab() {
               <Input id="radius" type="number" min="1" max="500" value={form.max_delivery_radius_km}
                 onChange={e => setForm(f => ({ ...f, max_delivery_radius_km: e.target.value }))}
                 placeholder="No limit" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="location_validation_radius">Customer–Depot Warning Distance (km)</Label>
+              <Input id="location_validation_radius" type="number" min="1" max="500" value={form.location_validation_radius}
+                onChange={e => setForm(f => ({ ...f, location_validation_radius: e.target.value }))}
+                placeholder="30" />
+              <p className="text-xs text-gray-400">Show a warning when a customer or order address is farther than this from the depot</p>
             </div>
             <div className="space-y-1">
               <Label htmlFor="routing">Routing Algorithm</Label>

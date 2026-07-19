@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, settingsApi, merchantPlatformApi } from '@/lib/api';
 import { DeliveryOrder } from '@/types';
@@ -29,7 +30,12 @@ import { useAuthStore } from '@/store/auth';
 
 interface ApiCashier { id: number; name: string; is_active: boolean; }
 
-export default function OrdersPage() {
+export default function OrdersPageWrapper() {
+  return <Suspense><OrdersPage /></Suspense>;
+}
+
+function OrdersPage() {
+  const searchParams = useSearchParams();
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
   const isOwner        = ['owner', 'merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
@@ -39,7 +45,7 @@ export default function OrdersPage() {
   const cashierName = useCashierStore((s) => s.cashierName);
   const setCashierName = useCashierStore((s) => s.setCashierName);
   const [search, setSearch]     = useState('');
-  const [status, setStatus]     = useState('all');
+  const [status, setStatus]     = useState(() => searchParams.get('status') ?? 'all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo]     = useState('');
   const [page, setPage]         = useState(1);

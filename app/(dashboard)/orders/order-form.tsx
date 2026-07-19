@@ -18,6 +18,14 @@ import { Search, Plus, Trash2, Link } from 'lucide-react';
 import { useCashierStore } from '@/store/cashier';
 import { parseMapsUrl, isShortenedMapsUrl } from '@/lib/maps-parser';
 
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const itemSchema = z.object({
   name:     z.string().min(1, 'Required'),
   quantity: z.number().min(0).optional().nullable(),
@@ -72,6 +80,7 @@ export default function OrderForm({ onClose, order }: Props) {
   const [mapsLink, setMapsLink]       = useState('');
   const [mapsError, setMapsError]     = useState('');
   const [extracting, setExtracting]   = useState(false);
+  const [depotWarning, setDepotWarning] = useState<number | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const skipNextSearch = useRef(false);
 
@@ -92,6 +101,21 @@ export default function OrderForm({ onClose, order }: Props) {
   const paymentMethods: { id: number; method_key: string; label: string }[] =
     paymentMethodsData?.data?.data ?? [];
 
+  const { data: depotSettingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: settingsApi.get,
+    staleTime: 5 * 60 * 1000,
+  });
+  const depotLat    = depotSettingsData?.data?.data?.depot_latitude    ?? null;
+  const depotLng    = depotSettingsData?.data?.data?.depot_longitude   ?? null;
+  const depotRadius = depotSettingsData?.data?.data?.location_validation_radius ?? 30;
+
+  useEffect(() => {
+    if (!coords || !depotLat || !depotLng) { setDepotWarning(null); return; }
+    const dist = haversineKm(coords.lat, coords.lng, depotLat, depotLng);
+    setDepotWarning(dist > depotRadius ? Math.round(dist * 10) / 10 : null);
+  }, [coords, depotLat, depotLng, depotRadius]);
+
   const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: order ? {
@@ -106,8 +130,8 @@ export default function OrderForm({ onClose, order }: Props) {
       delivery_address:         order.delivery_address,
       requested_delivery_date:  order.requested_delivery_date,
       // Use || so an empty string (from slicing an HH:MM:SS time) becomes undefined
-      requested_delivery_start: order.requested_delivery_start?.slice(11, 16) || undefined,
-      requested_delivery_end:   order.requested_delivery_end?.slice(11, 16) || undefined,
+      requested_delivery_start: order.requested_delivery_start?.slice(0, 5) || undefined,
+      requested_delivery_end:   order.requested_delivery_end?.slice(0, 5) || undefined,
       notes:                    order.notes ?? undefined,
       cashier_name:             order.cashier_name ?? cashierName,
       payment_method:           order.payment_method ?? 'cash',
@@ -344,6 +368,11 @@ export default function OrderForm({ onClose, order }: Props) {
               </div>
               {mapsError && <p className="text-xs text-red-500">{mapsError}</p>}
               {coords && <p className="text-xs text-green-600">Pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>}
+              {depotWarning && (
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  Lokasi ini {depotWarning} km dari depot (batas {depotRadius} km). Pastikan alamat sesuai.
+                </p>
+              )}
               {errors.delivery_address && <p className="text-xs text-red-500">{errors.delivery_address.message}</p>}
             </div>
           )}

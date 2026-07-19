@@ -12,8 +12,8 @@ interface AttentionItem {
 }
 
 const hrefForType: Record<string, string> = {
-  delayed_deliveries: '/orders',
-  failed_today:       '/orders',
+  delayed_deliveries: '/orders?status=in_progress',
+  failed_today:       '/orders?status=failed',
   missing_gps:        '/customers',
   dormant_customers:  '/bi/customers',
   offline_drivers:    '/drivers',
