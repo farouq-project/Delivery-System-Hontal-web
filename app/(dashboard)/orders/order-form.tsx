@@ -16,7 +16,7 @@ import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { ProductSuggestInput } from '@/components/product-suggest-input';
 import { Search, Plus, Trash2, Link } from 'lucide-react';
 import { useCashierStore } from '@/store/cashier';
-import { parseMapsUrl } from '@/lib/maps-parser';
+import { parseMapsUrl, isShortenedMapsUrl } from '@/lib/maps-parser';
 
 const itemSchema = z.object({
   name:     z.string().min(1, 'Required'),
@@ -68,9 +68,10 @@ export default function OrderForm({ onClose, order }: Props) {
   const [coords, setCoords]     = useState<{ lat: number; lng: number } | null>(
     order?.delivery_latitude ? { lat: order.delivery_latitude, lng: order.delivery_longitude! } : null
   );
-  const [geocoding, setGeocoding] = useState(false);
-  const [mapsLink, setMapsLink] = useState('');
-  const [mapsError, setMapsError] = useState('');
+  const [geocoding, setGeocoding]     = useState(false);
+  const [mapsLink, setMapsLink]       = useState('');
+  const [mapsError, setMapsError]     = useState('');
+  const [extracting, setExtracting]   = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const skipNextSearch = useRef(false);
 
@@ -168,6 +169,23 @@ export default function OrderForm({ onClose, order }: Props) {
     setGeocoding(false);
   };
 
+  const handleExtractMapsLink = async () => {
+    if (!mapsLink.trim()) return;
+    setExtracting(true);
+    setMapsError('');
+    try {
+      const res = await customersApi.resolveMapsLink(mapsLink.trim());
+      const { latitude, longitude } = res.data.data;
+      setCoords({ lat: latitude, lng: longitude });
+      setMapsError('');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? 'Could not extract coordinates from this link.';
+      setMapsError(msg);
+    }
+    setExtracting(false);
+  };
+
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (isEdit) {
@@ -209,8 +227,9 @@ export default function OrderForm({ onClose, order }: Props) {
 
       return ordersApi.create({
         ...data,
-        customer_id: customerId,
-        cashier_name: cashierName,
+        customer_id:       customerId,
+        cashier_name:      cashierName,
+        delivery_notes:    data.notes,
         delivery_latitude: coords?.lat,
         delivery_longitude: coords?.lng,
       });
@@ -295,21 +314,33 @@ export default function OrderForm({ onClose, order }: Props) {
               <div className="flex gap-2 items-center">
                 <Link className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                 <Input
-                  className="text-xs h-8"
-                  placeholder="Paste Google Maps link to extract coordinates…"
+                  className="text-xs h-8 flex-1"
+                  placeholder="https://maps.app.goo.gl/… or paste a long Maps link"
                   value={mapsLink}
                   onChange={(e) => {
-                    setMapsLink(e.target.value);
+                    const val = e.target.value;
+                    setMapsLink(val);
                     setMapsError('');
-                    const parsed = parseMapsUrl(e.target.value);
+                    if (!val) return;
+                    const parsed = parseMapsUrl(val);
                     if (parsed) {
                       setCoords({ lat: parsed.lat, lng: parsed.lng });
-                      setMapsError('');
-                    } else if (e.target.value.length > 10) {
+                    } else if (val.length > 10 && !isShortenedMapsUrl(val)) {
                       setMapsError('Could not read coordinates from this link');
                     }
+                    // shortened URLs need server-side redirect following — show Extract button
                   }}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs shrink-0"
+                  onClick={handleExtractMapsLink}
+                  disabled={extracting || !mapsLink.trim()}
+                >
+                  {extracting ? '…' : 'Extract'}
+                </Button>
               </div>
               {mapsError && <p className="text-xs text-red-500">{mapsError}</p>}
               {coords && <p className="text-xs text-green-600">Pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</p>}
