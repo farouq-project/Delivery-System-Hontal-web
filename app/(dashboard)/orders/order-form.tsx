@@ -256,7 +256,7 @@ export default function OrderForm({ onClose, order }: Props) {
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit Order ${order.order_number}` : 'New Delivery Order'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+        <form onSubmit={handleSubmit((d) => { if (!mutation.isPending) mutation.mutate(d); })} className="space-y-4">
           {/* Customer autocomplete — hidden when editing a non-pending order */}
           {isPending && (
             <div className="space-y-2">
