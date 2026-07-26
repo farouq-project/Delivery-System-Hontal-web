@@ -184,9 +184,13 @@ export const customerDomainApi = {
 
 // Merchant Platform (Phase 3) — settings/platform/*
 export const merchantPlatformApi = {
-  // Business Profile
+  // Business Profile (company identity — merchants table)
   getProfile:         () => api.get('/settings/platform/profile'),
   updateProfile:      (data: Record<string, unknown>) => api.patch('/settings/platform/profile', data),
+
+  // Business Identity (industry config — merchant_settings, Phase 6.2)
+  getBusinessProfile:    () => api.get('/settings/platform/business'),
+  updateBusinessProfile: (data: Record<string, unknown>) => api.patch('/settings/platform/business', data),
 
   // Operational
   getOperational:     () => api.get('/settings/platform/operational'),

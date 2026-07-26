@@ -10,14 +10,7 @@ import { Plus, Search, Edit, Trash2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import UserForm from './user-form';
 import { useAuthStore } from '@/store/auth';
-
-const ROLE_LABELS: Record<string, string> = {
-  super_admin: 'Super Admin',
-  developer: 'Developer',
-  merchant_owner: 'Merchant Owner',
-  dispatcher: 'Dispatcher',
-  driver: 'Driver',
-};
+import { getRoleLabel } from '@/lib/roles';
 
 export default function UsersPage() {
   const qc = useQueryClient();
@@ -126,7 +119,7 @@ export default function UsersPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                {ROLE_LABELS[u.role] ?? u.role}
+                {getRoleLabel(u.role)}
               </span>
               <div className="flex gap-2">
                 <Button size="sm" variant="ghost" title="Reset password" onClick={() => handleResetPassword(u)}>
@@ -172,7 +165,7 @@ export default function UsersPage() {
                 <td className="px-4 py-3 text-gray-600">{u.email}</td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                    {ROLE_LABELS[u.role] ?? u.role}
+                    {getRoleLabel(u.role)}
                   </span>
                 </td>
                 <td className="px-4 py-3">

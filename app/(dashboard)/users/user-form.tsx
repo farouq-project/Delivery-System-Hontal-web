@@ -14,16 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getErrorMessage } from '@/lib/utils';
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  super_admin: 'Super Admin',
-  developer: 'Developer',
-  owner: 'Owner',
-  merchant_owner: 'Merchant Owner',
-  dispatcher: 'Dispatcher',
-  driver: 'Driver',
-  kasir: 'Kasir',
-};
+import { getRoleLabel } from '@/lib/roles';
 
 const schema = z.object({
   name:        z.string().min(2),
@@ -120,7 +111,7 @@ export default function UserForm({ user, onClose }: Props) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {assignableRoles.map((r) => (
-                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                  <SelectItem key={r} value={r}>{getRoleLabel(r)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

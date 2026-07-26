@@ -517,6 +517,17 @@ export interface NotificationSettings {
   push_notifications_enabled: boolean;
 }
 
+// Phase 6.2 — Business Identity
+export type BusinessUnit = 'kg' | 'tray' | 'box' | 'pcs' | 'bottle' | 'gallon' | 'package' | 'order' | 'custom';
+
+export interface BusinessProfile {
+  business_type:     string | null;
+  business_unit:     BusinessUnit;
+  business_category: string | null;
+  operating_region:  string | null;
+  currency:          string;
+}
+
 export interface MerchantPaymentMethod {
   id: number;
   merchant_id: number;
