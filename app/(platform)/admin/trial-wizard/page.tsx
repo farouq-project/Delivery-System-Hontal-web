@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
-import { adminApi } from '@/lib/api';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { adminApi, publicApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FlaskConical, Copy, Check, AlertCircle } from 'lucide-react';
+import { FlaskConical, Copy, Check, AlertCircle, Lightbulb } from 'lucide-react';
+
+const BUSINESS_TYPES = [
+  'Water Depot', 'Food & Beverage Distributor', 'FMCG Distributor', 'Laundry & Dry Clean',
+  'Pharmaceutical Distributor', 'E-commerce Fulfillment', 'Other',
+];
 
 interface TrialResult {
   merchant: { id: number; ulid: string; company_name: string; email: string; slug: string };
@@ -20,25 +25,57 @@ interface TrialResult {
   sample_orders: number;
 }
 
+interface Plan {
+  name: string;
+  slug: string;
+  monthly_price: number;
+  delivery_limit: number | null;
+}
+
+function recommendPlan(plans: Plan[], estDeliveries: number): Plan | null {
+  if (!plans.length || estDeliveries <= 0) return null;
+  const monthly = estDeliveries * 30;
+  const sorted = [...plans].filter(p => p.delivery_limit !== null).sort((a, b) => (a.delivery_limit ?? 0) - (b.delivery_limit ?? 0));
+  return sorted.find(p => (p.delivery_limit ?? 0) >= monthly) ?? plans.find(p => p.delivery_limit === null) ?? null;
+}
+
 function TrialWizardInner() {
   const searchParams = useSearchParams();
 
   const [form, setForm] = useState({
-    company_name: searchParams.get('company_name') ?? '',
-    owner_name:   searchParams.get('owner_name')   ?? '',
-    owner_email:  searchParams.get('owner_email')  ?? '',
-    password:     'demo1234',
-    phone:        searchParams.get('phone')        ?? '',
-    trial_days:   '30',
-    with_samples: true,
+    company_name:   searchParams.get('company_name') ?? '',
+    owner_name:     searchParams.get('owner_name')   ?? '',
+    owner_email:    searchParams.get('owner_email')  ?? '',
+    password:       'demo1234',
+    phone:          searchParams.get('phone')        ?? '',
+    business_type:  '',
+    est_deliveries: '',
+    trial_days:     '7',
+    with_samples:   true,
   });
   const [result, setResult]   = useState<TrialResult | null>(null);
   const [copied, setCopied]   = useState('');
   const fromProspect = searchParams.get('from_prospect');
 
+  const { data: plansData } = useQuery({
+    queryKey: ['public-plans'],
+    queryFn:  () => publicApi.plans(),
+    staleTime: 5 * 60_000,
+  });
+  const plans: Plan[] = plansData?.data?.data ?? [];
+
+  const recommended = useMemo(
+    () => recommendPlan(plans, Number(form.est_deliveries) || 0),
+    [plans, form.est_deliveries]
+  );
+
   const mutation = useMutation({
     mutationFn: () => adminApi.createTrialMerchant({
-      ...form,
+      company_name: form.company_name,
+      owner_name:   form.owner_name,
+      owner_email:  form.owner_email,
+      password:     form.password,
+      phone:        form.phone || undefined,
       trial_days:   Number(form.trial_days),
       with_samples: form.with_samples,
     }),
@@ -63,7 +100,7 @@ function TrialWizardInner() {
 
   const resetForm = () => {
     setResult(null);
-    setForm({ company_name: '', owner_name: '', owner_email: '', password: 'demo1234', phone: '', trial_days: '30', with_samples: true });
+    setForm({ company_name: '', owner_name: '', owner_email: '', password: 'demo1234', phone: '', business_type: '', est_deliveries: '', trial_days: '7', with_samples: true });
   };
 
   return (
@@ -72,7 +109,7 @@ function TrialWizardInner() {
         <FlaskConical className="h-6 w-6 text-emerald-500" />
         <div>
           <h1 className="text-xl font-bold">Trial Wizard</h1>
-          <p className="text-sm text-gray-500">Provision a fully-configured trial merchant environment</p>
+          <p className="text-sm text-gray-500">Provision a fully-configured 7-day trial merchant environment</p>
         </div>
       </div>
 
@@ -110,6 +147,41 @@ function TrialWizardInner() {
                 placeholder="budi@contoh.com"
               />
             </div>
+
+            <div className="space-y-1.5">
+              <Label>Business Type</Label>
+              <select
+                value={form.business_type}
+                onChange={(e) => setForm({ ...form, business_type: e.target.value })}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">— Select type —</option>
+                {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Est. Deliveries / Day</Label>
+              <Input
+                type="number"
+                min={1}
+                value={form.est_deliveries}
+                onChange={(e) => setForm({ ...form, est_deliveries: e.target.value })}
+                placeholder="e.g. 20"
+              />
+            </div>
+
+            {recommended && form.est_deliveries && (
+              <div className="col-span-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-800">
+                <Lightbulb className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                <span>
+                  Recommended plan: <strong>{recommended.name}</strong>
+                  {recommended.delivery_limit && ` (${recommended.delivery_limit.toLocaleString()} credits/month)`}
+                  {recommended.monthly_price ? ` · Rp${recommended.monthly_price.toLocaleString('id-ID')}/bln` : ' · Custom pricing'}
+                </span>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label>Password</Label>
               <Input

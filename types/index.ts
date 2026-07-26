@@ -387,6 +387,9 @@ export interface MerchantSubscription {
   resumed_at: string | null;
   billing_cycle: 'monthly' | 'annual' | null;
   next_invoice_date: string | null;
+  credits_used: number;
+  extra_credits: number;
+  credits_reset_at: string | null;
   created_at: string;
   plan?: PlatformPlan | null;
   merchant?: { id: number; company_name: string; email: string } | null;

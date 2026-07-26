@@ -390,6 +390,16 @@ export const adminApi = {
   // Customer Intelligence (cross-merchant, super_admin only)
   searchCustomers: (params?: Record<string, unknown>) =>
     api.get('/admin/customers/search', { params }),
+
+  // Credit packs
+  listCreditPacks: () =>
+    api.get('/admin/credit-packs'),
+  grantCredits: (subscriptionId: number, pack_slug: string, note?: string) =>
+    api.post(`/admin/subscriptions/${subscriptionId}/grant-credits`, { pack_slug, note }),
+
+  // Release checklist
+  getReleaseChecklist: () =>
+    api.get('/admin/release-checklist'),
 };
 
 // Public API — no auth token, different base path
@@ -401,7 +411,15 @@ const publicHttp = axios.create({
 export const publicApi = {
   registerInterest: (data: Record<string, unknown>) =>
     publicHttp.post('/register-interest', data),
-  plans: () => publicHttp.get('/plans'),
+  plans:        () => publicHttp.get('/plans'),
+  features:     () => publicHttp.get('/features'),
+  faq:          () => publicHttp.get('/faq'),
+  testimonials: () => publicHttp.get('/testimonials'),
+};
+
+// Merchant Subscription (merchant-facing)
+export const subscriptionApi = {
+  getOwn: () => api.get('/subscription'),
 };
 
 // Business Intelligence (Phase 4.1)

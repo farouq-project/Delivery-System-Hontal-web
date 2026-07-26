@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import type { MerchantSubscription, SubscriptionStatus, PlatformPlan } from '@/types';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Zap } from 'lucide-react';
+
+interface CreditPack { id: number; name: string; slug: string; credits: number; price_idr: number; }
 
 const STATUS_CHIP: Record<SubscriptionStatus, string> = {
   trial:     'bg-amber-100 text-amber-800',
@@ -25,6 +27,8 @@ export default function AdminSubscriptionsPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [extendSub, setExtendSub]       = useState<MerchantSubscription | null>(null);
   const [extendDays, setExtendDays]     = useState(7);
+  const [grantSub, setGrantSub]         = useState<MerchantSubscription | null>(null);
+  const [grantSlug, setGrantSlug]       = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'subscriptions', page, status, search],
@@ -42,6 +46,12 @@ export default function AdminSubscriptionsPage() {
     queryFn: () => adminApi.listPlans(),
     enabled: !!changePlanSub,
     staleTime: 120_000,
+  });
+
+  const { data: packsData } = useQuery({
+    queryKey: ['admin', 'credit-packs'],
+    queryFn:  () => adminApi.listCreditPacks(),
+    staleTime: 300_000,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'subscriptions'] });
@@ -72,9 +82,16 @@ export default function AdminSubscriptionsPage() {
     onSuccess: () => { invalidate(); setExtendSub(null); },
   });
 
+  const grantMutation = useMutation({
+    mutationFn: ({ subId, slug }: { subId: number; slug: string }) =>
+      adminApi.grantCredits(subId, slug),
+    onSuccess: () => { invalidate(); setGrantSub(null); setGrantSlug(''); },
+  });
+
   const subs: MerchantSubscription[] = data?.data?.data ?? [];
   const lastPage = data?.data?.last_page ?? 1;
   const plans: PlatformPlan[] = plansData?.data?.data ?? [];
+  const packs: CreditPack[] = packsData?.data?.data ?? [];
 
   function getActions(s: MerchantSubscription) {
     const id = s.id;
@@ -82,9 +99,11 @@ export default function AdminSubscriptionsPage() {
     if (s.status === 'trial') {
       acts.push({ label: 'Activate', action: 'activate' });
       acts.push({ label: 'Extend Trial', action: 'extend' });
+      acts.push({ label: 'Grant Credits', action: 'grant-credits' });
       acts.push({ label: 'Cancel', action: 'cancel' });
     } else if (s.status === 'active') {
       acts.push({ label: 'Change Plan', action: 'change-plan' });
+      acts.push({ label: 'Grant Credits', action: 'grant-credits' });
       acts.push({ label: 'Pause', action: 'pause' });
       acts.push({ label: 'Expire', action: 'expire' });
       acts.push({ label: 'Cancel', action: 'cancel' });
@@ -134,6 +153,7 @@ export default function AdminSubscriptionsPage() {
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Merchant</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Plan</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Credits</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Trial Ends</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Started</th>
                 <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">Actions</th>
@@ -141,10 +161,10 @@ export default function AdminSubscriptionsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading && (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">Loading…</td></tr>
+                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">Loading…</td></tr>
               )}
               {!isLoading && subs.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">No subscriptions found.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No subscriptions found.</td></tr>
               )}
               {subs.map((s) => {
                 const { id, acts } = getActions(s);
@@ -159,6 +179,17 @@ export default function AdminSubscriptionsPage() {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CHIP[s.status]}`}>
                         {s.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {s.plan?.delivery_limit === null ? (
+                        <span className="text-xs text-gray-400">Unlimited</span>
+                      ) : s.plan?.delivery_limit ? (
+                        <div className="flex items-center gap-1 text-xs">
+                          <Zap className="h-3 w-3 text-purple-400" />
+                          <span>{(s.credits_used ?? 0).toLocaleString()}</span>
+                          <span className="text-gray-400">/ {s.plan.delivery_limit.toLocaleString()}</span>
+                        </div>
+                      ) : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{s.trial_ends_at ? s.trial_ends_at.slice(0, 10) : '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{s.started_at ? s.started_at.slice(0, 10) : '—'}</td>
@@ -179,6 +210,7 @@ export default function AdminSubscriptionsPage() {
                                   onClick={() => {
                                     if (act.action === 'change-plan') { setChangePlanSub(s); setActiveMenu(null); }
                                     else if (act.action === 'extend') { setExtendSub(s); setExtendDays(7); setActiveMenu(null); }
+                                    else if (act.action === 'grant-credits') { setGrantSub(s); setGrantSlug(''); setActiveMenu(null); }
                                     else actionMutation.mutate({ action: act.action, subId: id });
                                   }}
                                   className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -231,6 +263,38 @@ export default function AdminSubscriptionsPage() {
                 className="flex-1 py-2 bg-emerald-600 text-white rounded-md text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
               >
                 {changePlanMutation.isPending ? 'Changing…' : 'Apply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grant Credits modal */}
+      {grantSub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-xl w-full max-w-sm p-6">
+            <p className="font-bold text-gray-900 mb-1">Grant Credits</p>
+            <p className="text-sm text-gray-500 mb-4">{grantSub.merchant?.company_name}</p>
+            <div className="space-y-2 mb-4">
+              {packs.map((pack) => (
+                <label key={pack.slug} className="flex items-center gap-3 p-3 rounded-md border border-gray-200 cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="pack" value={pack.slug} checked={grantSlug === pack.slug} onChange={() => setGrantSlug(pack.slug)} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{pack.name}</p>
+                    <p className="text-xs text-gray-500">+{pack.credits} credits · Rp{pack.price_idr.toLocaleString('id-ID')}</p>
+                  </div>
+                </label>
+              ))}
+              {packs.length === 0 && <p className="text-sm text-gray-400">No credit packs configured.</p>}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setGrantSub(null)} className="flex-1 py-2 border border-gray-300 rounded-md text-sm text-gray-700">Cancel</button>
+              <button
+                onClick={() => { if (grantSlug) grantMutation.mutate({ subId: grantSub.id, slug: grantSlug }); }}
+                disabled={!grantSlug || grantMutation.isPending}
+                className="flex-1 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+              >
+                {grantMutation.isPending ? 'Granting…' : 'Grant'}
               </button>
             </div>
           </div>
