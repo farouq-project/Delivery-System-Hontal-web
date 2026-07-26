@@ -602,6 +602,7 @@ export interface GoogleApiAnalyticsPeriod {
   estimated_units: number;
   cache_hits: number;
   cache_hit_rate: number;
+  estimated_cost_usd?: number;
 }
 
 export interface GoogleApiTopConsumer {
@@ -609,11 +610,21 @@ export interface GoogleApiTopConsumer {
   merchant_name: string;
   requests: number;
   estimated_units: number;
+  cache_hits: number;
+}
+
+export interface GoogleApiTypeBreakdown {
+  api_type: string;
+  requests: number;
+  estimated_units: number;
+  cache_hits: number;
+  estimated_cost_usd: number;
 }
 
 export interface GoogleApiAnalytics {
   today: GoogleApiAnalyticsPeriod;
   this_month: GoogleApiAnalyticsPeriod;
+  by_api_type: GoogleApiTypeBreakdown[];
   top_consumers: GoogleApiTopConsumer[];
   daily_trend: { date: string; requests: number; estimated_units: number; cache_hits?: number }[];
 }

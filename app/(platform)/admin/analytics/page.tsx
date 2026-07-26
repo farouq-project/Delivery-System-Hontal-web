@@ -2,15 +2,16 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
-import type { GoogleApiAnalytics } from '@/types';
-import { Zap, TrendingUp, Users } from 'lucide-react';
+import type { GoogleApiAnalytics, GoogleApiTypeBreakdown } from '@/types';
+import { Zap, TrendingUp, Users, DollarSign, LayoutGrid } from 'lucide-react';
 
-function PeriodCard({ title, requests, units, cacheHits, cacheHitRate }: {
+function PeriodCard({ title, requests, units, cacheHits, cacheHitRate, costUsd }: {
   title: string;
   requests: number;
   units: number;
   cacheHits: number;
   cacheHitRate: number;
+  costUsd?: number;
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
@@ -34,6 +35,15 @@ function PeriodCard({ title, requests, units, cacheHits, cacheHitRate }: {
           </p>
           <p className="text-xs text-gray-400">cache hit rate</p>
         </div>
+        {costUsd !== undefined && (
+          <div className="col-span-2 pt-1 border-t border-gray-100">
+            <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
+              <DollarSign className="h-4 w-4 text-green-500" />
+              ${costUsd.toFixed(2)} USD
+            </p>
+            <p className="text-xs text-gray-400">est. Google API cost</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -85,8 +95,43 @@ export default function GoogleApiAnalyticsPage() {
               units={analytics.this_month.estimated_units}
               cacheHits={analytics.this_month.cache_hits}
               cacheHitRate={analytics.this_month.cache_hit_rate}
+              costUsd={analytics.this_month.estimated_cost_usd}
             />
           </div>
+
+          {/* API Type breakdown */}
+          {analytics.by_api_type && analytics.by_api_type.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <LayoutGrid className="h-4 w-4 text-gray-400" />
+                <p className="text-sm font-semibold text-gray-700">Breakdown by API Type (This Month)</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-xs text-gray-600">
+                  <thead>
+                    <tr className="text-left text-gray-400 border-b border-gray-100">
+                      <th className="pb-2 pr-4">API Type</th>
+                      <th className="pb-2 pr-4 text-right">Requests</th>
+                      <th className="pb-2 pr-4 text-right">Est. Units</th>
+                      <th className="pb-2 pr-4 text-right">Cache Hits</th>
+                      <th className="pb-2 text-right">Est. Cost (USD)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {analytics.by_api_type.map((row: GoogleApiTypeBreakdown) => (
+                      <tr key={row.api_type} className="hover:bg-gray-50">
+                        <td className="py-1.5 pr-4 font-mono capitalize">{row.api_type.replace(/_/g, ' ')}</td>
+                        <td className="py-1.5 pr-4 text-right">{row.requests.toLocaleString()}</td>
+                        <td className="py-1.5 pr-4 text-right">{row.estimated_units.toLocaleString()}</td>
+                        <td className="py-1.5 pr-4 text-right">{row.cache_hits.toLocaleString()}</td>
+                        <td className="py-1.5 text-right font-medium text-green-700">${row.estimated_cost_usd.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Daily trend */}
           {analytics.daily_trend.length > 0 && (
