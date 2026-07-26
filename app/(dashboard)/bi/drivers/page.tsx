@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { biApi } from '@/lib/api';
+import { useMerchantLabels } from '@/lib/merchant-labels';
 import { SectionHeader }   from '@/components/bi/SectionHeader';
 import { StatCard }        from '@/components/bi/StatCard';
 import { EmptyState }      from '@/components/bi/EmptyState';
@@ -17,6 +18,7 @@ const statusColor: Record<string, string> = {
 };
 
 export default function BiDriversPage() {
+  const { label, unitLabel } = useMerchantLabels();
   const { data, isLoading, error } = useQuery({
     queryKey: ['bi', 'drivers'],
     queryFn: biApi.drivers,
@@ -68,9 +70,9 @@ export default function BiDriversPage() {
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 w-8">#</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Driver</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Status</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">Completed</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">{unitLabel} Delivered</th>
                     <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">Failed</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">Revenue</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">{label('revenue')}</th>
                     <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">Success Rate</th>
                   </tr>
                 </thead>

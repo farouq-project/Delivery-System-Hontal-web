@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { biApi } from '@/lib/api';
+import { useMerchantLabels } from '@/lib/merchant-labels';
 import { StatCard }      from '@/components/bi/StatCard';
 import { AttentionPanel } from '@/components/bi/AttentionPanel';
 import { SectionHeader }  from '@/components/bi/SectionHeader';
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function BiOverviewPage() {
+  const { label } = useMerchantLabels();
   const { data, isLoading, error } = useQuery({
     queryKey: ['bi', 'overview'],
     queryFn: biApi.overview,
@@ -41,14 +43,14 @@ export default function BiOverviewPage() {
         <SectionHeader title="Today's Operations" description="Live figures — updates on refresh" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <StatCard
-            title="Revenue Today"
+            title={`${label('revenue')} Today`}
             value={fmtIdr(ops.revenue)}
             icon={TrendingUp}
             iconColor="text-green-500"
             variant="success"
           />
           <StatCard
-            title="Orders Today"
+            title={`${label('orders')} Today`}
             value={fmtNum(ops.orders)}
             icon={Package}
             href="/orders"
@@ -82,32 +84,32 @@ export default function BiOverviewPage() {
         <SectionHeader title="This Month" description="Calendar month to date" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <StatCard
-            title="Revenue MTD"
+            title={`${label('revenue')} MTD`}
             value={fmtIdr(month.revenue)}
             icon={TrendingUp}
             iconColor="text-indigo-500"
             href="/bi/operations"
           />
           <StatCard
-            title="Orders MTD"
+            title={`${label('orders')} MTD`}
             value={fmtNum(month.orders)}
             icon={Package}
             href="/bi/operations"
           />
           <StatCard
-            title="Avg Order"
+            title={label('avg_order_value')}
             value={fmtIdr(month.avg_order_value)}
             icon={ShoppingBag}
           />
           <StatCard
-            title="Pelanggan Baru"
+            title={`New ${label('customers')}`}
             value={fmtNum(month.new_customers)}
             icon={Users}
             iconColor="text-teal-500"
             href="/bi/customers"
           />
           <StatCard
-            title="Repeat Customers"
+            title={`Repeat ${label('customers')}`}
             value={fmtNum(month.repeat_customers)}
             icon={Star}
             iconColor="text-amber-500"
@@ -120,7 +122,7 @@ export default function BiOverviewPage() {
       <section>
         <SectionHeader title="Customer Health" />
         <div className="grid grid-cols-2 gap-3">
-          <StatCard title="Total Pelanggan"  value={fmtNum(cust.total)}          icon={Users} href="/bi/customers" />
+          <StatCard title={`Total ${label('customers')}`}  value={fmtNum(cust.total)} icon={Users} href="/bi/customers" />
           <StatCard title="Tidak Aktif"      value={cust.dormant != null ? fmtNum(cust.dormant) : '—'} variant="warning" href="/bi/customers" />
         </div>
       </section>

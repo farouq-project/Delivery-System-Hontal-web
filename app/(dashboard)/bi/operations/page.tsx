@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { biApi } from '@/lib/api';
+import { useMerchantLabels } from '@/lib/merchant-labels';
 import { StatCard }       from '@/components/bi/StatCard';
 import { SectionHeader }  from '@/components/bi/SectionHeader';
 import { AttentionPanel } from '@/components/bi/AttentionPanel';
@@ -9,6 +10,7 @@ import { fmtNum, fmtPct } from '@/components/bi/format';
 import { Package, Clock, AlertTriangle, XCircle, Truck, CheckCircle, BarChart2 } from 'lucide-react';
 
 export default function BiOperationsPage() {
+  const { label } = useMerchantLabels();
   const { data, isLoading, error } = useQuery({
     queryKey: ['bi', 'operations'],
     queryFn: biApi.operations,
@@ -78,8 +80,8 @@ export default function BiOperationsPage() {
       <section>
         <SectionHeader title="Today's Performance" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard title="Total Orders Today" value={fmtNum(d.total_orders_today)} icon={Package}      href="/orders" />
-          <StatCard title="Delivered Today"    value={fmtNum(d.delivered_today)}    icon={CheckCircle}  iconColor="text-green-500" variant="success" />
+          <StatCard title={`Total ${label('orders')} Today`} value={fmtNum(d.total_orders_today)} icon={Package}     href="/orders" />
+          <StatCard title={`${label('total_delivered')}`}   value={fmtNum(d.delivered_today)}    icon={CheckCircle} iconColor="text-green-500" variant="success" />
           <StatCard
             title="Success Rate"
             value={fmtPct(d.success_rate_today)}

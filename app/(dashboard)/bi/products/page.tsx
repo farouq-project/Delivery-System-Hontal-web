@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { biApi } from '@/lib/api';
+import { useMerchantLabels } from '@/lib/merchant-labels';
 import { RankingTable }  from '@/components/bi/RankingTable';
 import { SectionHeader } from '@/components/bi/SectionHeader';
 import { EmptyState }    from '@/components/bi/EmptyState';
@@ -9,6 +10,7 @@ import { fmtIdr, fmtNum } from '@/components/bi/format';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 
 export default function BiProductsPage() {
+  const { label, unitLabel } = useMerchantLabels();
   const { data, isLoading, error } = useQuery({
     queryKey: ['bi', 'products'],
     queryFn: biApi.products,
@@ -59,11 +61,11 @@ export default function BiProductsPage() {
             keyField="product_name"
             columns={[
               { key: 'product_name', label: 'Product' },
-              { key: 'total_orders', label: 'Orders', align: 'right',
+              { key: 'total_orders', label: label('orders'), align: 'right',
                 render: (v) => fmtNum(Number(v)) },
-              { key: 'delivered', label: 'Delivered', align: 'right',
+              { key: 'delivered', label: `${unitLabel} Delivered`, align: 'right',
                 render: (v) => fmtNum(Number(v)) },
-              { key: 'revenue', label: 'Revenue', align: 'right',
+              { key: 'revenue', label: label('revenue'), align: 'right',
                 render: (v) => fmtIdr(Number(v)) },
             ]}
           />
