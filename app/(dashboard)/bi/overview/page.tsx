@@ -169,7 +169,7 @@ export default function BiOverviewPage() {
               </div>
               {/* Pillar bars */}
               <div className="flex-1 space-y-2">
-                {(hs.pillars ?? []).map((p: { name: string; score: number; label: string }) => (
+                {Object.values(hs.pillars ?? {}).map((p: { name: string; score: number; label?: string }) => (
                   <div key={p.name} className="flex items-center gap-2">
                     <span className="text-xs text-gray-500 w-20 shrink-0 capitalize">{p.label ?? p.name}</span>
                     <div className="flex-1 bg-gray-100 rounded-full h-2">
