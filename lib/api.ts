@@ -422,7 +422,7 @@ export const subscriptionApi = {
   getOwn: () => api.get('/subscription'),
 };
 
-// Business Intelligence (Phase 4.1)
+// Business Intelligence (Phase 4.1) — existing endpoints untouched
 export const biApi = {
   overview:   () => api.get('/bi/overview'),
   customers:  () => api.get('/bi/customers'),
@@ -432,6 +432,31 @@ export const biApi = {
   products:   () => api.get('/bi/products'),
   areas:      () => api.get('/bi/areas'),
   attention:  () => api.get('/bi/attention'),
+};
+
+// Growth Dashboard V1 (GD1)
+export const growthApi = {
+  executive:  () => api.get('/bi/growth/executive'),
+  sales:      (period?: 'weekly' | 'monthly') =>
+    api.get('/bi/growth/sales', { params: period ? { period } : undefined }),
+  customers:         () => api.get('/bi/growth/customers'),
+  operationsMetrics: () => api.get('/bi/growth/operations'),
+  reports:           (period?: 'monthly' | 'quarterly' | 'yearly') =>
+    api.get('/bi/growth/reports', { params: period ? { period } : undefined }),
+
+  // Marketing Campaigns
+  listMarketing:    () => api.get('/bi/growth/marketing'),
+  createCampaign:   (data: Record<string, unknown>) => api.post('/bi/growth/marketing', data),
+  updateCampaign:   (id: number, data: Record<string, unknown>) =>
+    api.put(`/bi/growth/marketing/${id}`, data),
+  deleteCampaign:   (id: number) => api.delete(`/bi/growth/marketing/${id}`),
+
+  // Goals
+  listGoals:   () => api.get('/bi/growth/goals'),
+  createGoal:  (data: Record<string, unknown>) => api.post('/bi/growth/goals', data),
+  updateGoal:  (id: number, data: Record<string, unknown>) =>
+    api.put(`/bi/growth/goals/${id}`, data),
+  deleteGoal:  (id: number) => api.delete(`/bi/growth/goals/${id}`),
 };
 
 // Driver App

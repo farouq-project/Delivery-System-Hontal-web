@@ -113,7 +113,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               )}
             >
               <BarChart2 className="h-5 w-5 shrink-0" />
-              {!collapsed && 'Business Intelligence'}
+              {!collapsed && 'Business Growth'}
             </Link>
           )}
 

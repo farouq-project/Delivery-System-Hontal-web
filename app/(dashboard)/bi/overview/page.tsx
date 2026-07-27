@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { biApi } from '@/lib/api';
+import { biApi, growthApi } from '@/lib/api';
 import { useMerchantLabels } from '@/lib/merchant-labels';
 import { StatCard }      from '@/components/bi/StatCard';
 import { AttentionPanel } from '@/components/bi/AttentionPanel';
@@ -10,8 +10,26 @@ import { PerformanceCard } from '@/components/bi/PerformanceCard';
 import { fmtIdr, fmtPct, fmtNum } from '@/components/bi/format';
 import {
   TrendingUp, Package, Truck, Users, BarChart2,
-  CheckCircle, Star, ShoppingBag
+  CheckCircle, Star, ShoppingBag,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
+
+const GRADE_COLORS: Record<string, string> = {
+  A: 'text-green-600 border-green-500 bg-green-50',
+  B: 'text-blue-600 border-blue-500 bg-blue-50',
+  C: 'text-amber-600 border-amber-500 bg-amber-50',
+  D: 'text-orange-600 border-orange-500 bg-orange-50',
+  F: 'text-red-600 border-red-500 bg-red-50',
+};
+
+const PILLAR_COLORS: Record<string, string> = {
+  revenue:    'bg-indigo-500',
+  customer:   'bg-teal-500',
+  operations: 'bg-blue-500',
+  growth:     'bg-violet-500',
+  goals:      'bg-amber-500',
+};
 
 export default function BiOverviewPage() {
   const { label } = useMerchantLabels();
@@ -19,6 +37,12 @@ export default function BiOverviewPage() {
     queryKey: ['bi', 'overview'],
     queryFn: biApi.overview,
     staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: execData } = useQuery({
+    queryKey: ['growth', 'executive'],
+    queryFn: growthApi.executive,
+    staleTime: 5 * 60 * 1000,
   });
 
   if (isLoading) return <div className="p-6 text-gray-400 text-sm">Loading overview…</div>;
@@ -30,6 +54,10 @@ export default function BiOverviewPage() {
   const ops   = d.operations_today;
   const month = d.business_this_month;
   const cust  = d.customer_health;
+
+  const exec = execData?.data?.data;
+  const hs   = exec?.health_score;
+  const mc   = exec?.month_comparison;
 
   return (
     <div className="p-4 md:p-6 space-y-8">
@@ -126,6 +154,72 @@ export default function BiOverviewPage() {
           <StatCard title="Tidak Aktif"      value={cust.dormant != null ? fmtNum(cust.dormant) : '—'} variant="warning" href="/bi/customers" />
         </div>
       </section>
+
+      {/* Business Health Score */}
+      {hs && (
+        <section>
+          <SectionHeader title="Business Health Score" description="5-pillar assessment · updates every 5 min" />
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+            <div className="flex items-center gap-6">
+              {/* Grade circle */}
+              <div className={cn('w-20 h-20 rounded-full border-4 flex flex-col items-center justify-center shrink-0',
+                GRADE_COLORS[hs.grade] ?? 'text-gray-600 border-gray-400 bg-gray-50')}>
+                <span className="text-3xl font-black">{hs.grade}</span>
+                <span className="text-xs font-medium">{hs.score}/100</span>
+              </div>
+              {/* Pillar bars */}
+              <div className="flex-1 space-y-2">
+                {(hs.pillars ?? []).map((p: { name: string; score: number; label: string }) => (
+                  <div key={p.name} className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 w-20 shrink-0 capitalize">{p.label ?? p.name}</span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <div
+                        className={cn('h-2 rounded-full', PILLAR_COLORS[p.name] ?? 'bg-gray-400')}
+                        style={{ width: `${Math.min((p.score / 20) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 w-8 text-right">{p.score}/20</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-3 text-right">
+              <Link href="/bi/reports" className="text-xs text-indigo-600 hover:underline">View full report →</Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Month Comparison */}
+      {mc && (
+        <section>
+          <SectionHeader title="Month-to-Date vs Prior Month" description="Same day-number comparison" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { key: 'revenue',      metricLabel: label('revenue'),          format: fmtIdr },
+              { key: 'orders',       metricLabel: label('orders'),           format: fmtNum },
+              { key: 'delivered',    metricLabel: 'Delivered',               format: fmtNum },
+              { key: 'new_customers',metricLabel: `New ${label('customers')}`, format: fmtNum },
+              { key: 'success_rate', metricLabel: 'Success Rate',            format: fmtPct },
+            ].map(({ key, metricLabel, format }) => {
+              const item = mc[key as keyof typeof mc] as { current: number; growth_pct?: number; delta?: number } | undefined;
+              if (!item) return null;
+              const pct = item.growth_pct ?? item.delta ?? null;
+              return (
+                <div key={key} className="bg-white rounded-lg border border-gray-200 shadow-sm p-3">
+                  <p className="text-xs text-gray-400 truncate">{metricLabel}</p>
+                  <p className="text-lg font-bold text-gray-900 mt-0.5">{format(item.current)}</p>
+                  {pct !== null && (
+                    <p className={cn('text-xs font-semibold mt-0.5', pct >= 0 ? 'text-green-600' : 'text-red-500')}>
+                      {pct >= 0 ? '+' : ''}{pct}% vs prior
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Top Performers + Attention */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

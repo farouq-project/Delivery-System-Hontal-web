@@ -8,7 +8,8 @@ import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, PackageOpen, Truck,
-  Layers, ClipboardList, Map, BarChart2
+  Layers, ClipboardList, Map, BarChart2,
+  TrendingUp, Megaphone, Target, FileText,
 } from 'lucide-react';
 
 const BI_ROLES = ['merchant_owner', 'super_admin', 'developer'];
@@ -21,6 +22,10 @@ const subNav = [
   { href: '/bi/branches',   label: 'Branches',    icon: Layers },
   { href: '/bi/products',   label: 'Products',    icon: ClipboardList },
   { href: '/bi/areas',      label: 'Areas',       icon: Map },
+  { href: '/bi/sales',      label: 'Sales',       icon: TrendingUp },
+  { href: '/bi/marketing',  label: 'Marketing',   icon: Megaphone },
+  { href: '/bi/goals',      label: 'Goals',       icon: Target },
+  { href: '/bi/reports',    label: 'Reports',     icon: FileText },
 ];
 
 export default function BiLayout({ children }: { children: React.ReactNode }) {
@@ -49,9 +54,9 @@ export default function BiLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="p-8 text-center">
         <BarChart2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-        <h2 className="text-lg font-semibold text-gray-700 mb-2">Business Intelligence</h2>
+        <h2 className="text-lg font-semibold text-gray-700 mb-2">Business Growth</h2>
         <p className="text-gray-500 text-sm max-w-sm mx-auto">
-          Business Intelligence is not enabled for your account.
+          Business Growth is not enabled for your account.
           Contact your administrator to enable this feature.
         </p>
       </div>

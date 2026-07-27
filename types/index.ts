@@ -721,3 +721,174 @@ export interface MerchantSupportConsole {
     cache_hit_rate: number;
   };
 }
+
+// ─── Growth Dashboard V1 ──────────────────────────────────────────
+
+// Health Score
+export interface HealthPillar {
+  name: string;
+  score: number;
+  max: number;
+  description: string;
+  value: number | null;
+}
+
+export interface BusinessHealthScore {
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  grade_label: string;
+  pillars: HealthPillar[];
+}
+
+// Month Comparison
+export interface GrowthKpiItem {
+  current: number;
+  prior: number;
+  growth_pct: number | null;
+}
+
+export interface GrowthSuccessRateItem {
+  current: number;
+  prior: number;
+  delta: number;
+}
+
+export interface MonthComparison {
+  period: { current_label: string; prior_label: string };
+  revenue: GrowthKpiItem;
+  orders: GrowthKpiItem;
+  delivered: GrowthKpiItem;
+  new_customers: GrowthKpiItem;
+  success_rate: GrowthSuccessRateItem;
+}
+
+// Sales trends
+export interface WeeklyTrendRow {
+  week_start: string;
+  week_end: string;
+  week_label: string;
+  revenue: number;
+  orders: number;
+  delivered: number;
+  new_customers: number;
+  success_rate: number;
+}
+
+export interface MonthlyTrendRow {
+  year_month: string;
+  month_label: string;
+  revenue: number;
+  orders: number;
+  new_customers: number;
+}
+
+export interface CustomerTypeRow {
+  customer_type: string;
+  revenue: number;
+  orders: number;
+  unique_customers: number;
+}
+
+// Customer Growth
+export interface CustomerSegmentCounts {
+  healthy: number;
+  active: number;
+  at_risk: number;
+  dormant: number;
+  lost: number;
+  total: number;
+}
+
+export interface ClvBuckets {
+  under_100k: number;
+  k100_500k: number;
+  k500_1m: number;
+  over_1m: number;
+  avg_clv: number;
+}
+
+// Marketing Campaigns
+export type CampaignPlatform = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'google' | 'offline' | 'other';
+export type LeadSource = 'google' | 'meta' | 'instagram' | 'whatsapp' | 'tiktok' | 'referral' | 'marketplace' | 'offline' | 'walk_in' | 'other';
+export type CampaignType = 'broadcast' | 'promo' | 'referral' | 'seasonal' | 'retention' | 'acquisition';
+
+export interface MarketingCampaign {
+  id: number;
+  merchant_id: number;
+  name: string;
+  platform: CampaignPlatform;
+  lead_source: LeadSource;
+  campaign_type: CampaignType;
+  start_date: string;
+  end_date: string | null;
+  budget: number;
+  spend: number;
+  reach: number;
+  clicks: number;
+  wa_conversations: number;
+  leads: number;
+  orders: number;
+  customers_acquired: number;
+  attributed_revenue: number;
+  notes: string | null;
+  // Calculated KPIs (appended by API)
+  cac: number | null;
+  cost_per_lead: number | null;
+  cost_per_conversation: number | null;
+  roas: number | null;
+  conversion_rate: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MarketingAggregate {
+  total_campaigns: number;
+  total_budget: number;
+  total_spend: number;
+  total_reach: number;
+  total_clicks: number;
+  total_conversations: number;
+  total_leads: number;
+  total_orders: number;
+  total_customers_acquired: number;
+  total_attributed_revenue: number;
+  overall_cac: number | null;
+  overall_roas: number | null;
+  overall_conversion_rate: number | null;
+}
+
+export interface MarketingLeadSourceRow {
+  lead_source: string;
+  campaigns: number;
+  total_spend: number;
+  total_leads: number;
+  total_orders: number;
+  total_revenue: number;
+}
+
+// Goals
+export type GoalMetric = 'revenue' | 'orders' | 'customers' | 'success_rate' | 'new_customers';
+export type GoalPeriodType = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+export type GoalStatus = 'achieved' | 'on_track' | 'in_progress' | 'behind' | 'ended';
+
+export interface MerchantGoal {
+  id: number;
+  metric: GoalMetric;
+  target_value: number;
+  current: number;
+  pct: number;
+  raw_pct: number;
+  period_type: GoalPeriodType;
+  period_start: string;
+  period_end: string;
+  notes: string | null;
+  is_active: boolean;
+  status: GoalStatus;
+}
+
+// Reports
+export interface ReportRecommendation {
+  priority: 'high' | 'medium' | 'low';
+  category: string;
+  text: string;
+}
