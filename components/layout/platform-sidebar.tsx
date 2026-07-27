@@ -17,6 +17,7 @@ const platformNav = [
   { href: '/admin/plans',         label: 'Plans',           icon: CreditCard },
   { href: '/admin/subscriptions', label: 'Subscriptions',   icon: ClipboardList },
   { href: '/admin/health',        label: 'Merchant Health', icon: Activity },
+  { href: '/admin/growth',        label: 'Platform Growth', icon: BarChart2 },
   { href: '/admin/logs',          label: 'Activity Feed',   icon: Shield },
   { href: '/admin/analytics',     label: 'API Analytics',   icon: BarChart2 },
   { href: '/admin/search',        label: 'Global Search',   icon: Search },

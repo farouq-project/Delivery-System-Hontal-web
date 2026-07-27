@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import type { SubscriptionStatus, PlatformPlan, MerchantFeatureFlag, MerchantUsage, MerchantActivityLogEntry, MerchantSupportConsole } from '@/types';
-import { ArrowLeft, Building2, Users, Package, Settings, Activity, CreditCard, Zap, BarChart2, HeadphonesIcon } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Package, Settings, Activity, CreditCard, Zap, BarChart2, HeadphonesIcon, TrendingUp } from 'lucide-react';
+import { usePlatformMerchantStore } from '@/store/platform-merchant';
 
 type Tab = 'overview' | 'subscription' | 'usage' | 'billing' | 'users' | 'features' | 'settings' | 'activity' | 'support';
 
@@ -50,6 +51,7 @@ export default function MerchantDetailPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>('overview');
+  const { setSelectedMerchant } = usePlatformMerchantStore();
 
   // Subscription action state
   const [changePlanModal, setChangePlanModal] = useState(false);
@@ -238,16 +240,36 @@ export default function MerchantDetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Merchants
         </button>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{merchant.company_name}</h1>
             <p className="text-sm text-gray-500 mt-0.5">{merchant.email} · {merchant.phone}</p>
           </div>
-          {sub && (
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_CHIP[sub.status as SubscriptionStatus]}`}>
-              {sub.status}
-            </span>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                setSelectedMerchant({
+                  id: merchant.id,
+                  company_name: merchant.company_name,
+                  email: merchant.email,
+                  city: merchant.city ?? null,
+                  plan_name: sub?.plan_name ?? null,
+                  plan_slug: null,
+                  sub_status: sub?.status ?? null,
+                });
+                router.push('/admin/growth/overview');
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <TrendingUp className="h-4 w-4" />
+              Platform Growth
+            </button>
+            {sub && (
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_CHIP[sub.status as SubscriptionStatus]}`}>
+                {sub.status}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

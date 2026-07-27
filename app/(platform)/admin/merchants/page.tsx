@@ -5,7 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import type { AdminMerchantSummary, SubscriptionStatus, PlatformPlan } from '@/types';
-import { Search } from 'lucide-react';
+import { Search, BarChart2 } from 'lucide-react';
+import { usePlatformMerchantStore } from '@/store/platform-merchant';
 
 const STATUS_CHIP: Record<SubscriptionStatus, string> = {
   trial:     'bg-amber-100 text-amber-700',
@@ -28,6 +29,7 @@ function fmtDate(s: string | null) {
 
 export default function AdminMerchantsPage() {
   const router = useRouter();
+  const { setSelectedMerchant } = usePlatformMerchantStore();
   const [page, setPage]          = useState(1);
   const [search, setSearch]      = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -127,14 +129,15 @@ export default function AdminMerchantsPage() {
                 <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">Branches</th>
                 <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">This Month</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Created</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-700">Growth</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">Loading…</td></tr>
+                <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400">Loading…</td></tr>
               )}
               {!isLoading && merchants.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No merchants found.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400">No merchants found.</td></tr>
               )}
               {merchants.map((m) => (
                 <tr
@@ -173,6 +176,27 @@ export default function AdminMerchantsPage() {
                     <p className="text-xs text-gray-500">{fmtIdr(m.monthly_revenue)}</p>
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{fmtDate(m.created_at)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedMerchant({
+                          id: m.id,
+                          company_name: m.company_name,
+                          email: m.email,
+                          city: null,
+                          plan_name: m.subscription?.plan_name ?? null,
+                          plan_slug: null,
+                          sub_status: m.subscription?.status ?? null,
+                        });
+                        router.push('/admin/growth/overview');
+                      }}
+                      title="View Growth Dashboard"
+                      className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
+                    >
+                      <BarChart2 className="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
