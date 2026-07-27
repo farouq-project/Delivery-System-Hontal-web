@@ -9,6 +9,20 @@ api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('hontal_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    // Super admin merchant viewing mode: inject ?merchant_id on all /bi/* calls
+    if (config.url?.startsWith('/bi/')) {
+      try {
+        const raw = localStorage.getItem('hontal_platform_merchant');
+        if (raw) {
+          const pm = JSON.parse(raw);
+          const merchantId = pm?.state?.selectedMerchant?.id;
+          if (merchantId) {
+            config.params = { ...config.params, merchant_id: merchantId };
+          }
+        }
+      } catch {}
+    }
   }
   return config;
 });
@@ -390,6 +404,10 @@ export const adminApi = {
   // Customer Intelligence (cross-merchant, super_admin only)
   searchCustomers: (params?: Record<string, unknown>) =>
     api.get('/admin/customers/search', { params }),
+
+  // Platform Growth — compact merchant list for the merchant selector
+  merchantGrowthTargets: () =>
+    api.get('/admin/merchants/growth-targets'),
 
   // Credit packs
   listCreditPacks: () =>

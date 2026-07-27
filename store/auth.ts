@@ -25,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       },
       clearAuth: () => {
         localStorage.removeItem('hontal_token');
+        localStorage.removeItem('hontal_platform_merchant');
         set({ user: null, token: null });
       },
       isAuthenticated: () => !!get().token,

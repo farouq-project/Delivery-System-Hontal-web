@@ -10,6 +10,7 @@ import { fmtIdr, fmtNum, fmtPct } from '@/components/bi/format';
 import { Target, Plus, Pencil, Trash2, X, CheckCircle2, AlertCircle, Clock, TrendingUp } from 'lucide-react';
 import type { MerchantGoal, GoalMetric, GoalPeriodType, GoalStatus } from '@/types';
 import { cn } from '@/lib/utils';
+import { usePlatformMerchantStore } from '@/store/platform-merchant';
 
 const METRICS: { value: GoalMetric; label: string }[] = [
   { value: 'revenue',       label: 'Revenue' },
@@ -44,10 +45,11 @@ function formatGoalValue(metric: GoalMetric, value: number): string {
   return fmtNum(value);
 }
 
-function GoalCard({ goal, onEdit, onDelete }: {
+function GoalCard({ goal, onEdit, onDelete, readOnly }: {
   goal: MerchantGoal;
   onEdit: (g: MerchantGoal) => void;
   onDelete: (id: number) => void;
+  readOnly?: boolean;
 }) {
   const cfg   = statusConfig(goal.status);
   const Icon  = cfg.icon;
@@ -91,17 +93,19 @@ function GoalCard({ goal, onEdit, onDelete }: {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => onEdit(goal)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500">
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => { if (confirm('Delete this goal?')) onDelete(goal.id); }}
-            className="p-1.5 rounded hover:bg-red-50 text-gray-500 hover:text-red-600"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => onEdit(goal)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => { if (confirm('Delete this goal?')) onDelete(goal.id); }}
+              className="p-1.5 rounded hover:bg-red-50 text-gray-500 hover:text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -120,6 +124,7 @@ const EMPTY_FORM: FormState = {
 export default function BiGoalsPage() {
   const { label } = useMerchantLabels();
   const qc = useQueryClient();
+  const { isViewingMode } = usePlatformMerchantStore();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MerchantGoal | null>(null);
   const [form, setForm]       = useState<FormState>(EMPTY_FORM);
@@ -181,12 +186,14 @@ export default function BiGoalsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Goal Tracking</h1>
           <p className="text-sm text-gray-500 mt-0.5">Set and track business targets across any time period</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" /> New Goal
-        </button>
+        {!isViewingMode && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> New Goal
+          </button>
+        )}
       </div>
 
       {goals.length === 0 ? (
@@ -198,7 +205,7 @@ export default function BiGoalsPage() {
               <SectionHeader title="Active Goals" description="Goals within the current period" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {active.map((g) => (
-                  <GoalCard key={g.id} goal={g} onEdit={openEdit} onDelete={(id) => deleteMutation.mutate(id)} />
+                  <GoalCard key={g.id} goal={g} onEdit={openEdit} onDelete={(id) => deleteMutation.mutate(id)} readOnly={isViewingMode} />
                 ))}
               </div>
             </section>
@@ -209,7 +216,7 @@ export default function BiGoalsPage() {
               <SectionHeader title="Past Goals" description="Ended periods" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {past.map((g) => (
-                  <GoalCard key={g.id} goal={g} onEdit={openEdit} onDelete={(id) => deleteMutation.mutate(id)} />
+                  <GoalCard key={g.id} goal={g} onEdit={openEdit} onDelete={(id) => deleteMutation.mutate(id)} readOnly={isViewingMode} />
                 ))}
               </div>
             </section>
@@ -217,8 +224,8 @@ export default function BiGoalsPage() {
         </>
       )}
 
-      {/* Form Modal */}
-      {showForm && (
+      {/* Form Modal — hidden in viewing mode */}
+      {showForm && !isViewingMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-gray-200">

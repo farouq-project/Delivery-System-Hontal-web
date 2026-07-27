@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { MarketingCampaign, MarketingAggregate, MarketingLeadSourceRow } from '@/types';
 import { cn } from '@/lib/utils';
+import { usePlatformMerchantStore } from '@/store/platform-merchant';
 
 const PLATFORMS  = ['whatsapp','instagram','facebook','tiktok','google','offline','other'];
 const LEAD_SOURCES = ['google','meta','instagram','whatsapp','tiktok','referral','marketplace','offline','walk_in','other'];
@@ -42,6 +43,7 @@ const EMPTY_FORM: FormState = {
 
 export default function BiMarketingPage() {
   const qc = useQueryClient();
+  const { isViewingMode } = usePlatformMerchantStore();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MarketingCampaign | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -117,12 +119,14 @@ export default function BiMarketingPage() {
           <h1 className="text-2xl font-bold text-gray-900">Marketing Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">Track campaigns, lead sources, and marketing ROI</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" /> Add Campaign
-        </button>
+        {!isViewingMode && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Add Campaign
+          </button>
+        )}
       </div>
 
       {/* Aggregate KPIs */}
@@ -204,17 +208,19 @@ export default function BiMarketingPage() {
                       <div><p className="text-xs text-gray-400">Acquired</p><p className="text-sm font-medium">{fmtNum(c.customers_acquired)}</p></div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => { if (confirm('Delete this campaign?')) deleteMutation.mutate(c.id); }}
-                      className="p-1.5 rounded hover:bg-red-50 text-gray-500 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  {!isViewingMode && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => { if (confirm('Delete this campaign?')) deleteMutation.mutate(c.id); }}
+                        className="p-1.5 rounded hover:bg-red-50 text-gray-500 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -222,8 +228,8 @@ export default function BiMarketingPage() {
         )}
       </section>
 
-      {/* Campaign Form Modal */}
-      {showForm && (
+      {/* Campaign Form Modal — hidden in viewing mode */}
+      {showForm && !isViewingMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-200">

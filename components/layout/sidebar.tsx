@@ -42,8 +42,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const { user, clearAuth } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
 
-  const canManageUsers = ['owner', 'merchant_owner', 'developer'].includes(user?.role ?? '');
-  const canUseBi       = ['merchant_owner', 'developer'].includes(user?.role ?? '');
+  const canManageUsers  = ['owner', 'merchant_owner', 'developer'].includes(user?.role ?? '');
+  const canUseBi        = ['merchant_owner', 'developer'].includes(user?.role ?? '');
+  const isSuperAdmin    = user?.role === 'super_admin';
   const items = canManageUsers ? [...navItems, ...adminNavItems] : navItems;
 
   const handleLogout = async () => {
@@ -114,6 +115,22 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             >
               <BarChart2 className="h-5 w-5 shrink-0" />
               {!collapsed && 'Business Growth'}
+            </Link>
+          )}
+
+          {isSuperAdmin && (
+            <Link
+              href="/admin/growth/overview"
+              onClick={onMobileClose}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                pathname.startsWith('/admin/growth')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              )}
+            >
+              <BarChart2 className="h-5 w-5 shrink-0" />
+              {!collapsed && 'Platform Growth'}
             </Link>
           )}
 
