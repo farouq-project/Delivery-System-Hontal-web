@@ -10,8 +10,11 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem('hontal_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
-    // Super admin merchant viewing mode: inject ?merchant_id on all /bi/* calls
-    if (config.url?.startsWith('/bi/')) {
+    // Super admin merchant viewing mode: inject ?merchant_id on BI and merchant-settings reads
+    const needsMerchantCtx =
+      config.url?.startsWith('/bi/') ||
+      config.url?.startsWith('/settings/platform/');
+    if (needsMerchantCtx) {
       try {
         const raw = localStorage.getItem('hontal_platform_merchant');
         if (raw) {

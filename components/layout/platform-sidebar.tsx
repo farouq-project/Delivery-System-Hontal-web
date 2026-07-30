@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
   Building2, FileText, CreditCard, Activity, Shield, ClipboardList, LogOut,
-  LayoutDashboard, BarChart2, Search, Settings2, FlaskConical, ContactRound
+  LayoutDashboard, BarChart2, Search, Settings2, FlaskConical, ContactRound,
+  Menu, ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -30,6 +32,7 @@ export function PlatformSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch {}
@@ -38,35 +41,65 @@ export function PlatformSidebar() {
   };
 
   return (
-    <aside className="flex flex-col h-screen w-60 bg-gray-900 text-white shrink-0">
-      <div className="p-4 border-b border-gray-700">
-        <h1 className="font-bold text-lg text-emerald-400">Hontal Platform</h1>
-        <p className="text-xs text-gray-400 mt-0.5">Super Admin Console</p>
+    <aside
+      className={cn(
+        'flex flex-col h-screen bg-gray-900 text-white shrink-0 transition-all duration-200',
+        collapsed ? 'w-16' : 'w-60'
+      )}
+    >
+      {/* Header */}
+      <div className={cn(
+        'flex items-center border-b border-gray-700 shrink-0',
+        collapsed ? 'justify-center p-3' : 'justify-between p-4'
+      )}>
+        {!collapsed && (
+          <div className="min-w-0">
+            <h1 className="font-bold text-lg text-emerald-400 leading-tight">Hontal Platform</h1>
+            <p className="text-xs text-gray-400 mt-0.5">Super Admin Console</p>
+          </div>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors shrink-0"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <Menu className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+        </button>
       </div>
 
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        <p className="px-3 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Platform
-        </p>
-        {platformNav.map(({ href, label, icon: Icon, exact }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-              (exact ? pathname === href : pathname.startsWith(href))
-                ? 'bg-emerald-600 text-white'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-            )}
-          >
-            <Icon className="h-5 w-5 shrink-0" />
-            {label}
-          </Link>
-        ))}
+      {/* Nav */}
+      <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
+        {!collapsed && (
+          <p className="px-3 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Platform
+          </p>
+        )}
+        {collapsed && <div className="pt-2" />}
+        {platformNav.map(({ href, label, icon: Icon, exact }) => {
+          const active = exact ? pathname === href : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              title={collapsed ? label : undefined}
+              className={cn(
+                'flex items-center rounded-md text-sm transition-colors',
+                collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2',
+                active
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              )}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              {!collapsed && label}
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="p-4 border-t border-gray-700">
-        {user && (
+      {/* Footer */}
+      <div className={cn('border-t border-gray-700 shrink-0', collapsed ? 'p-2' : 'p-4')}>
+        {!collapsed && user && (
           <div className="mb-3">
             <p className="text-sm font-medium truncate">{user.name}</p>
             <p className="text-xs text-gray-400 truncate">{user.email}</p>
@@ -77,10 +110,14 @@ export function PlatformSidebar() {
         )}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+          title={collapsed ? 'Logout' : undefined}
+          className={cn(
+            'flex items-center w-full rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors',
+            collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2'
+          )}
         >
           <LogOut className="h-5 w-5 shrink-0" />
-          Logout
+          {!collapsed && 'Logout'}
         </button>
       </div>
     </aside>
