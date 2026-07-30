@@ -25,7 +25,7 @@ export function PlatformMerchantBar() {
   const [search, setSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['admin', 'growth-targets'],
     queryFn: adminApi.merchantGrowthTargets,
     staleTime: 5 * 60 * 1000,
@@ -103,8 +103,10 @@ export function PlatformMerchantBar() {
             <div className="max-h-72 overflow-y-auto py-1">
               {isLoading ? (
                 <p className="text-xs text-gray-400 text-center py-4">Loading…</p>
+              ) : isError ? (
+                <p className="text-xs text-red-500 text-center py-4">Failed to load merchants. Check API.</p>
               ) : filtered.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-4">No merchants found.</p>
+                <p className="text-xs text-gray-400 text-center py-4">{search ? 'No matches.' : 'No merchants found.'}</p>
               ) : (
                 filtered.map((m) => (
                   <button
