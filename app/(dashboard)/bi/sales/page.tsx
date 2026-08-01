@@ -47,7 +47,7 @@ export default function BiSalesPage() {
   if (error)     return <div className="p-6 text-red-500 text-sm">Failed to load sales data.</div>;
 
   const d = data?.data?.data;
-  if (!d) return <EmptyState title="No sales data" description="Sales data will appear once orders are recorded." icon={BarChart2} />;
+  if (!d) return <EmptyState title="No sales data" description="Sales data will appear once orders are recorded." icon={<BarChart2 className="h-8 w-8" />} />;
 
   const trend: (WeeklyTrendRow | MonthlyTrendRow)[] = d.trend ?? [];
   const byType: CustomerTypeRow[] = d.by_customer_type ?? [];
