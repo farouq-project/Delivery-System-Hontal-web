@@ -63,7 +63,7 @@ function GoalCard({ goal, onEdit, onDelete, readOnly }: {
             <span className="font-semibold text-gray-900">{label}</span>
             <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1', cfg.color)}>
               <Icon className="h-3 w-3" />
-              {goal.status.replace('_', ' ')}
+              {goal.status.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">{goal.period_type}</span>
           </div>
@@ -140,14 +140,17 @@ export default function BiGoalsPage() {
   const createMutation = useMutation({
     mutationFn: (d: Record<string, unknown>) => growthApi.createGoal(d),
     onSuccess: () => { invalidate(); setShowForm(false); setForm(EMPTY_FORM); },
+    onError: () => alert('Failed to create goal. Please try again.'),
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, d }: { id: number; d: Record<string, unknown> }) => growthApi.updateGoal(id, d),
     onSuccess: () => { invalidate(); setEditing(null); setForm(EMPTY_FORM); setShowForm(false); },
+    onError: () => alert('Failed to update goal. Please try again.'),
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => growthApi.deleteGoal(id),
     onSuccess: () => invalidate(),
+    onError: () => alert('Failed to delete goal. Please try again.'),
   });
 
   const openCreate = () => { setForm(EMPTY_FORM); setEditing(null); setShowForm(true); };

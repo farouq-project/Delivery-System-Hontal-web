@@ -59,14 +59,17 @@ export default function BiMarketingPage() {
   const createMutation = useMutation({
     mutationFn: (d: Record<string, unknown>) => growthApi.createCampaign(d),
     onSuccess: () => { invalidate(); setShowForm(false); setForm(EMPTY_FORM); },
+    onError: () => alert('Failed to create campaign. Please try again.'),
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, d }: { id: number; d: Record<string, unknown> }) => growthApi.updateCampaign(id, d),
     onSuccess: () => { invalidate(); setEditing(null); setForm(EMPTY_FORM); },
+    onError: () => alert('Failed to update campaign. Please try again.'),
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => growthApi.deleteCampaign(id),
     onSuccess: () => invalidate(),
+    onError: () => alert('Failed to delete campaign. Please try again.'),
   });
 
   const openCreate = () => { setForm(EMPTY_FORM); setEditing(null); setShowForm(true); };
@@ -138,7 +141,7 @@ export default function BiMarketingPage() {
           <KpiCard label="Customers Acquired" value={fmtNum(agg.total_customers_acquired ?? 0)} sub={`CAC: ${fmtCurrency(agg.overall_cac)}`} />
           <KpiCard label="Overall ROAS" value={fmtRoas(agg.overall_roas)} sub={`Revenue: Rp ${fmtNum(agg.total_attributed_revenue ?? 0)}`} />
         </div>
-        <div className="grid grid-cols-3 gap-3 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
           <KpiCard label="Reach" value={fmtNum(agg.total_reach ?? 0)} />
           <KpiCard label="WA Conversations" value={fmtNum(agg.total_conversations ?? 0)} />
           <KpiCard label="Conversion Rate" value={fmtRate(agg.overall_conversion_rate)} sub="Orders / Leads" />
@@ -146,9 +149,13 @@ export default function BiMarketingPage() {
       </section>
 
       {/* By Lead Source */}
-      {bySrc.length > 0 && (
-        <section>
-          <SectionHeader title="Revenue by Lead Source" />
+      <section>
+        <SectionHeader title="Revenue by Lead Source" />
+        {bySrc.length === 0 ? (
+          <p className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            Lead source breakdown will appear once campaigns with different lead sources are added.
+          </p>
+        ) : (
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -177,8 +184,8 @@ export default function BiMarketingPage() {
               </table>
             </div>
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Campaign list */}
       <section>
@@ -200,11 +207,11 @@ export default function BiMarketingPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                       <div><p className="text-xs text-gray-400">Spend</p><p className="text-sm font-medium">{fmtIdr(c.spend)}</p></div>
                       <div><p className="text-xs text-gray-400">Leads</p><p className="text-sm font-medium">{fmtNum(c.leads)}</p></div>
-                      <div><p className="text-xs text-gray-400">CAC</p><p className="text-sm font-medium">{fmtCurrency(c.cac)}</p></div>
-                      <div><p className="text-xs text-gray-400">ROAS</p><p className="text-sm font-medium">{fmtRoas(c.roas)}</p></div>
+                      <div><p className="text-xs text-gray-400">Customer Acquisition Cost</p><p className="text-sm font-medium">{fmtCurrency(c.cac)}</p></div>
+                      <div><p className="text-xs text-gray-400">Return on Ad Spend</p><p className="text-sm font-medium">{fmtRoas(c.roas)}</p></div>
                       <div><p className="text-xs text-gray-400">Revenue</p><p className="text-sm font-medium text-green-700">{fmtIdr(c.attributed_revenue)}</p></div>
                       <div><p className="text-xs text-gray-400">Orders</p><p className="text-sm font-medium">{fmtNum(c.orders)}</p></div>
-                      <div><p className="text-xs text-gray-400">Conv. Rate</p><p className="text-sm font-medium">{fmtRate(c.conversion_rate)}</p></div>
+                      <div><p className="text-xs text-gray-400">Conversion Rate</p><p className="text-sm font-medium">{fmtRate(c.conversion_rate)}</p></div>
                       <div><p className="text-xs text-gray-400">Acquired</p><p className="text-sm font-medium">{fmtNum(c.customers_acquired)}</p></div>
                     </div>
                   </div>
@@ -246,7 +253,7 @@ export default function BiMarketingPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {([['platform', 'Platform', PLATFORMS], ['lead_source', 'Lead Source', LEAD_SOURCES], ['campaign_type', 'Type', TYPES]] as [keyof FormState, string, string[]][]).map(([key, lbl, opts]) => (
                   <div key={key}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{lbl}</label>
@@ -270,7 +277,7 @@ export default function BiMarketingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {([
                   ['budget','Budget (Rp)'],['spend','Actual Spend (Rp)'],
                   ['reach','Reach'],['clicks','Clicks'],

@@ -83,7 +83,7 @@ function OrdersPage() {
     queryKey: ['orders', page, search, status, dateFrom, dateTo],
     queryFn: () => ordersApi.list({
       page,
-      per_page: (dateFrom || dateTo) ? 200 : 20,
+      per_page: 200,
       search,
       status: status === 'all' ? undefined : status,
       date_from: dateFrom || undefined,

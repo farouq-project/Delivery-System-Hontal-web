@@ -445,7 +445,7 @@ export const subscriptionApi = {
 
 // Business Intelligence (Phase 4.1) — existing endpoints untouched
 export const biApi = {
-  overview:   () => api.get('/bi/overview'),
+  overview:   (month?: string) => api.get('/bi/overview', { params: month ? { month } : undefined }),
   customers:  () => api.get('/bi/customers'),
   operations: () => api.get('/bi/operations'),
   drivers:    () => api.get('/bi/drivers'),

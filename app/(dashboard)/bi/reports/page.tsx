@@ -202,7 +202,7 @@ export default function BiReportsPage() {
           {/* ── Customers ── */}
           <SectionDivider title="Customers" />
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {['healthy', 'active', 'at_risk', 'dormant', 'lost'].map((s) => (
                 <div key={s} className="text-center">
                   <p className="text-xs text-gray-400 capitalize">{s.replace('_', ' ')}</p>
@@ -250,21 +250,23 @@ export default function BiReportsPage() {
           )}
 
           {/* ── Recommendations ── */}
-          {(d.recommendations?.length ?? 0) > 0 && (
-            <>
-              <SectionDivider title="Recommendations" />
-              <div className="space-y-3">
-                {d.recommendations.map((r: ReportRecommendation, i: number) => {
-                  const Icon = PRIORITY_ICON[r.priority] ?? Info;
-                  return (
-                    <div key={i} className={cn('flex gap-3 rounded-lg border p-3', PRIORITY_COLORS[r.priority])}>
-                      <Icon className="h-4 w-4 shrink-0 mt-0.5 text-current" />
-                      <p className="text-sm text-gray-800">{r.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
+          <SectionDivider title="Recommendations" />
+          {(d.recommendations?.length ?? 0) > 0 ? (
+            <div className="space-y-3">
+              {d.recommendations.map((r: ReportRecommendation, i: number) => {
+                const Icon = PRIORITY_ICON[r.priority] ?? Info;
+                return (
+                  <div key={i} className={cn('flex gap-3 rounded-lg border p-3', PRIORITY_COLORS[r.priority])}>
+                    <Icon className="h-4 w-4 shrink-0 mt-0.5 text-current" />
+                    <p className="text-sm text-gray-800">{r.text}</p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 bg-green-50 border border-green-200 rounded-lg p-3">
+              No recommendations — all key metrics are within healthy ranges.
+            </p>
           )}
 
           {/* ── Next Month Priorities ── */}
