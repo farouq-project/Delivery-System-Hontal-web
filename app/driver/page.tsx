@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { STATUS_COLORS, formatTime } from '@/lib/utils';
-import { CheckCircle, XCircle, MapPin, Package, LogOut, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, MapPin, Package, LogOut, MessageSquare, Navigation } from 'lucide-react';
 import DeliverModal from './deliver-modal';
 import { InstallButton } from '@/components/layout/install-button';
 
@@ -170,6 +170,8 @@ function DriverApp() {
                 requested_delivery_start?: string;
                 requested_delivery_end?: string;
                 delivery_notes?: string | null;
+                delivery_latitude?: number | null;
+                delivery_longitude?: number | null;
               };
             }) => (
               <div key={stop.stop_id} className="bg-white rounded-xl border shadow-sm p-4">
@@ -191,7 +193,18 @@ function DriverApp() {
                 <div className="space-y-1 mb-3">
                   <div className="flex items-start gap-2 text-sm">
                     <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-                    <p className="text-gray-600">{stop.order.delivery_address}</p>
+                    {stop.order.delivery_latitude && stop.order.delivery_longitude ? (
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${stop.order.delivery_latitude},${stop.order.delivery_longitude}&travelmode=driving`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline underline-offset-2"
+                      >
+                        {stop.order.delivery_address}
+                      </a>
+                    ) : (
+                      <p className="text-gray-600">{stop.order.delivery_address}</p>
+                    )}
                   </div>
                   <div className="flex items-start gap-2 text-sm">
                     <Package className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
@@ -210,6 +223,16 @@ function DriverApp() {
                   )}
                 </div>
 
+                {stop.order.delivery_latitude && stop.order.delivery_longitude && (
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${stop.order.delivery_latitude},${stop.order.delivery_longitude}&travelmode=driving`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 w-full mb-2 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors"
+                  >
+                    <Navigation className="h-4 w-4" /> Navigate
+                  </a>
+                )}
                 {stop.order.status !== 'delivered' && stop.order.status !== 'failed' && (
                   <div className="flex gap-2">
                     <Button
