@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { STATUS_COLORS, formatTime } from '@/lib/utils';
-import { CheckCircle, XCircle, MapPin, Package, LogOut } from 'lucide-react';
+import { CheckCircle, XCircle, MapPin, Package, LogOut, MessageSquare } from 'lucide-react';
 import DeliverModal from './deliver-modal';
 import { InstallButton } from '@/components/layout/install-button';
 
@@ -169,6 +169,7 @@ function DriverApp() {
                 order_number: string;
                 requested_delivery_start?: string;
                 requested_delivery_end?: string;
+                delivery_notes?: string | null;
               };
             }) => (
               <div key={stop.stop_id} className="bg-white rounded-xl border shadow-sm p-4">
@@ -200,6 +201,12 @@ function DriverApp() {
                     <p className="text-xs text-blue-500 ml-6">
                       Window: {formatTime(stop.order.requested_delivery_start)}–{formatTime(stop.order.requested_delivery_end)}
                     </p>
+                  )}
+                  {stop.order.delivery_notes && (
+                    <div className="flex items-start gap-2 text-sm mt-1">
+                      <MessageSquare className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                      <p className="text-amber-700 bg-amber-50 rounded px-2 py-1 text-xs leading-snug">{stop.order.delivery_notes}</p>
+                    </div>
                   )}
                 </div>
 
