@@ -488,7 +488,9 @@ export const driverApi = {
     api.patch('/driver/location', { latitude: lat, longitude: lng, accuracy_m: accuracy }),
   updateStatus: (status: string) => api.patch('/driver/status', { status }),
   deliver: (stopId: number, formData: FormData) =>
-    api.post(`/driver/stops/${stopId}/deliver`, formData),
+    api.post(`/driver/stops/${stopId}/deliver`, formData, {
+      headers: { 'Content-Type': undefined },
+    }),
   fail: (stopId: number, reason: string) =>
     api.post(`/driver/stops/${stopId}/fail`, { reason }),
   history: () => api.get('/driver/history'),
