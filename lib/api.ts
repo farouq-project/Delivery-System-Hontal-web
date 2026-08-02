@@ -6,6 +6,13 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  // When sending FormData let the browser set Content-Type + boundary.
+  // Deleting here (after header merge) is the only reliable way to clear
+  // the 'application/json' instance default across all axios versions.
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('hontal_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -488,9 +495,7 @@ export const driverApi = {
     api.patch('/driver/location', { latitude: lat, longitude: lng, accuracy_m: accuracy }),
   updateStatus: (status: string) => api.patch('/driver/status', { status }),
   deliver: (stopId: number, formData: FormData) =>
-    api.post(`/driver/stops/${stopId}/deliver`, formData, {
-      headers: { 'Content-Type': undefined },
-    }),
+    api.post(`/driver/stops/${stopId}/deliver`, formData),
   fail: (stopId: number, reason: string) =>
     api.post(`/driver/stops/${stopId}/fail`, { reason }),
   history: () => api.get('/driver/history'),
