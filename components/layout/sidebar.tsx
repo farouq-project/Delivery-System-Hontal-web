@@ -13,22 +13,7 @@ import { authApi } from '@/lib/api';
 import { useState } from 'react';
 import { InstallButton } from './install-button';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
-
-const navItems = [
-  { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-  { href: '/customers',  label: 'Customers',   icon: Users },
-  { href: '/drivers',    label: 'Drivers',     icon: Truck },
-  { href: '/orders',     label: 'Orders',      icon: PackageOpen },
-  { href: '/dispatch',   label: 'Dispatch',    icon: Route },
-  { href: '/klotter',    label: 'Klotter',     icon: Layers },
-  { href: '/live',       label: 'Live Map',    icon: Map },
-  { href: '/reports',    label: 'Reports',     icon: ClipboardList },
-];
-
-const adminNavItems = [
-  { href: '/users',    label: 'Users',    icon: UserCog },
-  { href: '/settings', label: 'Settings', icon: Settings },
-];
+import { useT } from '@/hooks/use-t';
 
 
 interface SidebarProps {
@@ -41,6 +26,23 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
+  const t = useT();
+
+  const navItems = [
+    { href: '/dashboard',  label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/customers',  label: t.nav.customers,  icon: Users },
+    { href: '/drivers',    label: t.nav.drivers,    icon: Truck },
+    { href: '/orders',     label: t.nav.orders,     icon: PackageOpen },
+    { href: '/dispatch',   label: t.nav.dispatch,   icon: Route },
+    { href: '/klotter',    label: t.nav.klotter,    icon: Layers },
+    { href: '/live',       label: t.nav.live_map,   icon: Map },
+    { href: '/reports',    label: t.nav.reports,    icon: ClipboardList },
+  ];
+
+  const adminNavItems = [
+    { href: '/users',    label: t.nav.users,    icon: UserCog },
+    { href: '/settings', label: t.nav.settings, icon: Settings },
+  ];
 
   const canManageUsers  = ['owner', 'merchant_owner', 'developer'].includes(user?.role ?? '');
   const canUseBi        = ['merchant_owner', 'developer'].includes(user?.role ?? '');
@@ -113,7 +115,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               )}
             >
               <BarChart2 className="h-5 w-5 shrink-0" />
-              {!collapsed && 'Business Growth'}
+              {!collapsed && t.nav.business_intelligence}
             </Link>
           )}
 
@@ -137,7 +139,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
           >
             <LogOut className="h-5 w-5 shrink-0" />
-            {!collapsed && 'Logout'}
+            {!collapsed && t.nav.logout}
           </button>
         </div>
       </aside>
