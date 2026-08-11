@@ -20,6 +20,12 @@ export function formatCurrency(value: number | null | undefined): string {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value ?? 0);
 }
 
+// Returns YYYY-MM-DD in the browser's local timezone, not UTC.
+// new Date().toISOString() is UTC — wrong at midnight WIB (UTC+7).
+export function localDateString(date = new Date()): string {
+  return date.toLocaleDateString('en-CA'); // en-CA always produces YYYY-MM-DD
+}
+
 export function formatDate(date: string | null | undefined, fmt = 'dd MMM yyyy'): string {
   if (!date) return '-';
   try { return format(parseISO(date), fmt); } catch { return date; }

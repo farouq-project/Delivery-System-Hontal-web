@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { driversApi, routesApi } from '@/lib/api';
 import { Route } from '@/types';
 import { LiveDriver } from '@/types';
-import { DRIVER_STATUS_COLORS, formatDate } from '@/lib/utils';
+import { DRIVER_STATUS_COLORS, formatDate, localDateString } from '@/lib/utils';
 import { WifiOff } from 'lucide-react';
 
 function isGpsStale(lastSeen: string | null): boolean {
@@ -28,7 +28,7 @@ export default function LivePage() {
     refetchInterval: 15_000,
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString();
 
   const { data: routesData } = useQuery({
     queryKey: ['routes', today],

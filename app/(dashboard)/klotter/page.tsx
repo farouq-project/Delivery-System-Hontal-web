@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ordersApi } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { STATUS_COLORS, formatCurrency, formatTime, formatDate, VIP_COLORS } from '@/lib/utils';
+import { STATUS_COLORS, formatCurrency, formatTime, formatDate, VIP_COLORS, localDateString } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
 import { Layers, Clock } from 'lucide-react';
@@ -53,7 +53,7 @@ interface DriverKlotters {
 
 export default function KlotterPage() {
   const { user } = useAuthStore();
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(localDateString());
 
   const canManageSettings = ['super_admin', 'developer', 'merchant_owner'].includes(user?.role ?? '');
 

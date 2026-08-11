@@ -6,7 +6,7 @@ import { routesApi, driversApi, ordersApi } from '@/lib/api';
 import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { STATUS_COLORS, VIP_COLORS, formatTime } from '@/lib/utils';
+import { STATUS_COLORS, VIP_COLORS, formatTime, localDateString } from '@/lib/utils';
 import { Loader2, Trash2, RotateCcw, X, Lock, Unlock, Play, RefreshCw, Zap, TrendingDown, BarChart2, HelpCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/auth';
@@ -18,7 +18,7 @@ export default function DispatchPage() {
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
   const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString();
   const [confirmDeleteDispatch, setConfirmDeleteDispatch] = useState(false);
   const [showRouteQualityHelp, setShowRouteQualityHelp] = useState(false);
   const [confirmResetUnassigned, setConfirmResetUnassigned] = useState(false);

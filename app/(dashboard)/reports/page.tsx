@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { reportsApi, ordersApi } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, localDateString } from '@/lib/utils';
 import { ArrowUp, ArrowDown, ArrowUpDown, ClipboardList } from 'lucide-react';
 
 interface CashierRow {
@@ -20,7 +20,7 @@ interface CashierRow {
 type SortKey = keyof CashierRow;
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return localDateString();
 }
 
 export default function ReportsPage() {

@@ -17,6 +17,7 @@ import { ProductSuggestInput } from '@/components/product-suggest-input';
 import { Search, Plus, Trash2, Link } from 'lucide-react';
 import { useCashierStore } from '@/store/cashier';
 import { parseMapsUrl, isShortenedMapsUrl } from '@/lib/maps-parser';
+import { localDateString } from '@/lib/utils';
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -137,7 +138,7 @@ export default function OrderForm({ onClose, order }: Props) {
       payment_method:           order.payment_method ?? 'cash',
       driver_id:                order.driver_id ?? null,
     } : {
-      requested_delivery_date: new Date().toISOString().split('T')[0],
+      requested_delivery_date: localDateString(),
       requested_delivery_start: nowTime(),
       items: [{ name: '', quantity: undefined, notes: '' }],
       cashier_name: cashierName,

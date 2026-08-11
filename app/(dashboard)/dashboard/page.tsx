@@ -7,11 +7,12 @@ import { PackageOpen, Truck, CheckCircle, Clock } from 'lucide-react';
 import { LiveDriver } from '@/types';
 import { useAuthStore } from '@/store/auth';
 import ExecutiveDashboard from '@/components/executive-dashboard';
+import { localDateString } from '@/lib/utils';
 
 const OWNER_ROLES = ['merchant_owner', 'developer', 'super_admin'];
 
 function DispatcherDashboard() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString();
 
   const { data: ordersData } = useQuery({
     queryKey: ['orders', 'summary', today],
