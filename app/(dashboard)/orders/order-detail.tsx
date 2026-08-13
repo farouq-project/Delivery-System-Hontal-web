@@ -234,8 +234,8 @@ export default function OrderDetail({ order, onClose }: Props) {
                   <div key={i} className="flex gap-3 text-sm">
                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
                     <div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[h.status]}`}>
-                        {h.status.replace('_', ' ')}
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[h.status ?? '']}`}>
+                        {h.status?.replace('_', ' ') ?? '—'}
                       </span>
                       {h.notes && <p className="text-gray-500 text-xs mt-0.5">{h.notes}</p>}
                       <p className="text-gray-400 text-xs">{formatDate(h.created_at, 'dd MMM HH:mm')}</p>

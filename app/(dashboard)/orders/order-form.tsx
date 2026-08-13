@@ -486,7 +486,7 @@ export default function OrderForm({ onClose, order }: Props) {
                   {drivers.map((d) => (
                     <SelectItem key={d.id} value={String(d.id)}>
                       {d.driver_name}
-                      <span className="ml-2 text-xs text-gray-400">({d.status.replace('_', ' ')})</span>
+                      <span className="ml-2 text-xs text-gray-400">({d.status?.replace('_', ' ') ?? '—'})</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
