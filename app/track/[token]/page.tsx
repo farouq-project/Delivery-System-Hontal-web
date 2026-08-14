@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { PLATFORM } from '@/lib/brand';
 import { CheckCircle, Clock, XCircle, Truck, Package } from 'lucide-react';
+
+const TrackingMap = dynamic(() => import('./tracking-map'), {
+  ssr: false,
+  loading: () => <div style={{ height: 280 }} className="bg-gray-100 animate-pulse" />,
+});
 
 interface TrackingData {
   order_number: string;
@@ -15,6 +21,14 @@ interface TrackingData {
   notes?: string | null;
   predicted_delivery_time?: string | null;
   prediction_source?: 'customer_history' | 'merchant_average' | null;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
+  driver_lat?: number | null;
+  driver_lng?: number | null;
+  is_kirim?: boolean;
+  depot_name?: string | null;
+  depot_latitude?: number | null;
+  depot_longitude?: number | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -77,41 +91,58 @@ export default function TrackingPage() {
           )}
 
           {data && statusCfg && (
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-5 border-b border-gray-100">
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Order</p>
-                <p className="text-xl font-bold text-gray-900">{data.order_number}</p>
-                <p className="text-sm text-gray-600 mt-0.5">{data.customer_name}</p>
-              </div>
-
-              <div className="px-6 py-5 flex items-center gap-4">
-                <span className={statusCfg.color}>{statusCfg.icon}</span>
-                <div>
-                  <p className="font-semibold text-gray-900">{statusCfg.label}</p>
-                  {data.predicted_delivery_time ? (
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                      <Clock className="h-3.5 w-3.5" />
-                      Est. {new Date(data.predicted_delivery_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  ) : data.estimated_arrival ? (
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                      <Clock className="h-3.5 w-3.5" />
-                      ETA {data.estimated_arrival}
-                    </p>
-                  ) : null}
-                  {data.driver_name && (
-                    <p className="text-sm text-gray-500 mt-0.5">Driver: {data.driver_name}</p>
-                  )}
+            <>
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Order</p>
+                  <p className="text-xl font-bold text-gray-900">{data.order_number}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">{data.customer_name}</p>
                 </div>
+
+                <div className="px-6 py-5 flex items-center gap-4">
+                  <span className={statusCfg.color}>{statusCfg.icon}</span>
+                  <div>
+                    <p className="font-semibold text-gray-900">{statusCfg.label}</p>
+                    {data.predicted_delivery_time ? (
+                      <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        Est. {new Date(data.predicted_delivery_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    ) : data.estimated_arrival ? (
+                      <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        ETA {data.estimated_arrival}
+                      </p>
+                    ) : null}
+                    {data.driver_name && (
+                      <p className="text-sm text-gray-500 mt-0.5">Driver: {data.driver_name}</p>
+                    )}
+                  </div>
+                </div>
+
+                {data.notes && (
+                  <div className="px-6 pb-5">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Notes</p>
+                    <p className="text-sm text-gray-700">{data.notes}</p>
+                  </div>
+                )}
               </div>
 
-              {data.notes && (
-                <div className="px-6 pb-5">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Notes</p>
-                  <p className="text-sm text-gray-700">{data.notes}</p>
+              {data.delivery_latitude && data.delivery_longitude && (
+                <div className="mt-3 rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                  <TrackingMap
+                    deliveryLat={data.delivery_latitude}
+                    deliveryLng={data.delivery_longitude}
+                    customerName={data.customer_name}
+                    driverLat={data.driver_lat}
+                    driverLng={data.driver_lng}
+                    depotLat={data.depot_latitude}
+                    depotLng={data.depot_longitude}
+                    depotName={data.depot_name}
+                  />
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
       </main>

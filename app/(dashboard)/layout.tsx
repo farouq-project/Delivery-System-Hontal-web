@@ -22,6 +22,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace('/login');
     } else if (user?.role === 'super_admin') {
       router.replace('/admin/applications');
+    } else if (user?.role === 'hontal_dispatcher') {
+      router.replace('/kirim/dispatch');
     } else if (!isDispatcher()) {
       router.replace('/driver');
     }

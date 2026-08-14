@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Truck, PackageOpen,
   Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList, Settings,
-  BarChart2
+  BarChart2, Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -28,15 +28,20 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const t = useT();
 
+  const isOps = user?.role === 'merchant_ops';
+
   const navItems = [
     { href: '/dashboard',  label: t.nav.dashboard, icon: LayoutDashboard },
     { href: '/customers',  label: t.nav.customers,  icon: Users },
-    { href: '/drivers',    label: t.nav.drivers,    icon: Truck },
+    ...(!isOps ? [{ href: '/drivers', label: t.nav.drivers, icon: Truck }] : []),
     { href: '/orders',     label: t.nav.orders,     icon: PackageOpen },
-    { href: '/dispatch',   label: t.nav.dispatch,   icon: Route },
-    { href: '/klotter',    label: t.nav.klotter,    icon: Layers },
+    ...(!isOps ? [
+      { href: '/dispatch', label: t.nav.dispatch,   icon: Route  },
+      { href: '/klotter',  label: t.nav.klotter,    icon: Layers },
+    ] : []),
     { href: '/live',       label: t.nav.live_map,   icon: Map },
     { href: '/reports',    label: t.nav.reports,    icon: ClipboardList },
+    ...(isOps ? [{ href: '/depots', label: 'Depots', icon: Building2 }] : []),
   ];
 
   const adminNavItems = [

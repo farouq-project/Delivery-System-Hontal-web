@@ -37,6 +37,8 @@ export default function LoginPage() {
       setAuth(user, token);
       if (user.role === 'driver') {
         router.push('/driver');
+      } else if (user.role === 'hontal_dispatcher') {
+        router.push('/kirim/dispatch');
       } else {
         router.push('/dashboard');
       }

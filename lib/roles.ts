@@ -10,13 +10,15 @@
  */
 
 export const ROLE_LABELS: Record<string, string> = {
-  super_admin:    'Platform Admin',
-  developer:      'Developer',
-  owner:          'Owner',
-  merchant_owner: 'Owner',
-  dispatcher:     'Admin',
-  driver:         'Driver',
-  kasir:          'Kasir',
+  super_admin:       'Platform Admin',
+  developer:         'Developer',
+  owner:             'Owner',
+  merchant_owner:    'Owner',
+  dispatcher:        'Admin',
+  driver:            'Driver',
+  kasir:             'Kasir',
+  merchant_ops:      'Ops',
+  hontal_dispatcher: 'Kirim Dispatcher',
 };
 
 export function getRoleLabel(role: string): string {
@@ -27,4 +29,4 @@ export function getRoleLabel(role: string): string {
 export const OWNER_ROLES = ['merchant_owner', 'developer', 'super_admin'] as const;
 
 /** Roles allowed to log in to the merchant dashboard. */
-export const DASHBOARD_ROLES = ['merchant_owner', 'developer', 'super_admin', 'dispatcher'] as const;
+export const DASHBOARD_ROLES = ['merchant_owner', 'developer', 'super_admin', 'dispatcher', 'merchant_ops'] as const;
