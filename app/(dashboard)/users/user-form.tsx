@@ -21,7 +21,7 @@ const schema = z.object({
   email:       z.string().email(),
   phone:       z.string().optional(),
   password:    z.string().min(8, 'Min 8 characters').optional().or(z.literal('')),
-  role:        z.enum(['super_admin', 'developer', 'owner', 'merchant_owner', 'dispatcher', 'driver', 'kasir']),
+  role:        z.enum(['super_admin', 'developer', 'owner', 'merchant_owner', 'dispatcher', 'driver', 'kasir', 'merchant_ops', 'hontal_dispatcher']),
   merchant_id: z.number().optional().nullable(),
   is_active:   z.boolean().optional(),
   can_logout:  z.boolean().optional(),
