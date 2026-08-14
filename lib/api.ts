@@ -123,6 +123,17 @@ export const ordersApi = {
     api.post('/orders/bulk-update-cashier', { order_ids: ids, cashier_name }),
 };
 
+// Hontal Kirim
+export const kirimApi = {
+  depots: {
+    list:    (includeInactive = false) => api.get('/kirim/depots', { params: includeInactive ? { include_inactive: 1 } : {} }),
+    create:  (data: Record<string, unknown>) => api.post('/kirim/depots', data),
+    update:  (id: number, data: Record<string, unknown>) => api.put(`/kirim/depots/${id}`, data),
+    archive: (id: number) => api.delete(`/kirim/depots/${id}`),
+  },
+  resolveMapsLink: (url: string) => api.post('/customers/resolve-maps-link', { url }),
+};
+
 // Reports
 export const reportsApi = {
   deliverySummary: (params?: Record<string, unknown>) => api.get('/reports/delivery-summary', { params }),

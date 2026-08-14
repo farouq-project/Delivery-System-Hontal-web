@@ -44,14 +44,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     ...(isOps ? [{ href: '/depots', label: 'Depots', icon: Building2 }] : []),
   ];
 
-  const adminNavItems = [
-    { href: '/users',    label: t.nav.users,    icon: UserCog },
-    { href: '/settings', label: t.nav.settings, icon: Settings },
-  ];
 
   const canManageUsers  = ['owner', 'merchant_owner', 'developer'].includes(user?.role ?? '');
-  const canUseBi        = ['merchant_owner', 'developer'].includes(user?.role ?? '');
-  const items = canManageUsers ? [...navItems, ...adminNavItems] : navItems;
+  const canUseBi        = ['merchant_owner', 'developer', 'merchant_ops'].includes(user?.role ?? '');
+  const items = [
+    ...navItems,
+    ...(canManageUsers ? [{ href: '/users',    label: t.nav.users,    icon: UserCog }] : []),
+    ...(canManageUsers || isOps ? [{ href: '/settings', label: t.nav.settings, icon: Settings }] : []),
+  ];
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch {}

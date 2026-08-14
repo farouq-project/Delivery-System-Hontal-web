@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/auth';
 import ExecutiveDashboard from '@/components/executive-dashboard';
 import { localDateString } from '@/lib/utils';
 
-const OWNER_ROLES = ['merchant_owner', 'developer', 'super_admin'];
+const OWNER_ROLES = ['merchant_owner', 'developer', 'super_admin', 'merchant_ops'];
 
 function DispatcherDashboard() {
   const today = localDateString();
