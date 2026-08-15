@@ -37,7 +37,7 @@ function TopupDialog({ merchant, onClose }: { merchant: KirimMerchant; onClose: 
   const mutation = useMutation({
     mutationFn: () => adminApi.kirim.topup(merchant.id, parseInt(amount) * 1000, note || undefined),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'kirim', 'merchants'] }); onClose(); },
-    onError: (e) => setError(getErrorMessage(e)),
+    onError: (e) => setError(getErrorMessage(e) ?? ''),
   });
 
   return (
@@ -98,7 +98,7 @@ function CreateMerchantDialog({ onClose }: { onClose: () => void }) {
       initial_topup_idr: form.initial_topup_idr ? parseInt(form.initial_topup_idr) * 1000 : 0,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'kirim', 'merchants'] }); onClose(); },
-    onError: (e) => setError(getErrorMessage(e)),
+    onError: (e) => setError(getErrorMessage(e) ?? ''),
   });
 
   const field = (label: string, key: keyof typeof form, placeholder?: string, type = 'text') => (

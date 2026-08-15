@@ -43,7 +43,7 @@ function CreateDispatcherDialog({ onClose }: { onClose: () => void }) {
   const mutation = useMutation({
     mutationFn: () => adminApi.kirim.createDispatcher(form),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'kirim', 'dispatchers'] }); onClose(); },
-    onError: (e) => setError(getErrorMessage(e)),
+    onError: (e) => setError(getErrorMessage(e) ?? ''),
   });
 
   return (
@@ -84,7 +84,7 @@ function CreateDriverDialog({ onClose }: { onClose: () => void }) {
   const mutation = useMutation({
     mutationFn: () => adminApi.kirim.createDriver(form),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'kirim', 'drivers'] }); onClose(); },
-    onError: (e) => setError(getErrorMessage(e)),
+    onError: (e) => setError(getErrorMessage(e) ?? ''),
   });
 
   return (
