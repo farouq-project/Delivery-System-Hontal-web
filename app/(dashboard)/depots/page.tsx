@@ -163,6 +163,19 @@ export default function DepotsPage() {
     queryFn: () => kirimApi.depots.list(showInactive),
   });
 
+  const { data: creditData } = useQuery({
+    queryKey: ['kirim-balance'],
+    queryFn: kirimApi.credit.balance,
+    staleTime: 60_000,
+  });
+  const credit = creditData?.data?.data as {
+    balance_idr: number;
+    deliveries_remaining: number;
+    is_blocked: boolean;
+    low_balance: boolean;
+    kirim_enabled: boolean;
+  } | undefined;
+
   const archiveMutation = useMutation({
     mutationFn: (id: number) => kirimApi.depots.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['depots'] }); setArchiving(null); },
@@ -192,6 +205,32 @@ export default function DepotsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Kirim credit balance */}
+      {credit && credit.kirim_enabled && (
+        <div className={`rounded-xl border p-4 mb-6 flex items-center justify-between gap-4 ${credit.is_blocked ? 'bg-red-50 border-red-200' : credit.low_balance ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Hontal Kirim Credit</p>
+            <p className={`text-2xl font-bold mt-0.5 ${credit.is_blocked ? 'text-red-700' : credit.low_balance ? 'text-amber-700' : 'text-blue-700'}`}>
+              Rp {credit.balance_idr.toLocaleString('id-ID')}
+            </p>
+            <p className="text-sm text-gray-500 mt-0.5">{credit.deliveries_remaining} deliveries remaining</p>
+          </div>
+          {credit.is_blocked ? (
+            <div className="text-right">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-100 border border-red-200 px-2.5 py-1 rounded-full">Akun Terblokir</span>
+              <p className="text-xs text-red-500 mt-1">Top up to resume orders</p>
+            </div>
+          ) : credit.low_balance ? (
+            <div className="text-right">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-full">Saldo Rendah</span>
+              <p className="text-xs text-amber-600 mt-1">Contact Hontal to top up</p>
+            </div>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-full">Aktif</span>
+          )}
+        </div>
+      )}
 
       {isLoading && (
         <div className="text-sm text-gray-400 py-8 text-center">Loading depots…</div>

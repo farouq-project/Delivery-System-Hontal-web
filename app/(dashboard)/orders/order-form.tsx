@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ordersApi, customersApi, driversApi, settingsApi } from '@/lib/api';
+import { ordersApi, customersApi, driversApi, settingsApi, kirimApi } from '@/lib/api';
 import { Customer, DeliveryOrder, Driver } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,6 +82,8 @@ export default function OrderForm({ onClose, order }: Props) {
   const [mapsError, setMapsError]     = useState('');
   const [extracting, setExtracting]   = useState(false);
   const [depotWarning, setDepotWarning] = useState<number | null>(null);
+  const [deliveryType, setDeliveryType] = useState<'merchant_managed' | 'hontal_kirim'>('merchant_managed');
+  const [kirimDepotId, setKirimDepotId] = useState<number | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const skipNextSearch = useRef(false);
 
@@ -107,6 +109,23 @@ export default function OrderForm({ onClose, order }: Props) {
     queryFn: settingsApi.get,
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: kirimBalanceData } = useQuery({
+    queryKey: ['kirim-balance'],
+    queryFn: kirimApi.credit.balance,
+    staleTime: 60_000,
+    enabled: !isEdit,
+  });
+  const kirimEnabled     = kirimBalanceData?.data?.data?.kirim_enabled ?? false;
+  const kirimBalance     = kirimBalanceData?.data?.data?.balance_idr ?? 0;
+  const kirimCanAfford   = (kirimBalanceData?.data?.data?.deliveries_remaining ?? 0) > 0;
+
+  const { data: kirimDepotsData } = useQuery({
+    queryKey: ['depots'],
+    queryFn: () => kirimApi.depots.list(false),
+    enabled: !isEdit && deliveryType === 'hontal_kirim',
+  });
+  const kirimDepots: { id: number; name: string; address: string }[] = kirimDepotsData?.data?.data ?? [];
   const depotLat    = depotSettingsData?.data?.data?.depot_latitude    ?? null;
   const depotLng    = depotSettingsData?.data?.data?.depot_longitude   ?? null;
   const depotRadius = depotSettingsData?.data?.data?.location_validation_radius ?? 30;
@@ -250,6 +269,24 @@ export default function OrderForm({ onClose, order }: Props) {
         customerId = created.data.data.id;
       }
 
+      // Kirim order path
+      if (deliveryType === 'hontal_kirim') {
+        return kirimApi.orders.create({
+          depot_id:          kirimDepotId!,
+          customer_id:       customerId,
+          customer_name:     data.customer_name,
+          customer_phone:    data.customer_phone ?? undefined,
+          delivery_address:  data.delivery_address,
+          delivery_latitude: coords?.lat,
+          delivery_longitude: coords?.lng,
+          delivery_notes:    data.notes ?? undefined,
+          product_name:      data.items[0]?.name ?? '',
+          order_value:       data.order_value,
+          payment_method:    data.payment_method,
+          requested_delivery_date: data.requested_delivery_date,
+        });
+      }
+
       return ordersApi.create({
         ...data,
         customer_id:       customerId,
@@ -281,7 +318,69 @@ export default function OrderForm({ onClose, order }: Props) {
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit Order ${order.order_number}` : 'New Delivery Order'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit((d) => { if (!mutation.isPending) mutation.mutate(d); })} className="space-y-4">
+        <form onSubmit={handleSubmit((d) => {
+          if (!mutation.isPending) {
+            if (deliveryType === 'hontal_kirim' && !kirimDepotId) return;
+            mutation.mutate(d);
+          }
+        })} className="space-y-4">
+
+          {/* Delivery type toggle — only shown for new orders when Kirim is enabled */}
+          {!isEdit && kirimEnabled && (
+            <div className="space-y-2">
+              <Label>Delivery Type</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['merchant_managed', 'hontal_kirim'] as const).map((t) => (
+                  <button
+                    key={t} type="button"
+                    onClick={() => { setDeliveryType(t); setKirimDepotId(null); }}
+                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      deliveryType === t
+                        ? t === 'hontal_kirim' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-700 bg-gray-900 text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {t === 'merchant_managed' ? 'Merchant Managed' : 'Hontal Kirim'}
+                  </button>
+                ))}
+              </div>
+              {deliveryType === 'hontal_kirim' && (
+                <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
+                  Credit balance: <strong>Rp {kirimBalance.toLocaleString('id-ID')}</strong>
+                  {!kirimCanAfford && <span className="ml-2 text-red-600 font-semibold">— Insufficient credit</span>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Depot selector — only when Kirim selected */}
+          {!isEdit && deliveryType === 'hontal_kirim' && (
+            <div className="space-y-1.5">
+              <Label>Pickup Depot <span className="text-red-500">*</span></Label>
+              {kirimDepots.length === 0 ? (
+                <p className="text-sm text-amber-600">No active depots found. Add a depot first in the Depots page.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {kirimDepots.map((depot) => (
+                    <button
+                      key={depot.id} type="button"
+                      onClick={() => setKirimDepotId(depot.id)}
+                      className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                        kirimDepotId === depot.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="font-medium">{depot.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{depot.address}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {deliveryType === 'hontal_kirim' && !kirimDepotId && (
+                <p className="text-xs text-red-500">Select a depot to continue</p>
+              )}
+            </div>
+          )}
+
           {/* Customer autocomplete — hidden when editing a non-pending order */}
           {isPending && (
             <div className="space-y-2">

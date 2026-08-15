@@ -131,6 +131,23 @@ export const kirimApi = {
     update:  (id: number, data: Record<string, unknown>) => api.put(`/kirim/depots/${id}`, data),
     archive: (id: number) => api.delete(`/kirim/depots/${id}`),
   },
+  orders: {
+    create: (data: Record<string, unknown>) => api.post('/kirim/orders', data),
+    list:   (params?: Record<string, unknown>) => api.get('/kirim/orders', { params }),
+  },
+  credit: {
+    balance:      () => api.get('/kirim/balance'),
+    transactions: (page = 1) => api.get('/kirim/transactions', { params: { page } }),
+  },
+  dispatch: {
+    batches:      () => api.get('/kirim/dispatch/batches'),
+    batchOrders:  (batchId: number) => api.get(`/kirim/dispatch/batches/${batchId}/orders`),
+    closeBatch:   (batchId: number) => api.post(`/kirim/dispatch/batches/${batchId}/close`),
+    drivers:      () => api.get('/kirim/dispatch/drivers'),
+    createRoute:  (data: Record<string, unknown>) => api.post('/kirim/dispatch/routes', data),
+    topup:        (merchantId: number, amountIdr: number, note: string) =>
+                    api.post('/kirim/dispatch/topup', { merchant_id: merchantId, amount_idr: amountIdr, note }),
+  },
   resolveMapsLink: (url: string) => api.post('/customers/resolve-maps-link', { url }),
 };
 
@@ -439,6 +456,18 @@ export const adminApi = {
   // Release checklist
   getReleaseChecklist: () =>
     api.get('/admin/release-checklist'),
+
+  // Hontal Kirim admin
+  kirim: {
+    merchants:        ()                                         => api.get('/admin/kirim/merchants'),
+    createMerchant:   (data: Record<string, unknown>)           => api.post('/admin/kirim/merchants', data),
+    topup:            (merchantId: number, amountIdr: number, note?: string) =>
+      api.post('/admin/kirim/merchants/topup', { merchant_id: merchantId, amount_idr: amountIdr, note }),
+    dispatchers:      ()                                         => api.get('/admin/kirim/team/dispatchers'),
+    mitraDrivers:     ()                                         => api.get('/admin/kirim/team/drivers'),
+    createDispatcher: (data: Record<string, unknown>)           => api.post('/admin/kirim/team/dispatchers', data),
+    createDriver:     (data: Record<string, unknown>)           => api.post('/admin/kirim/team/drivers', data),
+  },
 };
 
 // Public API — no auth token, different base path

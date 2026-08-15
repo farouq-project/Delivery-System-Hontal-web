@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   Building2, FileText, CreditCard, Activity, Shield, ClipboardList, LogOut,
   LayoutDashboard, BarChart2, Search, Settings2, FlaskConical, ContactRound,
-  Menu, ChevronLeft, X,
+  Menu, ChevronLeft, X, Truck, Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -15,7 +15,7 @@ import { authApi } from '@/lib/api';
 const platformNav = [
   { href: '/admin',               label: 'Dashboard',       icon: LayoutDashboard, exact: true },
   { href: '/admin/applications',  label: 'Applications',    icon: FileText },
-  { href: '/admin/merchants',     label: 'Merchants',       icon: Building2 },
+  { href: '/admin/merchants',     label: 'Sistem Merchants', icon: Building2 },
   { href: '/admin/plans',         label: 'Plans',           icon: CreditCard },
   { href: '/admin/subscriptions', label: 'Subscriptions',   icon: ClipboardList },
   { href: '/admin/health',        label: 'Merchant Health', icon: Activity },
@@ -26,6 +26,11 @@ const platformNav = [
   { href: '/admin/settings',      label: 'Settings',        icon: Settings2 },
   { href: '/admin/trial-wizard',  label: 'Trial Wizard',    icon: FlaskConical },
   { href: '/admin/crm',           label: 'Sales CRM',       icon: ContactRound },
+];
+
+const kirimNav = [
+  { href: '/admin/kirim/merchants', label: 'Kirim Merchants', icon: Building2 },
+  { href: '/admin/kirim/team',      label: 'Hontal Team',     icon: Users },
 ];
 
 interface PlatformSidebarProps {
@@ -96,7 +101,12 @@ export function PlatformSidebar({ mobileOpen, onCloseMobile }: PlatformSidebarPr
           </p>
         )}
         {platformNav.map(({ href, label, icon: Icon, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href);
+          // Prevent /admin/merchants from matching /admin/kirim/merchants
+          const active = exact
+            ? pathname === href
+            : href === '/admin/merchants'
+              ? pathname === '/admin/merchants' || pathname.startsWith('/admin/merchants/')
+              : pathname.startsWith(href);
           const isCollapsed = !isMobile && collapsed;
           return (
             <Link
@@ -109,6 +119,41 @@ export function PlatformSidebar({ mobileOpen, onCloseMobile }: PlatformSidebarPr
                 isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2',
                 active
                   ? 'bg-emerald-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              )}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              {!isCollapsed && label}
+            </Link>
+          );
+        })}
+
+        {/* Hontal Kirim section */}
+        {(!isMobile && !collapsed) && (
+          <p className="px-3 pt-4 pb-1 text-xs font-semibold text-orange-400 uppercase tracking-wider">
+            Hontal Kirim
+          </p>
+        )}
+        {(!isMobile && collapsed) && <div className="pt-2 border-t border-gray-700 mt-2" />}
+        {isMobile && (
+          <p className="px-3 pt-4 pb-1 text-xs font-semibold text-orange-400 uppercase tracking-wider">
+            Hontal Kirim
+          </p>
+        )}
+        {kirimNav.map(({ href, label, icon: Icon }) => {
+          const active = pathname.startsWith(href);
+          const isCollapsed = !isMobile && collapsed;
+          return (
+            <Link
+              key={href}
+              href={href}
+              title={isCollapsed ? label : undefined}
+              onClick={isMobile ? onCloseMobile : undefined}
+              className={cn(
+                'flex items-center rounded-md text-sm transition-colors',
+                isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2',
+                active
+                  ? 'bg-orange-600 text-white'
                   : 'text-gray-300 hover:bg-gray-700 hover:text-white'
               )}
             >
