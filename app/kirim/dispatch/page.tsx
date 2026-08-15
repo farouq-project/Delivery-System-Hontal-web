@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { kirimApi } from '@/lib/api';
@@ -10,8 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { getErrorMessage } from '@/lib/utils';
 import {
   Clock, PackageOpen, LogOut, CalendarDays,
-  Truck, CheckCircle2, AlertCircle, Plus, MapPin, Navigation,
+  Truck, CheckCircle2, AlertCircle, Plus, MapPin, Navigation, Map,
 } from 'lucide-react';
+
+const DispatchMap = dynamic(() => import('./dispatch-map'), { ssr: false });
 
 const ALLOWED_ROLES = ['hontal_dispatcher', 'super_admin', 'developer'];
 
@@ -42,16 +45,31 @@ interface DateOrder {
 
 interface DriverOption { id: number; name: string; vehicle_type: string; vehicle_plate: string; status: string }
 
+interface ActiveRouteStop {
+  id: number;
+  seq: number;
+  type: 'pickup' | 'dropoff';
+  status: string;
+  lat: number | null;
+  lng: number | null;
+  label: string;
+  order_number: string | null;
+  address: string | null;
+}
+
 interface ActiveRoute {
   id: number;
   status: 'queued' | 'active';
   driver_name: string;
   vehicle_plate: string;
+  driver_lat: number | null;
+  driver_lng: number | null;
   total_stops: number;
   completed_stops: number;
   assigned_at: string;
   started_at: string | null;
   batch: { id: number; window_start: string; window_end: string } | null;
+  stops: ActiveRouteStop[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -243,6 +261,7 @@ export default function KirimDispatchPage() {
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(new Set());
   const [routeBuilderOpen, setRouteBuilderOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
+  const [showMap, setShowMap] = useState(true);
 
   if (!ALLOWED_ROLES.includes(user?.role ?? '')) {
     return (
@@ -313,6 +332,11 @@ export default function KirimDispatchPage() {
           <p className="text-slate-400 text-xs">{user?.name} · {user?.role}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline"
+            className={`border-slate-600 text-slate-200 hover:bg-slate-800 text-xs ${showMap ? 'bg-slate-700' : ''}`}
+            onClick={() => setShowMap(v => !v)}>
+            <Map className="h-3.5 w-3.5 mr-1" /> Map
+          </Button>
           <Button size="sm" variant="outline" className="border-slate-600 text-slate-200 hover:bg-slate-800 text-xs"
             onClick={() => setTopupOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Top-Up
@@ -369,11 +393,13 @@ export default function KirimDispatchPage() {
           </div>
         </aside>
 
-        {/* Right: orders for selected date OR active routes panel */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Right: order panel + live map */}
+        <main className="flex-1 flex overflow-hidden">
+          {/* Center: orders / active routes panel */}
+          <div className="flex flex-col overflow-hidden" style={{ width: showMap ? '420px' : undefined, flex: showMap ? 'none' : '1' }}>
           {!selectedDate ? (
-            /* Active routes panel (no date selected) */
-            <div className="flex-1 overflow-y-auto p-5">
+            /* Active routes list (no date selected) */
+            <div className="flex-1 overflow-y-auto p-4">
               <div className="mb-2 flex items-center gap-2">
                 <Navigation className="h-4 w-4 text-gray-400" />
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Active Routes</h3>
@@ -437,8 +463,7 @@ export default function KirimDispatchPage() {
                   <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm text-gray-400 font-medium">Waiting for the first Kirim order</p>
                   <p className="text-xs text-gray-300 mt-2 max-w-xs mx-auto">
-                    Kirim merchants must have a depot configured before they can place orders.
-                    Once an order is placed, it appears in the date list on the left.
+                    Once a Kirim order is placed, it appears in the date list on the left.
                   </p>
                 </div>
               )}
@@ -446,7 +471,7 @@ export default function KirimDispatchPage() {
           ) : (
             <>
               {/* Date toolbar */}
-              <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+              <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
                 <div>
                   <h2 className="font-semibold text-gray-900 text-sm">
                     {deliveryDates.find(d => d.date === selectedDate)?.label ?? selectedDate} — {selectedDate}
@@ -472,8 +497,8 @@ export default function KirimDispatchPage() {
 
               {/* Selection hint */}
               {dateOrders.some(o => !o.assigned_to_route) && selectedOrderIds.size === 0 && (
-                <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 text-xs text-blue-600">
-                  Click unassigned orders to select them for a route
+                <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 text-xs text-blue-600 shrink-0">
+                  Click unassigned orders to select them, or use Select All
                 </div>
               )}
 
@@ -511,10 +536,9 @@ export default function KirimDispatchPage() {
                                 <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{order.order_number}</td>
                                 <td className="px-3 py-2.5">
                                   <p className="font-medium text-gray-900">{order.customer_name}</p>
-                                  <p className="text-xs text-gray-400 truncate max-w-[220px]">{order.delivery_address}</p>
+                                  <p className="text-xs text-gray-400 truncate max-w-[180px]">{order.delivery_address}</p>
                                 </td>
                                 <td className="px-3 py-2.5 text-gray-600 text-xs">{order.product_name}</td>
-                                <td className="px-3 py-2.5 text-gray-500 text-xs">{order.depot?.name ?? '—'}</td>
                                 <td className="px-3 py-2.5">
                                   {isAssigned ? (
                                     <span className="text-xs text-green-600 font-medium">Assigned</span>
@@ -538,6 +562,27 @@ export default function KirimDispatchPage() {
                 )}
               </div>
             </>
+          )}
+          </div>
+
+          {/* Right: live map panel */}
+          {showMap && (
+            <div className="flex-1 border-l border-gray-200 relative overflow-hidden">
+              {/* Map legend overlay */}
+              <div className="absolute top-3 right-3 z-[1000] bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-xs space-y-1">
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-400 inline-block" />Unassigned</div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />Selected</div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />Assigned</div>
+                {activeRoutes.length > 0 && (
+                  <div className="flex items-center gap-1.5 pt-1 border-t border-gray-100"><span className="w-3 h-3 rounded-full bg-gray-400 inline-block" />{activeRoutes.length} route{activeRoutes.length > 1 ? 's' : ''}</div>
+                )}
+              </div>
+              <DispatchMap
+                dateOrders={dateOrders}
+                selectedOrderIds={selectedOrderIds}
+                activeRoutes={activeRoutes}
+              />
+            </div>
           )}
         </main>
       </div>
