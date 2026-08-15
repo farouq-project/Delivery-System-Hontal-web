@@ -145,6 +145,7 @@ export const kirimApi = {
     closeBatch:   (batchId: number) => api.post(`/kirim/dispatch/batches/${batchId}/close`),
     drivers:      () => api.get('/kirim/dispatch/drivers'),
     createRoute:  (data: Record<string, unknown>) => api.post('/kirim/dispatch/routes', data),
+    activeRoutes: () => api.get('/kirim/dispatch/active-routes'),
     topup:        (merchantId: number, amountIdr: number, note: string) =>
                     api.post('/kirim/dispatch/topup', { merchant_id: merchantId, amount_idr: amountIdr, note }),
   },
@@ -469,9 +470,11 @@ export const adminApi = {
   // Hontal Kirim admin
   kirim: {
     merchants:        ()                                         => api.get('/admin/kirim/merchants'),
+    merchantDetail:   (id: number)                              => api.get(`/admin/kirim/merchants/${id}`),
     createMerchant:   (data: Record<string, unknown>)           => api.post('/admin/kirim/merchants', data),
     topup:            (merchantId: number, amountIdr: number, note?: string) =>
       api.post('/admin/kirim/merchants/topup', { merchant_id: merchantId, amount_idr: amountIdr, note }),
+    convertToSistem:  (id: number)                              => api.post(`/admin/kirim/merchants/${id}/convert-sistem`),
     dispatchers:      ()                                         => api.get('/admin/kirim/team/dispatchers'),
     mitraDrivers:     ()                                         => api.get('/admin/kirim/team/drivers'),
     createDispatcher: (data: Record<string, unknown>)           => api.post('/admin/kirim/team/dispatchers', data),

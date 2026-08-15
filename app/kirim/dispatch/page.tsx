@@ -11,7 +11,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { getErrorMessage } from '@/lib/utils';
 import {
   Clock, PackageOpen, LogOut, ChevronRight,
-  Users, Truck, CheckCircle2, AlertCircle, Plus,
+  Users, Truck, CheckCircle2, AlertCircle, Plus, MapPin, Navigation,
 } from 'lucide-react';
 
 const ALLOWED_ROLES = ['hontal_dispatcher', 'super_admin', 'developer'];
@@ -42,6 +42,19 @@ interface BatchOrder {
 }
 
 interface DriverOption { id: number; name: string; vehicle_type: string; vehicle_plate: string; status: string }
+
+interface ActiveRoute {
+  id: number;
+  status: 'queued' | 'in_progress';
+  driver_name: string;
+  vehicle_plate: string;
+  total_stops: number;
+  completed_stops: number;
+  assigned_at: string;
+  started_at: string | null;
+  batch: { id: number; window_start: string; window_end: string } | null;
+  stop_progress: Record<string, number>;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -286,6 +299,13 @@ export default function KirimDispatchPage() {
   });
   const batchOrders: BatchOrder[] = ordersRes?.data?.data ?? [];
 
+  const { data: activeRoutesRes } = useQuery({
+    queryKey: ['dispatch-active-routes'],
+    queryFn: kirimApi.dispatch.activeRoutes,
+    refetchInterval: 20_000,
+  });
+  const activeRoutes: ActiveRoute[] = activeRoutesRes?.data?.data ?? [];
+
   const closeMutation = useMutation({
     mutationFn: (batchId: number) => kirimApi.dispatch.closeBatch(batchId),
     onSuccess: () => {
@@ -381,11 +401,83 @@ export default function KirimDispatchPage() {
         {/* Right: batch detail */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {!selectedBatch ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-              <div className="text-center">
-                <ChevronRight className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                Select a batch to view orders
+            <div className="flex-1 overflow-y-auto p-5">
+              {/* Active routes panel */}
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                  <Navigation className="h-3.5 w-3.5" />
+                  Active Routes
+                  {activeRoutes.length > 0 && (
+                    <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full font-medium">
+                      {activeRoutes.length}
+                    </span>
+                  )}
+                </h3>
+                {activeRoutes.length === 0 ? (
+                  <div className="border border-dashed border-gray-200 rounded-lg p-8 text-center">
+                    <Truck className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm text-gray-400">No active routes right now</p>
+                    <p className="text-xs text-gray-300 mt-1">Select a batch to assign orders to drivers</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {activeRoutes.map((route) => {
+                      const pct = route.total_stops > 0
+                        ? Math.round((route.completed_stops / route.total_stops) * 100)
+                        : 0;
+                      return (
+                        <div key={route.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm">{route.driver_name}</p>
+                              <p className="text-xs text-gray-400">{route.vehicle_plate}</p>
+                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              route.status === 'in_progress'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {route.status === 'in_progress' ? 'En route' : 'Queued'}
+                            </span>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="mb-2">
+                            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {route.completed_stops} / {route.total_stops} stops
+                              </span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-blue-500 rounded-full transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                          {route.batch && (
+                            <p className="text-xs text-gray-400">
+                              Batch {fmtDate(route.batch.window_start)} {fmt(route.batch.window_start)}–{fmt(route.batch.window_end)}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              {batches.length === 0 && activeRoutes.length === 0 && (
+                <div className="border border-dashed border-gray-200 rounded-lg p-8 text-center mt-4">
+                  <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm text-gray-400 font-medium">Waiting for the first Kirim order</p>
+                  <p className="text-xs text-gray-300 mt-2 max-w-xs mx-auto">
+                    Kirim merchants must have a depot configured before they can place orders.
+                    Once an order is placed, it appears as a batch here.
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <>

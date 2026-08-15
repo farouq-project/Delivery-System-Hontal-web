@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -145,6 +146,7 @@ function CreateMerchantDialog({ onClose }: { onClose: () => void }) {
 }
 
 export default function KirimMerchantsPage() {
+  const router = useRouter();
   const [toppingUp, setToppingUp]   = useState<KirimMerchant | null>(null);
   const [creating, setCreating]     = useState(false);
 
@@ -212,7 +214,7 @@ export default function KirimMerchantsPage() {
                 <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No Kirim merchants yet. Add one to get started.</td></tr>
               )}
               {merchants.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50">
+                <tr key={m.id} onClick={() => router.push(`/admin/kirim/merchants/${m.id}`)} className="hover:bg-gray-50 cursor-pointer">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {m.is_blocked && <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />}
@@ -245,7 +247,7 @@ export default function KirimMerchantsPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
-                      onClick={() => setToppingUp(m)}
+                      onClick={(e) => { e.stopPropagation(); setToppingUp(m); }}
                       className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
                     >
                       <CreditCard className="h-3.5 w-3.5" />
