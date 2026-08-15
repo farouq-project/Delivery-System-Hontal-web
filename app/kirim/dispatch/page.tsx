@@ -565,23 +565,28 @@ export default function KirimDispatchPage() {
           )}
           </div>
 
-          {/* Right: live map panel */}
+          {/* Right: live map panel — isolation:isolate keeps Leaflet z-indexes contained */}
           {showMap && (
-            <div className="flex-1 border-l border-gray-200 relative overflow-hidden">
-              {/* Map legend overlay */}
-              <div className="absolute top-3 right-3 z-[1000] bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-xs space-y-1">
-                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-400 inline-block" />Unassigned</div>
-                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />Selected</div>
-                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />Assigned</div>
+            <div className="flex-1 border-l border-gray-200 flex flex-col overflow-hidden" style={{ isolation: 'isolate' }}>
+              {/* Legend bar */}
+              <div className="bg-white border-b border-gray-100 px-3 py-1.5 flex items-center gap-4 text-xs text-gray-600 shrink-0">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />Unassigned</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />Selected</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />Assigned</span>
                 {activeRoutes.length > 0 && (
-                  <div className="flex items-center gap-1.5 pt-1 border-t border-gray-100"><span className="w-3 h-3 rounded-full bg-gray-400 inline-block" />{activeRoutes.length} route{activeRoutes.length > 1 ? 's' : ''}</div>
+                  <span className="flex items-center gap-1.5 ml-auto text-gray-400">
+                    <Navigation className="h-3 w-3" />
+                    {activeRoutes.length} active route{activeRoutes.length > 1 ? 's' : ''}
+                  </span>
                 )}
               </div>
-              <DispatchMap
-                dateOrders={dateOrders}
-                selectedOrderIds={selectedOrderIds}
-                activeRoutes={activeRoutes}
-              />
+              <div className="flex-1 relative">
+                <DispatchMap
+                  dateOrders={dateOrders}
+                  selectedOrderIds={selectedOrderIds}
+                  activeRoutes={activeRoutes}
+                />
+              </div>
             </div>
           )}
         </main>
