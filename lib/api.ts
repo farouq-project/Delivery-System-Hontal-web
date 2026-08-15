@@ -147,6 +147,7 @@ export const kirimApi = {
     closeBatch:    (batchId: number) => api.post(`/kirim/dispatch/batches/${batchId}/close`),
     drivers:       () => api.get('/kirim/dispatch/drivers'),
     createRoute:   (data: Record<string, unknown>) => api.post('/kirim/dispatch/routes', data),
+    cancelRoute:   (routeId: number) => api.delete(`/kirim/dispatch/routes/${routeId}`),
     activeRoutes:  () => api.get('/kirim/dispatch/active-routes'),
     topup:         (merchantId: number, amountIdr: number, note: string) =>
                      api.post('/kirim/dispatch/topup', { merchant_id: merchantId, amount_idr: amountIdr, note }),

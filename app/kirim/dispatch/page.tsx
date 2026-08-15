@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { getErrorMessage } from '@/lib/utils';
 import {
   Clock, PackageOpen, LogOut, CalendarDays,
-  Truck, CheckCircle2, AlertCircle, Plus, MapPin, Navigation, Map,
+  Truck, CheckCircle2, AlertCircle, Plus, MapPin, Navigation, Map, RotateCcw,
 } from 'lucide-react';
 
 const DispatchMap = dynamic(() => import('./dispatch-map'), { ssr: false });
@@ -262,6 +262,17 @@ export default function KirimDispatchPage() {
   const [routeBuilderOpen, setRouteBuilderOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
   const [showMap, setShowMap] = useState(true);
+  const [cancelConfirmRouteId, setCancelConfirmRouteId] = useState<number | null>(null);
+
+  const cancelRouteMutation = useMutation({
+    mutationFn: (routeId: number) => kirimApi.dispatch.cancelRoute(routeId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['dispatch-active-routes'] });
+      qc.invalidateQueries({ queryKey: ['dispatch-orders-by-date'] });
+      qc.invalidateQueries({ queryKey: ['dispatch-delivery-dates'] });
+      setCancelConfirmRouteId(null);
+    },
+  });
 
   if (!ALLOWED_ROLES.includes(user?.role ?? '')) {
     return (
@@ -429,11 +440,20 @@ export default function KirimDispatchPage() {
                             <p className="font-medium text-gray-900 text-sm">{route.driver_name}</p>
                             <p className="text-xs text-gray-400">{route.vehicle_plate}</p>
                           </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            route.status === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                            {route.status === 'active' ? 'En route' : 'Queued'}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              route.status === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {route.status === 'active' ? 'En route' : 'Queued'}
+                            </span>
+                            <button
+                              onClick={() => setCancelConfirmRouteId(route.id)}
+                              className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              title="Reset route"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                         <div className="mb-2">
                           <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
@@ -585,6 +605,7 @@ export default function KirimDispatchPage() {
                   dateOrders={dateOrders}
                   selectedOrderIds={selectedOrderIds}
                   activeRoutes={activeRoutes}
+                  onCancelRoute={setCancelConfirmRouteId}
                 />
               </div>
             </div>
@@ -604,6 +625,57 @@ export default function KirimDispatchPage() {
 
       <Dialog open={topupOpen} onOpenChange={(o) => { if (!o) setTopupOpen(false); }}>
         {topupOpen && <TopupDialog onClose={() => setTopupOpen(false)} />}
+      </Dialog>
+
+      {/* Reset Route confirmation */}
+      <Dialog
+        open={cancelConfirmRouteId !== null}
+        onOpenChange={(o) => { if (!o && !cancelRouteMutation.isPending) setCancelConfirmRouteId(null); }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-4 w-4 text-red-500" />
+              Reset Route #{cancelConfirmRouteId}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {(() => {
+              const route = activeRoutes.find(r => r.id === cancelConfirmRouteId);
+              return route ? (
+                <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+                  <p><span className="font-medium">{route.driver_name}</span> · {route.vehicle_plate}</p>
+                  <p className="text-gray-500">{route.total_stops} stops · {route.completed_stops} completed</p>
+                  <p className={`text-xs font-medium ${route.status === 'active' ? 'text-blue-600' : 'text-yellow-600'}`}>
+                    {route.status === 'active' ? 'Currently en route' : 'Queued, not started'}
+                  </p>
+                </div>
+              ) : null;
+            })()}
+            <p className="text-sm text-gray-600">
+              This will cancel the route and return all assigned orders back to pending. The driver will be unassigned.
+            </p>
+            {cancelRouteMutation.error && (
+              <p className="text-sm text-red-600">{getErrorMessage(cancelRouteMutation.error)}</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                disabled={cancelRouteMutation.isPending}
+                onClick={() => setCancelConfirmRouteId(null)}
+              >
+                Keep Route
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={cancelRouteMutation.isPending}
+                onClick={() => cancelConfirmRouteId && cancelRouteMutation.mutate(cancelConfirmRouteId)}
+              >
+                {cancelRouteMutation.isPending ? 'Resetting…' : 'Reset Route'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
       </Dialog>
     </div>
   );

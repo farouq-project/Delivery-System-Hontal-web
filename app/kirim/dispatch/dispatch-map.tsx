@@ -143,11 +143,12 @@ interface Props {
   dateOrders: MapOrder[];
   selectedOrderIds: Set<number>;
   activeRoutes: MapActiveRoute[];
+  onCancelRoute?: (routeId: number) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function DispatchMap({ dateOrders, selectedOrderIds, activeRoutes }: Props) {
+export default function DispatchMap({ dateOrders, selectedOrderIds, activeRoutes, onCancelRoute }: Props) {
   // Collect all points for auto-fit
   const orderPoints: [number, number][] = dateOrders
     .filter(o => o.delivery_latitude && o.delivery_longitude)
@@ -244,7 +245,7 @@ export default function DispatchMap({ dateOrders, selectedOrderIds, activeRoutes
             {route.driver_lat && route.driver_lng && (
               <Marker position={[route.driver_lat, route.driver_lng]} icon={driverIcon(color)}>
                 <Popup>
-                  <div className="text-sm min-w-[140px]">
+                  <div className="text-sm min-w-[160px]">
                     <p className="font-semibold">{route.driver_name}</p>
                     <p className="text-xs text-gray-500">{route.vehicle_plate}</p>
                     <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
@@ -252,6 +253,14 @@ export default function DispatchMap({ dateOrders, selectedOrderIds, activeRoutes
                     }`}>
                       {route.status === 'active' ? 'En route' : 'Queued'}
                     </span>
+                    {onCancelRoute && (
+                      <button
+                        onClick={() => onCancelRoute(route.id)}
+                        className="mt-2 w-full text-xs text-red-600 border border-red-200 rounded px-2 py-1 hover:bg-red-50 transition-colors"
+                      >
+                        Reset Route
+                      </button>
+                    )}
                   </div>
                 </Popup>
               </Marker>
