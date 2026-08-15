@@ -14,6 +14,7 @@ interface AuthState {
   isDriver: () => boolean;
   isMerchantOps: () => boolean;
   isHontalDispatcher: () => boolean;
+  isKirimMerchant: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -41,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
       isDriver: () => get().user?.role === 'driver',
       isMerchantOps: () => get().user?.role === 'merchant_ops',
       isHontalDispatcher: () => get().user?.role === 'hontal_dispatcher',
+      isKirimMerchant: () => get().user?.merchant?.merchant_type === 'kirim',
     }),
     { name: 'hontal_auth', partialize: (s) => ({ user: s.user, token: s.token }) }
   )

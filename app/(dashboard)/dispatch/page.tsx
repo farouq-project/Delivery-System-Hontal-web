@@ -16,8 +16,21 @@ const DispatchBoard = dynamic(() => import('./dispatch-board'), { ssr: false });
 
 export default function DispatchPage() {
   const qc = useQueryClient();
-  const authUser = useAuthStore((s) => s.user);
+  const { user: authUser, isKirimMerchant } = useAuthStore();
   const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+
+  if (isKirimMerchant()) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 text-center p-8">
+        <div className="text-4xl mb-4">🚚</div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Hontal Kirim handles your deliveries</h2>
+        <p className="text-sm text-gray-500 max-w-sm">
+          As a Kirim merchant, your orders are dispatched by Hontal&apos;s team. You don&apos;t need to manage routes or assign drivers — we handle that for you.
+        </p>
+        <p className="text-xs text-gray-400 mt-4">Track your order status from the Orders page.</p>
+      </div>
+    );
+  }
   const today = localDateString();
   const [confirmDeleteDispatch, setConfirmDeleteDispatch] = useState(false);
   const [showRouteQualityHelp, setShowRouteQualityHelp] = useState(false);

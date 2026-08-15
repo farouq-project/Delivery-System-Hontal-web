@@ -293,10 +293,16 @@ export const adminApi = {
   // Applications
   listApplications: (params?: Record<string, unknown>) =>
     api.get('/admin/applications', { params }),
+  createApplication: (data: Record<string, unknown>) =>
+    api.post('/admin/applications', data),
   getApplication: (id: number) =>
     api.get(`/admin/applications/${id}`),
+  updateApplication: (id: number, data: Record<string, unknown>) =>
+    api.patch(`/admin/applications/${id}`, data),
   approveApplication: (id: number) =>
     api.patch(`/admin/applications/${id}/approve`),
+  approveApplicationAsKirim: (id: number) =>
+    api.patch(`/admin/applications/${id}/approve-kirim`),
   rejectApplication: (id: number, rejection_reason: string) =>
     api.patch(`/admin/applications/${id}/reject`, { rejection_reason }),
   requestInfoApplication: (id: number, notes?: string) =>
@@ -305,6 +311,9 @@ export const adminApi = {
     api.patch(`/admin/applications/${id}/notes`, { notes }),
   deleteApplication: (id: number) =>
     api.delete(`/admin/applications/${id}`),
+
+  convertMerchantToKirim: (id: number) =>
+    api.post(`/admin/merchants/${id}/convert-kirim`),
 
   // Merchant directory
   listMerchants: (params?: Record<string, unknown>) =>

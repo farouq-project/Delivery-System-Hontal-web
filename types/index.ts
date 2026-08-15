@@ -23,6 +23,7 @@ export interface Merchant {
   phone: string;
   email: string;
   timezone: string;
+  merchant_type?: 'sistem' | 'kirim' | 'internal' | null;
   settings?: MerchantSetting;
 }
 
@@ -362,6 +363,7 @@ export interface MerchantApplication {
   branch_count: number | null;
   estimated_monthly_deliveries: number | null;
   selected_plan: string | null;
+  merchant_type_requested: 'sistem' | 'kirim' | null;
   notes: string | null;
   rejection_reason: string | null;
   internal_notes: string | null;

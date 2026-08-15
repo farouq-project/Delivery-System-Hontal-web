@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import type { AdminMerchantSummary, SubscriptionStatus, PlatformPlan } from '@/types';
-import { Search, BarChart2 } from 'lucide-react';
+import { Search, BarChart2, ArrowRightLeft } from 'lucide-react';
 import { usePlatformMerchantStore } from '@/store/platform-merchant';
 
 const STATUS_CHIP: Record<SubscriptionStatus, string> = {
@@ -29,6 +29,7 @@ function fmtDate(s: string | null) {
 
 export default function AdminMerchantsPage() {
   const router = useRouter();
+  const qc = useQueryClient();
   const { setSelectedMerchant } = usePlatformMerchantStore();
   const [page, setPage]          = useState(1);
   const [search, setSearch]      = useState('');
@@ -62,11 +63,16 @@ export default function AdminMerchantsPage() {
   const total    = data?.data?.total ?? 0;
   const plans: PlatformPlan[] = plansData?.data?.data ?? [];
 
+  const convertMutation = useMutation({
+    mutationFn: (id: number) => adminApi.convertMerchantToKirim(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'merchants'] }),
+  });
+
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Merchants</h1>
-        <p className="text-sm text-gray-500 mt-1">{total > 0 ? `${total} merchant${total !== 1 ? 's' : ''} on the platform` : 'Merchant directory'}</p>
+        <h1 className="text-2xl font-bold text-gray-900">Sistem Merchants</h1>
+        <p className="text-sm text-gray-500 mt-1">{total > 0 ? `${total} merchant${total !== 1 ? 's' : ''} · own dispatch software` : 'Merchants using Hontal\'s dispatch platform'}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -130,14 +136,15 @@ export default function AdminMerchantsPage() {
                 <th className="px-4 py-3 text-right text-xs font-bold text-gray-700">This Month</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700">Created</th>
                 <th className="px-4 py-3 text-center text-xs font-bold text-gray-700">Growth</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-700">Type</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading && (
-                <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400">Loading…</td></tr>
+                <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400">Loading…</td></tr>
               )}
               {!isLoading && merchants.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400">No merchants found.</td></tr>
+                <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400">No merchants found.</td></tr>
               )}
               {merchants.map((m) => (
                 <tr
@@ -195,6 +202,20 @@ export default function AdminMerchantsPage() {
                       className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
                     >
                       <BarChart2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!confirm(`Convert ${m.company_name} to Kirim merchant?\n\nThis enables the Hontal Kirim feature and moves them to the Kirim Merchants list.`)) return;
+                        convertMutation.mutate(m.id);
+                      }}
+                      title="Convert to Kirim merchant"
+                      disabled={convertMutation.isPending}
+                      className="p-1.5 rounded hover:bg-orange-50 text-gray-400 hover:text-orange-600 transition-colors disabled:opacity-40"
+                    >
+                      <ArrowRightLeft className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>
