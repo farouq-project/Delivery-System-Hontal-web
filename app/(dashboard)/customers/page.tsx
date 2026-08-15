@@ -55,7 +55,7 @@ function SortIcon({ field, sortBy, sortDir }: { field: SortField; sortBy: SortFi
 export default function CustomersPage() {
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
-  const isOwner  = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+  const isOwner  = ['merchant_owner', 'super_admin', 'developer', 'merchant_ops'].includes(authUser?.role ?? '');
 
   const [search, setSearch]             = useState('');
   const [page, setPage]                 = useState(1);

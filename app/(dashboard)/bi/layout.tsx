@@ -12,7 +12,7 @@ import {
   TrendingUp, Megaphone, Target, FileText,
 } from 'lucide-react';
 
-const BI_ROLES = ['merchant_owner', 'super_admin', 'developer'];
+const BI_ROLES = ['merchant_owner', 'super_admin', 'developer', 'merchant_ops'];
 
 const subNav = [
   { href: '/bi/overview',   label: 'Overview',    icon: LayoutDashboard },

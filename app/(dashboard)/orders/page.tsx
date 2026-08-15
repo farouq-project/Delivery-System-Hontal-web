@@ -38,7 +38,7 @@ function OrdersPage() {
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
-  const isOwner        = ['owner', 'merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+  const isOwner        = ['owner', 'merchant_owner', 'super_admin', 'developer', 'merchant_ops'].includes(authUser?.role ?? '');
   // All dashboard roles can edit assigned/delivered orders (PIN protected)
   const canEditAssigned = ['owner', 'merchant_owner', 'super_admin', 'developer', 'dispatcher', 'kasir'].includes(authUser?.role ?? '');
   const canViewPOD      = canEditAssigned;

@@ -50,7 +50,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const items = [
     ...navItems,
     ...(canManageUsers ? [{ href: '/users',    label: t.nav.users,    icon: UserCog }] : []),
-    ...(canManageUsers || isOps ? [{ href: '/settings', label: t.nav.settings, icon: Settings }] : []),
+    ...(canManageUsers ? [{ href: '/settings', label: t.nav.settings, icon: Settings }] : []),
   ];
 
   const handleLogout = async () => {
