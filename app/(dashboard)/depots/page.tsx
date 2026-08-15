@@ -29,11 +29,11 @@ interface Depot {
 const schema = z.object({
   name:          z.string().min(2, 'Name required'),
   address:       z.string().min(5, 'Address required'),
-  latitude:      z.coerce.number().min(-90).max(90),
-  longitude:     z.coerce.number().min(-180).max(180),
+  latitude:      z.number().min(-90).max(90),
+  longitude:     z.number().min(-180).max(180),
   contact_name:  z.string().optional(),
   contact_phone: z.string().optional(),
-  sort_order:    z.coerce.number().int().min(0).optional(),
+  sort_order:    z.number().int().min(0).optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -111,12 +111,12 @@ function DepotForm({ depot, onClose }: { depot: Depot | null; onClose: () => voi
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>Latitude</Label>
-          <Input type="number" step="any" placeholder="-6.917" {...register('latitude')} />
+          <Input type="number" step="any" placeholder="-6.917" {...register('latitude', { valueAsNumber: true })} />
           {errors.latitude && <p className="text-xs text-red-500">{errors.latitude.message}</p>}
         </div>
         <div className="space-y-1.5">
           <Label>Longitude</Label>
-          <Input type="number" step="any" placeholder="107.619" {...register('longitude')} />
+          <Input type="number" step="any" placeholder="107.619" {...register('longitude', { valueAsNumber: true })} />
           {errors.longitude && <p className="text-xs text-red-500">{errors.longitude.message}</p>}
         </div>
       </div>
@@ -134,7 +134,7 @@ function DepotForm({ depot, onClose }: { depot: Depot | null; onClose: () => voi
 
       <div className="space-y-1.5">
         <Label>Sort Order</Label>
-        <Input type="number" min={0} {...register('sort_order')} />
+        <Input type="number" min={0} {...register('sort_order', { valueAsNumber: true })} />
       </div>
 
       {mutation.error && (
