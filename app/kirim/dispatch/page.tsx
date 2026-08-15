@@ -7,34 +7,33 @@ import { kirimApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { getErrorMessage } from '@/lib/utils';
 import {
-  Clock, PackageOpen, LogOut, ChevronRight,
-  Users, Truck, CheckCircle2, AlertCircle, Plus, MapPin, Navigation,
+  Clock, PackageOpen, LogOut, CalendarDays,
+  Truck, CheckCircle2, AlertCircle, Plus, MapPin, Navigation,
 } from 'lucide-react';
 
 const ALLOWED_ROLES = ['hontal_dispatcher', 'super_admin', 'developer'];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface BatchMerchant { merchant_id: number; company_name: string; order_count: number }
-interface Batch {
-  id: number;
-  window_start: string;
-  window_end: string;
-  status: 'open' | 'closed' | 'dispatched';
-  order_count: number;
-  route_count: number;
-  merchants: BatchMerchant[];
+interface DeliveryDate {
+  date: string;
+  label: string;
+  total: number;
+  unassigned: number;
 }
 
-interface BatchOrder {
+interface DateOrder {
   id: number;
   order_number: string;
+  batch_id: number | null;
+  merchant_id: number;
   merchant_name: string;
   customer_name: string;
   delivery_address: string;
+  delivery_latitude: number;
+  delivery_longitude: number;
   product_name: string;
   status: string;
   depot: { id: number; name: string } | null;
@@ -45,7 +44,7 @@ interface DriverOption { id: number; name: string; vehicle_type: string; vehicle
 
 interface ActiveRoute {
   id: number;
-  status: 'queued' | 'in_progress';
+  status: 'queued' | 'active';
   driver_name: string;
   vehicle_plate: string;
   total_stops: number;
@@ -53,7 +52,6 @@ interface ActiveRoute {
   assigned_at: string;
   started_at: string | null;
   batch: { id: number; window_start: string; window_end: string } | null;
-  stop_progress: Record<string, number>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -61,32 +59,14 @@ interface ActiveRoute {
 function fmt(iso: string) {
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-}
-
-function StatusBadge({ status }: { status: Batch['status'] }) {
-  const map = {
-    open:       'bg-green-100 text-green-700',
-    closed:     'bg-yellow-100 text-yellow-700',
-    dispatched: 'bg-blue-100 text-blue-700',
-  };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${map[status]}`}>
-      {status}
-    </span>
-  );
-}
 
 // ── Route Builder Dialog ──────────────────────────────────────────────────────
 
 function RouteBuilderDialog({
-  batchId,
   selectedOrders,
   onClose,
 }: {
-  batchId: number;
-  selectedOrders: BatchOrder[];
+  selectedOrders: DateOrder[];
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -99,8 +79,7 @@ function RouteBuilderDialog({
   });
   const drivers: DriverOption[] = driversRes?.data?.data ?? [];
 
-  // Preview stop sequence: pickups first (grouped by depot), then dropoffs
-  const depotGroups = selectedOrders.reduce<Record<number, BatchOrder[]>>((acc, o) => {
+  const depotGroups = selectedOrders.reduce<Record<number, DateOrder[]>>((acc, o) => {
     const key = o.depot?.id ?? 0;
     (acc[key] = acc[key] || []).push(o);
     return acc;
@@ -108,14 +87,14 @@ function RouteBuilderDialog({
 
   const mutation = useMutation({
     mutationFn: () => kirimApi.dispatch.createRoute({
-      batch_id:  batchId,
       driver_id: driverId!,
       order_ids: selectedOrders.map((o) => o.id),
       notes,
     }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['dispatch-batch-orders', batchId] });
-      qc.invalidateQueries({ queryKey: ['dispatch-batches'] });
+      qc.invalidateQueries({ queryKey: ['dispatch-delivery-dates'] });
+      qc.invalidateQueries({ queryKey: ['dispatch-orders-by-date'] });
+      qc.invalidateQueries({ queryKey: ['dispatch-active-routes'] });
       onClose();
     },
   });
@@ -156,7 +135,6 @@ function RouteBuilderDialog({
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">Stop Sequence</label>
           <div className="border border-gray-100 rounded-lg overflow-hidden text-sm">
-            {/* Pickups */}
             {Object.entries(depotGroups).map(([depotId, orders], i) => (
               <div key={depotId} className="px-3 py-2.5 bg-orange-50 border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -170,7 +148,6 @@ function RouteBuilderDialog({
                 </div>
               </div>
             ))}
-            {/* Dropoffs */}
             {selectedOrders.map((o, i) => (
               <div key={o.id} className="px-3 py-2.5 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-2">
@@ -202,10 +179,7 @@ function RouteBuilderDialog({
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button
-            disabled={!driverId || mutation.isPending}
-            onClick={() => mutation.mutate()}
-          >
+          <Button disabled={!driverId || mutation.isPending} onClick={() => mutation.mutate()}>
             {mutation.isPending ? 'Creating…' : 'Create Route'}
           </Button>
         </div>
@@ -223,12 +197,8 @@ function TopupDialog({ onClose }: { onClose: () => void }) {
   const [note, setNote] = useState('');
 
   const mutation = useMutation({
-    mutationFn: () => kirimApi.dispatch.topup(
-      parseInt(merchantId),
-      parseInt(amount),
-      note || 'Manual top-up',
-    ),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['dispatch-batches'] }); onClose(); },
+    mutationFn: () => kirimApi.dispatch.topup(parseInt(merchantId), parseInt(amount), note || 'Manual top-up'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['dispatch-delivery-dates'] }); onClose(); },
   });
 
   return (
@@ -253,8 +223,7 @@ function TopupDialog({ onClose }: { onClose: () => void }) {
         {mutation.error && <p className="text-sm text-red-600">{getErrorMessage(mutation.error)}</p>}
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" disabled={!merchantId || !amount || mutation.isPending}
-            onClick={() => mutation.mutate()}>
+          <Button size="sm" disabled={!merchantId || !amount || mutation.isPending} onClick={() => mutation.mutate()}>
             {mutation.isPending ? 'Saving…' : 'Record Top-Up'}
           </Button>
         </div>
@@ -270,13 +239,11 @@ export default function KirimDispatchPage() {
   const { user, clearAuth } = useAuthStore();
   const qc = useQueryClient();
 
-  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(new Set());
   const [routeBuilderOpen, setRouteBuilderOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
-  const [closingBatch, setClosingBatch] = useState<Batch | null>(null);
 
-  // Role guard
   if (!ALLOWED_ROLES.includes(user?.role ?? '')) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm">
@@ -285,19 +252,20 @@ export default function KirimDispatchPage() {
     );
   }
 
-  const { data: batchRes, isLoading: batchesLoading } = useQuery({
-    queryKey: ['dispatch-batches'],
-    queryFn: kirimApi.dispatch.batches,
+  const { data: datesRes, isLoading: datesLoading } = useQuery({
+    queryKey: ['dispatch-delivery-dates'],
+    queryFn: kirimApi.dispatch.deliveryDates,
     refetchInterval: 30_000,
   });
-  const batches: Batch[] = batchRes?.data?.data ?? [];
+  const deliveryDates: DeliveryDate[] = datesRes?.data?.data ?? [];
 
   const { data: ordersRes } = useQuery({
-    queryKey: ['dispatch-batch-orders', selectedBatch?.id],
-    queryFn: () => kirimApi.dispatch.batchOrders(selectedBatch!.id),
-    enabled: !!selectedBatch,
+    queryKey: ['dispatch-orders-by-date', selectedDate],
+    queryFn: () => kirimApi.dispatch.ordersByDate(selectedDate!),
+    enabled: !!selectedDate,
+    refetchInterval: 20_000,
   });
-  const batchOrders: BatchOrder[] = ordersRes?.data?.data ?? [];
+  const dateOrders: DateOrder[] = ordersRes?.data?.data ?? [];
 
   const { data: activeRoutesRes } = useQuery({
     queryKey: ['dispatch-active-routes'],
@@ -306,17 +274,9 @@ export default function KirimDispatchPage() {
   });
   const activeRoutes: ActiveRoute[] = activeRoutesRes?.data?.data ?? [];
 
-  const closeMutation = useMutation({
-    mutationFn: (batchId: number) => kirimApi.dispatch.closeBatch(batchId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['dispatch-batches'] });
-      setClosingBatch(null);
-    },
-  });
-
   const handleLogout = () => { clearAuth(); router.push('/login'); };
 
-  const toggleOrder = (order: BatchOrder) => {
+  const toggleOrder = (order: DateOrder) => {
     if (order.assigned_to_route) return;
     setSelectedOrderIds((prev) => {
       const next = new Set(prev);
@@ -325,7 +285,14 @@ export default function KirimDispatchPage() {
     });
   };
 
-  const selectedOrders = batchOrders.filter((o) => selectedOrderIds.has(o.id));
+  const selectedOrders = dateOrders.filter((o) => selectedOrderIds.has(o.id));
+
+  // Group orders by merchant for the order table
+  const ordersByMerchant = dateOrders.reduce<Record<string, DateOrder[]>>((acc, o) => {
+    const key = `${o.merchant_id}:${o.merchant_name}`;
+    (acc[key] = acc[key] || []).push(o);
+    return acc;
+  }, {});
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -347,157 +314,138 @@ export default function KirimDispatchPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 56px)' }}>
-        {/* Left: batch list */}
+        {/* Left: delivery date list */}
         <aside className="w-72 bg-white border-r border-gray-200 flex flex-col overflow-hidden shrink-0">
           <div className="px-3 py-2.5 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Batches</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Delivery Dates
+            </p>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {batchesLoading && (
+            {datesLoading && (
               <div className="p-4 text-sm text-gray-400 text-center">Loading…</div>
             )}
-            {batches.map((batch) => (
+            {deliveryDates.map((d) => (
               <button
-                key={batch.id}
-                onClick={() => { setSelectedBatch(batch); setSelectedOrderIds(new Set()); }}
+                key={d.date}
+                onClick={() => { setSelectedDate(d.date); setSelectedOrderIds(new Set()); }}
                 className={`w-full text-left px-3 py-3 border-b border-gray-50 transition-colors ${
-                  selectedBatch?.id === batch.id ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-gray-50'
+                  selectedDate === d.date ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-gray-50'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-800">
-                    {fmtDate(batch.window_start)} {fmt(batch.window_start)}–{fmt(batch.window_end)}
-                  </span>
-                  <StatusBadge status={batch.status} />
+                  <span className="text-sm font-semibold text-gray-800">{d.label}</span>
+                  <span className="text-xs text-gray-400">{d.date}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
-                    <PackageOpen className="h-3 w-3" />{batch.order_count} orders
+                    <PackageOpen className="h-3 w-3" />{d.total} orders
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Truck className="h-3 w-3" />{batch.route_count} routes
-                  </span>
+                  {d.unassigned > 0 && (
+                    <span className="flex items-center gap-1 text-amber-600 font-medium">
+                      <AlertCircle className="h-3 w-3" />{d.unassigned} unassigned
+                    </span>
+                  )}
                 </div>
-                {batch.merchants.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {batch.merchants.map((m) => (
-                      <span key={m.merchant_id} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                        {m.company_name} ({m.order_count})
-                      </span>
-                    ))}
-                  </div>
-                )}
               </button>
             ))}
-            {!batchesLoading && batches.length === 0 && (
+            {!datesLoading && deliveryDates.length === 0 && (
               <div className="p-6 text-center text-sm text-gray-400">
                 <Clock className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                No batches yet. Orders appear here when the first Kirim order is placed.
+                No orders yet. Orders appear here when the first Kirim order is placed.
               </div>
             )}
           </div>
         </aside>
 
-        {/* Right: batch detail */}
+        {/* Right: orders for selected date OR active routes panel */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {!selectedBatch ? (
+          {!selectedDate ? (
+            /* Active routes panel (no date selected) */
             <div className="flex-1 overflow-y-auto p-5">
-              {/* Active routes panel */}
-              <div className="mb-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                  <Navigation className="h-3.5 w-3.5" />
-                  Active Routes
-                  {activeRoutes.length > 0 && (
-                    <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full font-medium">
-                      {activeRoutes.length}
-                    </span>
-                  )}
-                </h3>
-                {activeRoutes.length === 0 ? (
-                  <div className="border border-dashed border-gray-200 rounded-lg p-8 text-center">
-                    <Truck className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm text-gray-400">No active routes right now</p>
-                    <p className="text-xs text-gray-300 mt-1">Select a batch to assign orders to drivers</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {activeRoutes.map((route) => {
-                      const pct = route.total_stops > 0
-                        ? Math.round((route.completed_stops / route.total_stops) * 100)
-                        : 0;
-                      return (
-                        <div key={route.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <p className="font-medium text-gray-900 text-sm">{route.driver_name}</p>
-                              <p className="text-xs text-gray-400">{route.vehicle_plate}</p>
-                            </div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              route.status === 'in_progress'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {route.status === 'in_progress' ? 'En route' : 'Queued'}
-                            </span>
-                          </div>
-                          {/* Progress bar */}
-                          <div className="mb-2">
-                            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {route.completed_stops} / {route.total_stops} stops
-                              </span>
-                              <span>{pct}%</span>
-                            </div>
-                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-blue-500 rounded-full transition-all"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                          {route.batch && (
-                            <p className="text-xs text-gray-400">
-                              Batch {fmtDate(route.batch.window_start)} {fmt(route.batch.window_start)}–{fmt(route.batch.window_end)}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div className="mb-2 flex items-center gap-2">
+                <Navigation className="h-4 w-4 text-gray-400" />
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Active Routes</h3>
+                {activeRoutes.length > 0 && (
+                  <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full font-medium">
+                    {activeRoutes.length}
+                  </span>
                 )}
               </div>
 
-              {batches.length === 0 && activeRoutes.length === 0 && (
-                <div className="border border-dashed border-gray-200 rounded-lg p-8 text-center mt-4">
+              {activeRoutes.length === 0 ? (
+                <div className="border border-dashed border-gray-200 rounded-lg p-8 text-center mb-4">
+                  <Truck className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm text-gray-400">No active routes right now</p>
+                  <p className="text-xs text-gray-300 mt-1">Select a delivery date to assign orders to drivers</p>
+                </div>
+              ) : (
+                <div className="space-y-2 mb-4">
+                  {activeRoutes.map((route) => {
+                    const pct = route.total_stops > 0
+                      ? Math.round((route.completed_stops / route.total_stops) * 100)
+                      : 0;
+                    return (
+                      <div key={route.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-medium text-gray-900 text-sm">{route.driver_name}</p>
+                            <p className="text-xs text-gray-400">{route.vehicle_plate}</p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            route.status === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {route.status === 'active' ? 'En route' : 'Queued'}
+                          </span>
+                        </div>
+                        <div className="mb-2">
+                          <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {route.completed_stops} / {route.total_stops} stops
+                            </span>
+                            <span>{pct}%</span>
+                          </div>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                        {route.batch && (
+                          <p className="text-xs text-gray-400">
+                            Batch {fmt(route.batch.window_start)}–{fmt(route.batch.window_end)}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {deliveryDates.length === 0 && activeRoutes.length === 0 && (
+                <div className="border border-dashed border-gray-200 rounded-lg p-8 text-center">
                   <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm text-gray-400 font-medium">Waiting for the first Kirim order</p>
                   <p className="text-xs text-gray-300 mt-2 max-w-xs mx-auto">
                     Kirim merchants must have a depot configured before they can place orders.
-                    Once an order is placed, it appears as a batch here.
+                    Once an order is placed, it appears in the date list on the left.
                   </p>
                 </div>
               )}
             </div>
           ) : (
             <>
-              {/* Batch toolbar */}
+              {/* Date toolbar */}
               <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <div>
                   <h2 className="font-semibold text-gray-900 text-sm">
-                    Batch {fmt(selectedBatch.window_start)}–{fmt(selectedBatch.window_end)} — {fmtDate(selectedBatch.window_start)}
+                    {deliveryDates.find(d => d.date === selectedDate)?.label ?? selectedDate} — {selectedDate}
                   </h2>
                   <p className="text-xs text-gray-500">
-                    {batchOrders.length} orders · {batchOrders.filter(o => o.assigned_to_route).length} assigned
+                    {dateOrders.length} orders · {dateOrders.filter(o => o.assigned_to_route).length} assigned
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {selectedBatch.status === 'open' && (
-                    <Button size="sm" variant="outline" className="text-yellow-700 border-yellow-300"
-                      onClick={() => setClosingBatch(selectedBatch)}>
-                      Close Batch Now
-                    </Button>
-                  )}
                   {selectedOrderIds.size > 0 && (
                     <Button size="sm" onClick={() => setRouteBuilderOpen(true)}>
                       <Truck className="h-3.5 w-3.5 mr-1" />
@@ -508,73 +456,71 @@ export default function KirimDispatchPage() {
               </div>
 
               {/* Selection hint */}
-              {batchOrders.some(o => !o.assigned_to_route) && selectedOrderIds.size === 0 && (
+              {dateOrders.some(o => !o.assigned_to_route) && selectedOrderIds.size === 0 && (
                 <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 text-xs text-blue-600">
                   Click unassigned orders to select them for a route
                 </div>
               )}
 
-              {/* Order table */}
+              {/* Order table — grouped by merchant */}
               <div className="flex-1 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-gray-50 z-10">
-                    <tr className="border-b border-gray-100">
-                      <th className="w-8 px-3 py-2" />
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Order</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Merchant</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Customer</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Depot</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {batchOrders.map((order) => {
-                      const isSelected = selectedOrderIds.has(order.id);
-                      const isAssigned = !!order.assigned_to_route;
-                      return (
-                        <tr
-                          key={order.id}
-                          onClick={() => toggleOrder(order)}
-                          className={`transition-colors ${isAssigned ? 'opacity-50 cursor-default' : 'cursor-pointer'} ${
-                            isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          <td className="px-3 py-2.5">
-                            {isAssigned ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            ) : (
-                              <div className={`h-4 w-4 rounded border-2 transition-colors ${
-                                isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                              }`} />
-                            )}
-                          </td>
-                          <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{order.order_number}</td>
-                          <td className="px-3 py-2.5 text-gray-600">{order.merchant_name}</td>
-                          <td className="px-3 py-2.5">
-                            <p className="font-medium text-gray-900">{order.customer_name}</p>
-                            <p className="text-xs text-gray-400 truncate max-w-[180px]">{order.delivery_address}</p>
-                          </td>
-                          <td className="px-3 py-2.5 text-gray-500 text-xs">{order.depot?.name ?? '—'}</td>
-                          <td className="px-3 py-2.5">
-                            {isAssigned ? (
-                              <span className="text-xs text-green-600 font-medium">Assigned</span>
-                            ) : (
-                              <span className="text-xs text-amber-600 font-medium">{order.status}</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {batchOrders.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="text-center py-12 text-gray-400 text-sm">
-                          <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                          No orders in this batch yet
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                {Object.entries(ordersByMerchant).map(([key, orders]) => {
+                  const merchantName = orders[0].merchant_name;
+                  return (
+                    <div key={key}>
+                      <div className="sticky top-0 bg-gray-50 border-b border-gray-100 px-4 py-1.5 z-10">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{merchantName}</p>
+                      </div>
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-gray-50">
+                          {orders.map((order) => {
+                            const isSelected = selectedOrderIds.has(order.id);
+                            const isAssigned = !!order.assigned_to_route;
+                            return (
+                              <tr
+                                key={order.id}
+                                onClick={() => toggleOrder(order)}
+                                className={`transition-colors ${isAssigned ? 'opacity-50 cursor-default' : 'cursor-pointer'} ${
+                                  isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                }`}
+                              >
+                                <td className="px-3 py-2.5 w-8">
+                                  {isAssigned ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <div className={`h-4 w-4 rounded border-2 transition-colors ${
+                                      isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                                    }`} />
+                                  )}
+                                </td>
+                                <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{order.order_number}</td>
+                                <td className="px-3 py-2.5">
+                                  <p className="font-medium text-gray-900">{order.customer_name}</p>
+                                  <p className="text-xs text-gray-400 truncate max-w-[220px]">{order.delivery_address}</p>
+                                </td>
+                                <td className="px-3 py-2.5 text-gray-600 text-xs">{order.product_name}</td>
+                                <td className="px-3 py-2.5 text-gray-500 text-xs">{order.depot?.name ?? '—'}</td>
+                                <td className="px-3 py-2.5">
+                                  {isAssigned ? (
+                                    <span className="text-xs text-green-600 font-medium">Assigned</span>
+                                  ) : (
+                                    <span className="text-xs text-amber-600 font-medium">{order.status}</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })}
+                {dateOrders.length === 0 && (
+                  <div className="text-center py-12 text-gray-400 text-sm">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    No orders for this date
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -583,9 +529,8 @@ export default function KirimDispatchPage() {
 
       {/* Dialogs */}
       <Dialog open={routeBuilderOpen} onOpenChange={(o) => { if (!o) setRouteBuilderOpen(false); }}>
-        {routeBuilderOpen && selectedBatch && (
+        {routeBuilderOpen && (
           <RouteBuilderDialog
-            batchId={selectedBatch.id}
             selectedOrders={selectedOrders}
             onClose={() => { setRouteBuilderOpen(false); setSelectedOrderIds(new Set()); }}
           />
@@ -595,15 +540,6 @@ export default function KirimDispatchPage() {
       <Dialog open={topupOpen} onOpenChange={(o) => { if (!o) setTopupOpen(false); }}>
         {topupOpen && <TopupDialog onClose={() => setTopupOpen(false)} />}
       </Dialog>
-
-      <ConfirmDialog
-        open={!!closingBatch}
-        title="Close batch early?"
-        description={`Batch ${closingBatch ? `${fmt(closingBatch.window_start)}–${fmt(closingBatch.window_end)}` : ''} will be closed immediately. No new orders can be added after this.`}
-        confirmLabel="Close Batch"
-        onConfirm={() => closingBatch && closeMutation.mutate(closingBatch.id)}
-        onCancel={() => setClosingBatch(null)}
-      />
     </div>
   );
 }

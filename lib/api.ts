@@ -140,14 +140,16 @@ export const kirimApi = {
     transactions: (page = 1) => api.get('/kirim/transactions', { params: { page } }),
   },
   dispatch: {
-    batches:      () => api.get('/kirim/dispatch/batches'),
-    batchOrders:  (batchId: number) => api.get(`/kirim/dispatch/batches/${batchId}/orders`),
-    closeBatch:   (batchId: number) => api.post(`/kirim/dispatch/batches/${batchId}/close`),
-    drivers:      () => api.get('/kirim/dispatch/drivers'),
-    createRoute:  (data: Record<string, unknown>) => api.post('/kirim/dispatch/routes', data),
-    activeRoutes: () => api.get('/kirim/dispatch/active-routes'),
-    topup:        (merchantId: number, amountIdr: number, note: string) =>
-                    api.post('/kirim/dispatch/topup', { merchant_id: merchantId, amount_idr: amountIdr, note }),
+    deliveryDates: () => api.get('/kirim/dispatch/delivery-dates'),
+    ordersByDate:  (date: string) => api.get('/kirim/dispatch/orders-by-date', { params: { date } }),
+    batches:       () => api.get('/kirim/dispatch/batches'),
+    batchOrders:   (batchId: number) => api.get(`/kirim/dispatch/batches/${batchId}/orders`),
+    closeBatch:    (batchId: number) => api.post(`/kirim/dispatch/batches/${batchId}/close`),
+    drivers:       () => api.get('/kirim/dispatch/drivers'),
+    createRoute:   (data: Record<string, unknown>) => api.post('/kirim/dispatch/routes', data),
+    activeRoutes:  () => api.get('/kirim/dispatch/active-routes'),
+    topup:         (merchantId: number, amountIdr: number, note: string) =>
+                     api.post('/kirim/dispatch/topup', { merchant_id: merchantId, amount_idr: amountIdr, note }),
   },
   resolveMapsLink: (url: string) => api.post('/customers/resolve-maps-link', { url }),
 };
