@@ -135,14 +135,14 @@ function RouteBuilderDialog({
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">Stop Sequence</label>
           <div className="border border-gray-100 rounded-lg overflow-hidden text-sm">
-            {Object.entries(depotGroups).map(([depotId, orders], i) => (
+            {Object.entries(depotGroups).filter(([depotId]) => depotId !== '0').map(([depotId, orders], i) => (
               <div key={depotId} className="px-3 py-2.5 bg-orange-50 border-b border-gray-100">
                 <div className="flex items-center gap-2">
                   <span className="bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">
                     {i + 1}
                   </span>
                   <div>
-                    <p className="font-medium text-orange-800">Pickup — {orders[0].depot?.name ?? 'Unknown depot'}</p>
+                    <p className="font-medium text-orange-800">Pickup — {orders[0].depot?.name}</p>
                     <p className="text-xs text-orange-600">Collect {orders.length} order{orders.length > 1 ? 's' : ''}: {orders.map(o => o.order_number).join(', ')}</p>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ function RouteBuilderDialog({
               <div key={o.id} className="px-3 py-2.5 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-2">
                   <span className="bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">
-                    {Object.keys(depotGroups).length + i + 1}
+                    {Object.keys(depotGroups).filter(k => k !== '0').length + i + 1}
                   </span>
                   <div className="min-w-0">
                     <p className="font-medium truncate">{o.customer_name}</p>
@@ -286,6 +286,16 @@ export default function KirimDispatchPage() {
   };
 
   const selectedOrders = dateOrders.filter((o) => selectedOrderIds.has(o.id));
+  const unassignedOrders = dateOrders.filter((o) => !o.assigned_to_route);
+  const allUnassignedSelected = unassignedOrders.length > 0 && unassignedOrders.every((o) => selectedOrderIds.has(o.id));
+
+  const toggleSelectAll = () => {
+    if (allUnassignedSelected) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(unassignedOrders.map((o) => o.id)));
+    }
+  };
 
   // Group orders by merchant for the order table
   const ordersByMerchant = dateOrders.reduce<Record<string, DateOrder[]>>((acc, o) => {
@@ -446,6 +456,11 @@ export default function KirimDispatchPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {unassignedOrders.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={toggleSelectAll}>
+                      {allUnassignedSelected ? 'Deselect All' : `Select All (${unassignedOrders.length})`}
+                    </Button>
+                  )}
                   {selectedOrderIds.size > 0 && (
                     <Button size="sm" onClick={() => setRouteBuilderOpen(true)}>
                       <Truck className="h-3.5 w-3.5 mr-1" />
