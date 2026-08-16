@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { routesApi, driversApi, ordersApi, authApi } from '@/lib/api';
 import { Route, Driver, DeliveryOrder } from '@/types';
@@ -17,45 +17,32 @@ const DispatchBoard = dynamic(() => import('./dispatch-board'), { ssr: false });
 export default function DispatchPage() {
   const qc = useQueryClient();
   const { user: authUser, setUser } = useAuthStore();
-  const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
 
-  // Always fetch live merchant type — the persisted auth store can be stale
-  // after an admin converts the merchant type (kirim ↔ sistem) mid-session.
-  const { data: meRes, isLoading: meLoading } = useQuery({
-    queryKey: ['auth-me'],
-    queryFn: authApi.me,
-    staleTime: 60_000,
-  });
-  // Keep auth store in sync without triggering a full logout/login
-  const freshUser = meRes?.data?.data;
-  if (freshUser && freshUser.merchant?.merchant_type !== authUser?.merchant?.merchant_type) {
-    setUser(freshUser);
-  }
-
-  const liveMerchantType = freshUser?.merchant?.merchant_type ?? authUser?.merchant?.merchant_type;
-
-  if (meLoading) {
-    return <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Loading…</div>;
-  }
-
-  if (liveMerchantType === 'kirim') {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 text-center p-8">
-        <div className="text-4xl mb-4">🚚</div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">Hontal Kirim handles your deliveries</h2>
-        <p className="text-sm text-gray-500 max-w-sm">
-          As a Kirim merchant, your orders are dispatched by Hontal&apos;s team. You don&apos;t need to manage routes or assign drivers — we handle that for you.
-        </p>
-        <p className="text-xs text-gray-400 mt-4">Track your order status from the Orders page.</p>
-      </div>
-    );
-  }
-  const today = localDateString();
+  // ── All state declarations MUST come before any early return ──────────────
   const [confirmDeleteDispatch, setConfirmDeleteDispatch] = useState(false);
   const [showRouteQualityHelp, setShowRouteQualityHelp] = useState(false);
   const [confirmResetUnassigned, setConfirmResetUnassigned] = useState(false);
   const [confirmResetOrderId, setConfirmResetOrderId] = useState<number | null>(null);
   const [confirmBulkUnassign, setConfirmBulkUnassign] = useState<'selected' | 'all' | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+  const [bulkDriverId, setBulkDriverId] = useState('');
+  const [selectedAssignedIds, setSelectedAssignedIds] = useState<number[]>([]);
+
+  // Fetch live merchant type — the persisted auth store can be stale after an
+  // admin converts the merchant type (kirim ↔ sistem) mid-session.
+  const { data: meRes, isLoading: meLoading } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: authApi.me,
+    staleTime: 60_000,
+  });
+
+  // Sync auth store as a side effect — never during render
+  useEffect(() => {
+    const freshUser = meRes?.data?.data;
+    if (freshUser) setUser(freshUser);
+  }, [meRes, setUser]);
+
+  const today = localDateString();
 
   const { data: routesData, isLoading: routesLoading } = useQuery({
     queryKey: ['routes', today],
@@ -85,39 +72,12 @@ export default function DispatchPage() {
   });
 
   const routes: Route[] = routesData?.data?.data ?? [];
-  const allDrivers: Driver[] = allDriversData?.data?.data ?? [];
-  const pendingOrders: DeliveryOrder[] = ordersData?.data?.data ?? [];
-  const allAssignedOrders: DeliveryOrder[] = (allAssignedOrdersData?.data?.data ?? [])
-    .filter((o: DeliveryOrder) => !['delivered', 'failed', 'cancelled'].includes(o.status));
   const todayRouteId = routes[0]?.id ?? null;
 
   const { data: fullRouteData } = useQuery({
     queryKey: ['routes', 'full', todayRouteId],
     queryFn: () => routesApi.get(todayRouteId!),
     enabled: !!todayRouteId,
-  });
-
-  const todayRoute: Route | null = fullRouteData?.data?.data ?? null;
-  const isLocked = !!(todayRoute?.locked_at);
-
-  const allStopMap = new Map(
-    (todayRoute?.assignments.flatMap((a) => a.stops) ?? [])
-      .map((s) => [s.order?.id, s])
-  );
-
-  const sortedPendingOrders = [...pendingOrders].sort((a, b) => {
-    const sa = allStopMap.get(a.id)?.total_score ?? -Infinity;
-    const sb = allStopMap.get(b.id)?.total_score ?? -Infinity;
-    return sb - sa;
-  });
-
-  const sortedAssignedOrders = [...allAssignedOrders].sort((a, b) => {
-    const sa = allStopMap.get(a.id)?.total_score;
-    const sb = allStopMap.get(b.id)?.total_score;
-    if (sa !== undefined && sb !== undefined) return sb - sa;
-    if (sa !== undefined) return -1;
-    if (sb !== undefined) return 1;
-    return (a.route_sequence ?? Infinity) - (b.route_sequence ?? Infinity);
   });
 
   const generateMutation = useMutation({
@@ -183,13 +143,6 @@ export default function DispatchPage() {
     },
   });
 
-  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
-  const [bulkDriverId, setBulkDriverId] = useState('');
-  const [selectedAssignedIds, setSelectedAssignedIds] = useState<number[]>([]);
-
-  const toggleAssignedSelected = (id: number) =>
-    setSelectedAssignedIds((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-
   const assignOrdersMutation = useMutation({
     mutationFn: (vars: { order_ids: number[]; driver_id: number }) => routesApi.assignOrders(vars),
     onSuccess: () => {
@@ -199,6 +152,59 @@ export default function DispatchPage() {
       setBulkDriverId('');
     },
   });
+
+  // ── Early returns AFTER all hooks ─────────────────────────────────────────
+  const liveMerchantType = meRes?.data?.data?.merchant?.merchant_type ?? authUser?.merchant?.merchant_type;
+
+  if (meLoading) {
+    return <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Loading…</div>;
+  }
+
+  if (liveMerchantType === 'kirim') {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 text-center p-8">
+        <div className="text-4xl mb-4">🚚</div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Hontal Kirim handles your deliveries</h2>
+        <p className="text-sm text-gray-500 max-w-sm">
+          As a Kirim merchant, your orders are dispatched by Hontal&apos;s team. You don&apos;t need to manage routes or assign drivers — we handle that for you.
+        </p>
+        <p className="text-xs text-gray-400 mt-4">Track your order status from the Orders page.</p>
+      </div>
+    );
+  }
+
+  // ── Derived values (plain JS, not hooks) ──────────────────────────────────
+  const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
+  const allDrivers: Driver[] = allDriversData?.data?.data ?? [];
+  const pendingOrders: DeliveryOrder[] = ordersData?.data?.data ?? [];
+  const allAssignedOrders: DeliveryOrder[] = (allAssignedOrdersData?.data?.data ?? [])
+    .filter((o: DeliveryOrder) => !['delivered', 'failed', 'cancelled'].includes(o.status));
+
+  const todayRoute: Route | null = fullRouteData?.data?.data ?? null;
+  const isLocked = !!(todayRoute?.locked_at);
+
+  const allStopMap = new Map(
+    (todayRoute?.assignments.flatMap((a) => a.stops) ?? [])
+      .map((s) => [s.order?.id, s])
+  );
+
+  const sortedPendingOrders = [...pendingOrders].sort((a, b) => {
+    const sa = allStopMap.get(a.id)?.total_score ?? -Infinity;
+    const sb = allStopMap.get(b.id)?.total_score ?? -Infinity;
+    return sb - sa;
+  });
+
+  const sortedAssignedOrders = [...allAssignedOrders].sort((a, b) => {
+    const sa = allStopMap.get(a.id)?.total_score;
+    const sb = allStopMap.get(b.id)?.total_score;
+    if (sa !== undefined && sb !== undefined) return sb - sa;
+    if (sa !== undefined) return -1;
+    if (sb !== undefined) return 1;
+    return (a.route_sequence ?? Infinity) - (b.route_sequence ?? Infinity);
+  });
+
+  const toggleAssignedSelected = (id: number) =>
+    setSelectedAssignedIds((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const toggleOrderSelected = (orderId: number) =>
     setSelectedOrderIds((prev) =>
