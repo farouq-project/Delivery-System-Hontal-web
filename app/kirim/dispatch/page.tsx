@@ -80,6 +80,8 @@ function fmt(iso: string) {
 
 // ── Route Builder Dialog ──────────────────────────────────────────────────────
 
+interface RouteOrigin { lat: number; lng: number; name: string; address: string | null }
+
 function RouteBuilderDialog({
   selectedOrders,
   onClose,
@@ -97,11 +99,34 @@ function RouteBuilderDialog({
   });
   const drivers: DriverOption[] = driversRes?.data?.data ?? [];
 
+  // Fetch NN+2-opt optimized order preview (same engine as createRoute)
+  const orderIdKey = selectedOrders.map(o => o.id).sort().join(',');
+  const { data: previewRes, isLoading: previewLoading } = useQuery({
+    queryKey: ['route-preview', orderIdKey],
+    queryFn: () => kirimApi.dispatch.previewRoute({ order_ids: selectedOrders.map(o => o.id) }),
+    staleTime: Infinity,
+  });
+
+  const preview = previewRes?.data?.data;
+  const orderedIds: number[] = preview?.ordered_ids ?? [];
+  const origin: RouteOrigin | null = preview?.origin ?? null;
+
+  // Sort orders by optimized sequence; fall back to selection order while loading
+  const optimizedOrders = orderedIds.length > 0
+    ? [...selectedOrders].sort((a, b) => {
+        const ai = orderedIds.indexOf(a.id);
+        const bi = orderedIds.indexOf(b.id);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      })
+    : selectedOrders;
+
+  // Fallback: order-level depot groups (for merchants that DO set depot_id on orders)
   const depotGroups = selectedOrders.reduce<Record<number, DateOrder[]>>((acc, o) => {
     const key = o.depot?.id ?? 0;
     (acc[key] = acc[key] || []).push(o);
     return acc;
   }, {});
+  const depotStops = Object.entries(depotGroups).filter(([k]) => k !== '0');
 
   const mutation = useMutation({
     mutationFn: () => kirimApi.dispatch.createRoute({
@@ -149,16 +174,34 @@ function RouteBuilderDialog({
           )}
         </div>
 
-        {/* Stop preview */}
+        {/* Stop sequence — optimized by NN+2-opt */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">Stop Sequence</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">Stop Sequence</label>
+            {previewLoading
+              ? <span className="text-xs text-gray-400">Optimizing route…</span>
+              : orderedIds.length > 0 && <span className="text-xs text-emerald-600 font-medium">NN + 2-opt optimized</span>
+            }
+          </div>
           <div className="border border-gray-100 rounded-lg overflow-hidden text-sm">
-            {Object.entries(depotGroups).filter(([depotId]) => depotId !== '0').map(([depotId, orders], i) => (
+            {/* Pickup stop from merchant depot settings (covers null depot_id merchants like TelurKu) */}
+            {origin && (
+              <div className="px-3 py-2.5 bg-orange-50 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <span className="bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">0</span>
+                  <div className="min-w-0">
+                    <p className="font-medium text-orange-800">Pickup — {origin.name}</p>
+                    {origin.address && <p className="text-xs text-orange-600 truncate">{origin.address}</p>}
+                    <p className="text-xs text-orange-500">Collect {optimizedOrders.length} order{optimizedOrders.length > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Fallback: order-level depot stops for merchants that set depot_id on each order */}
+            {!origin && depotStops.map(([depotId, orders], i) => (
               <div key={depotId} className="px-3 py-2.5 bg-orange-50 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <span className="bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">
-                    {i + 1}
-                  </span>
+                  <span className="bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">{i + 1}</span>
                   <div>
                     <p className="font-medium text-orange-800">Pickup — {orders[0].depot?.name}</p>
                     <p className="text-xs text-orange-600">Collect {orders.length} order{orders.length > 1 ? 's' : ''}: {orders.map(o => o.order_number).join(', ')}</p>
@@ -166,11 +209,12 @@ function RouteBuilderDialog({
                 </div>
               </div>
             ))}
-            {selectedOrders.map((o, i) => (
+            {/* Delivery stops in optimized order */}
+            {optimizedOrders.map((o, i) => (
               <div key={o.id} className="px-3 py-2.5 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-2">
                   <span className="bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">
-                    {Object.keys(depotGroups).filter(k => k !== '0').length + i + 1}
+                    {(origin ? 1 : depotStops.length + 1) + i}
                   </span>
                   <div className="min-w-0">
                     <p className="font-medium truncate">{o.customer_name}</p>
@@ -197,7 +241,7 @@ function RouteBuilderDialog({
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button disabled={!driverId || mutation.isPending} onClick={() => mutation.mutate()}>
+          <Button disabled={!driverId || mutation.isPending || previewLoading} onClick={() => mutation.mutate()}>
             {mutation.isPending ? 'Creating…' : 'Create Route'}
           </Button>
         </div>
