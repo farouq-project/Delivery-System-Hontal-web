@@ -8,6 +8,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   setAuth: (user: User, token: string) => void;
+  setUser: (user: User) => void;
   clearAuth: () => void;
   isAuthenticated: () => boolean;
   isDispatcher: () => boolean;
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem('hontal_token', token);
         set({ user, token });
       },
+      setUser: (user) => set({ user }),
       clearAuth: () => {
         localStorage.removeItem('hontal_token');
         localStorage.removeItem('hontal_platform_merchant');

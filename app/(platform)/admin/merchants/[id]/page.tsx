@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import type { SubscriptionStatus, PlatformPlan, MerchantFeatureFlag, MerchantUsage, MerchantActivityLogEntry, MerchantSupportConsole } from '@/types';
-import { ArrowLeft, Building2, Users, Package, Settings, Activity, CreditCard, Zap, BarChart2, HeadphonesIcon, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Building2, Users, Package, Settings, Activity, CreditCard, Zap, BarChart2, HeadphonesIcon, TrendingUp, ArrowRightLeft } from 'lucide-react';
 import { usePlatformMerchantStore } from '@/store/platform-merchant';
 
 type Tab = 'overview' | 'subscription' | 'usage' | 'billing' | 'users' | 'features' | 'settings' | 'activity' | 'support';
@@ -209,6 +209,13 @@ export default function MerchantDetailPage() {
     },
   });
 
+  const convertToKirimMutation = useMutation({
+    mutationFn: () => adminApi.convertMerchantToKirim(Number(id)),
+    onSuccess: () => {
+      router.push(`/admin/kirim/merchants/${id}`);
+    },
+  });
+
   if (isLoading) return <div className="p-6 text-sm text-gray-400">Loading merchant…</div>;
 
   const d = data?.data?.data;
@@ -299,6 +306,7 @@ export default function MerchantDetailPage() {
               ['Phone', merchant.phone],
               ['Address', merchant.address],
               ['Timezone', merchant.timezone],
+              ['Type', merchant.merchant_type ?? 'sistem'],
               ['Created', new Date(merchant.created_at).toLocaleDateString('id-ID')],
             ].map(([label, value]) => (
               <div key={label} className="flex gap-4 text-sm">
@@ -306,6 +314,24 @@ export default function MerchantDetailPage() {
                 <span className="text-gray-900">{value ?? '—'}</span>
               </div>
             ))}
+            {(!merchant.merchant_type || merchant.merchant_type === 'sistem') && (
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-500 mb-2">Convert this merchant to Hontal Kirim (pooled delivery managed by Hontal team).</p>
+                {convertToKirimMutation.error && (
+                  <p className="text-xs text-red-600 mb-2">
+                    {(convertToKirimMutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Conversion failed.'}
+                  </p>
+                )}
+                <button
+                  onClick={() => convertToKirimMutation.mutate()}
+                  disabled={convertToKirimMutation.isPending}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-50 text-orange-700 border border-orange-200 rounded-md hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                >
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                  {convertToKirimMutation.isPending ? 'Converting…' : 'Convert to Kirim'}
+                </button>
+              </div>
+            )}
           </div>
           <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
             <h2 className="font-bold text-gray-900 mb-3">Delivery Summary</h2>

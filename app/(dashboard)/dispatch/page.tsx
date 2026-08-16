@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { routesApi, driversApi, ordersApi } from '@/lib/api';
+import { routesApi, driversApi, ordersApi, authApi } from '@/lib/api';
 import { Route, Driver, DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,10 +16,29 @@ const DispatchBoard = dynamic(() => import('./dispatch-board'), { ssr: false });
 
 export default function DispatchPage() {
   const qc = useQueryClient();
-  const { user: authUser, isKirimMerchant } = useAuthStore();
+  const { user: authUser, setUser } = useAuthStore();
   const isOwner = ['merchant_owner', 'super_admin', 'developer'].includes(authUser?.role ?? '');
 
-  if (isKirimMerchant()) {
+  // Always fetch live merchant type — the persisted auth store can be stale
+  // after an admin converts the merchant type (kirim ↔ sistem) mid-session.
+  const { data: meRes, isLoading: meLoading } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: authApi.me,
+    staleTime: 60_000,
+  });
+  // Keep auth store in sync without triggering a full logout/login
+  const freshUser = meRes?.data?.data;
+  if (freshUser && freshUser.merchant?.merchant_type !== authUser?.merchant?.merchant_type) {
+    setUser(freshUser);
+  }
+
+  const liveMerchantType = freshUser?.merchant?.merchant_type ?? authUser?.merchant?.merchant_type;
+
+  if (meLoading) {
+    return <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Loading…</div>;
+  }
+
+  if (liveMerchantType === 'kirim') {
     return (
       <div className="flex flex-col items-center justify-center h-96 text-center p-8">
         <div className="text-4xl mb-4">🚚</div>
