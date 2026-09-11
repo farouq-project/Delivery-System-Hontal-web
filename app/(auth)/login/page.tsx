@@ -11,13 +11,20 @@ import { PLATFORM } from '@/lib/brand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Package, Truck, MapPin, BarChart3 } from 'lucide-react';
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
   password: z.string().min(6, 'Min 6 characters'),
 });
 type FormData = z.infer<typeof schema>;
+
+const CAPABILITIES = [
+  { icon: Package, title: 'Order & Dispatch', desc: 'Take orders in and assign them to the right driver.' },
+  { icon: Truck, title: 'Drivers & Routes', desc: 'Manage drivers, depots, and delivery sequences.' },
+  { icon: MapPin, title: 'Delivery Tracking', desc: 'Follow deliveries live, with proof on arrival.' },
+  { icon: BarChart3, title: 'Customer Intelligence', desc: 'See who orders, how often, and what it is worth.' },
+] as const;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,18 +61,38 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-gray-50">
       {/* Left panel — visible on lg+ */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 bg-gray-900 p-12 text-white">
-        <div>
-          <p className="text-xl font-bold tracking-tight">{PLATFORM.name}</p>
-          <p className="text-sm text-gray-400 mt-1">{PLATFORM.tagline}</p>
+        <div className="flex items-center gap-2.5">
+          <span className="grid place-items-center h-9 w-9 rounded-lg bg-blue-600 shrink-0">
+            <Truck className="h-5 w-5 text-white" strokeWidth={2.25} />
+          </span>
+          <div>
+            <p className="text-lg font-bold tracking-tight leading-none">
+              {PLATFORM.name} <span className="text-blue-400">Delivery</span>
+            </p>
+            <p className="text-xs text-gray-400 mt-1.5">{PLATFORM.tagline}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-lg font-medium text-gray-200 leading-relaxed">
-            "Smarter routing, deeper insights, happier customers."
+
+        <div className="max-w-md py-8">
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight">
+            Run your delivery operation with less chaos.
+          </h2>
+          <p className="mt-4 text-sm text-gray-400 leading-relaxed">
+            From order intake to proof of delivery — dispatch drivers, plan routes,
+            track deliveries as they happen, and understand the customers behind every drop.
           </p>
-          <p className="mt-4 text-sm text-gray-500">
-            Delivery operations platform built for modern distributors.
-          </p>
+
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            {CAPABILITIES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="rounded-lg border border-white/10 bg-white/5 p-3.5">
+                <Icon className="h-4 w-4 text-blue-400" strokeWidth={2} />
+                <p className="mt-2.5 text-sm font-medium text-gray-100 leading-snug">{title}</p>
+                <p className="mt-1 text-xs text-gray-500 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
+
         <p className="text-xs text-gray-600">© {year} {PLATFORM.name}. All rights reserved.</p>
       </div>
 
