@@ -5,11 +5,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Truck, PackageOpen,
   Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList, Settings,
-  BarChart2, Building2
+  BarChart2, Building2, ShoppingCart, Boxes
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
-import { authApi } from '@/lib/api';
+import { authApi, featuresApi } from '@/lib/api';
 import { useState } from 'react';
 import { InstallButton } from './install-button';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
@@ -30,11 +31,23 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
   const isOps = user?.role === 'merchant_ops';
 
+  // POS and Inventory appear only when the merchant has the feature switched on and the role
+  // is allowed — the same two checks the API enforces on those routes.
+  const { data: featuresRes } = useQuery({
+    queryKey: ['features'],
+    queryFn: featuresApi.list,
+    staleTime: 5 * 60 * 1000,
+  });
+  const features = (featuresRes?.data?.data ?? {}) as Record<string, boolean>;
+  const posRole  = ['merchant_owner', 'kasir', 'developer', 'super_admin'].includes(user?.role ?? '');
+
   const navItems = [
     { href: '/dashboard',  label: t.nav.dashboard, icon: LayoutDashboard },
+    ...(posRole && features.pos ? [{ href: '/pos', label: t.nav.pos, icon: ShoppingCart }] : []),
     { href: '/customers',  label: t.nav.customers,  icon: Users },
     ...(!isOps ? [{ href: '/drivers', label: t.nav.drivers, icon: Truck }] : []),
     { href: '/orders',     label: t.nav.orders,     icon: PackageOpen },
+    ...(posRole && features.inventory ? [{ href: '/inventory', label: t.nav.inventory, icon: Boxes }] : []),
     ...(!isOps ? [
       { href: '/dispatch', label: t.nav.dispatch,   icon: Route  },
       { href: '/klotter',  label: t.nav.klotter,    icon: Layers },

@@ -556,3 +556,27 @@ export const driverApi = {
     api.post(`/driver/stops/${stopId}/fail`, { reason }),
   history: () => api.get('/driver/history'),
 };
+
+// Inventory — products, units, and the stock ledger (feature flag: `inventory`)
+export const inventoryApi = {
+  summary:   () => api.get('/inventory/summary'),
+  products:  (params?: Record<string, unknown>) => api.get('/inventory/products', { params }),
+  product:   (id: number) => api.get(`/inventory/products/${id}`),
+  create:    (data: Record<string, unknown>) => api.post('/inventory/products', data),
+  update:    (id: number, data: Record<string, unknown>) => api.put(`/inventory/products/${id}`, data),
+  remove:    (id: number) => api.delete(`/inventory/products/${id}`),
+  bulk:      (action: 'activate' | 'deactivate' | 'delete', ids: number[]) =>
+    api.post('/inventory/products/bulk', { action, ids }),
+  stockIn:   (data: Record<string, unknown>) => api.post('/inventory/stock-in', data),
+  stockOut:  (data: Record<string, unknown>) => api.post('/inventory/stock-out', data),
+  adjust:    (data: Record<string, unknown>) => api.post('/inventory/adjustments', data),
+  movements: (params?: Record<string, unknown>) => api.get('/inventory/movements', { params }),
+};
+
+// POS / Kasir (feature flag: `pos`)
+export const posApi = {
+  products:     (search?: string) => api.get('/pos/products', { params: search ? { search } : {} }),
+  transactions: (params?: Record<string, unknown>) => api.get('/pos/transactions', { params }),
+  transaction:  (id: number) => api.get(`/pos/transactions/${id}`),
+  create:       (data: Record<string, unknown>) => api.post('/pos/transactions', data),
+};
