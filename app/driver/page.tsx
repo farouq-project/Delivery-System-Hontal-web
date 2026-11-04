@@ -11,6 +11,13 @@ import { STATUS_COLORS, formatTime } from '@/lib/utils';
 import { CheckCircle, XCircle, MapPin, Package, LogOut, MessageSquare, Navigation } from 'lucide-react';
 import DeliverModal from './deliver-modal';
 import { InstallButton } from '@/components/layout/install-button';
+import dynamic from 'next/dynamic';
+
+// Leaflet needs the browser window — load the map on the client only.
+const DriverMap = dynamic(() => import('./driver-map'), {
+  ssr: false,
+  loading: () => <div className="h-48 sm:h-64 w-full bg-gray-100 border-b" />,
+});
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } });
 
@@ -21,6 +28,7 @@ function DriverApp() {
   const [delivering, setDelivering] = useState<number | null>(null);
   const [failing, setFailing] = useState<number | null>(null);
   const [gpsError, setGpsError]   = useState<string | null>(null);
+  const [myPosition, setMyPosition] = useState<{ lat: number; lng: number } | null>(null);
   const gpsInterval = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
@@ -33,6 +41,7 @@ function DriverApp() {
 
     const onSuccess = (pos: GeolocationPosition) => {
       setGpsError(null);
+      setMyPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       driverApi.updateLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy).catch(() => {});
     };
 
@@ -144,6 +153,9 @@ function DriverApp() {
           />
         </div>
       )}
+
+      {/* Compact map of today's stops — the list stays visible and scrollable below */}
+      {stops.length > 0 && <DriverMap stops={stops} myPosition={myPosition} />}
 
       {/* Stops list */}
       <div className="px-4 py-4 space-y-3">

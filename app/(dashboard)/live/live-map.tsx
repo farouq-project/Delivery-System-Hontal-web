@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LiveDriver, Route } from '@/types';
-import { DRIVER_STATUS_COLORS } from '@/lib/utils';
+import { DRIVER_STATUS_COLORS, orderProductLines } from '@/lib/utils';
 
 // Fix leaflet default icon
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
@@ -121,6 +121,13 @@ export default function LiveMap({ drivers, selectedDriver, route, staleDriverIds
                       <div className="text-sm">
                         <p className="font-medium">#{stop.stop_sequence} {stop.order.customer_name}</p>
                         <p className="text-gray-500">{stop.order.delivery_address}</p>
+                        {orderProductLines(stop.order).length > 0 && (
+                          <ul className="my-1 text-gray-700">
+                            {orderProductLines(stop.order).map((line, i) => (
+                              <li key={i}>📦 {line}</li>
+                            ))}
+                          </ul>
+                        )}
                         <p className="text-gray-400 text-xs">{stop.order.order_number}</p>
                         <p className="text-xs mt-0.5" style={{ color }}>
                           {assignment.driver!.driver_name}

@@ -118,6 +118,7 @@ export interface DeliveryOrder {
   requested_delivery_end: string | null;
   status: OrderStatus;
   notes: string | null;
+  delivery_notes?: string | null;
   cashier_name: CashierName | null;
   payment_method: PaymentMethod | null;
   order_created_at: string;

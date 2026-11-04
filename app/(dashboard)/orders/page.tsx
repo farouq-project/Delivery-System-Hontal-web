@@ -8,7 +8,9 @@ import { DeliveryOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { STATUS_COLORS, formatCurrency, formatDate, formatTime } from '@/lib/utils';
+import { STATUS_COLORS, formatCurrency, formatDate, formatTime, getErrorMessage } from '@/lib/utils';
+
+const BULK_STATUS_CHUNK = 50;
 
 function calcDuration(createdAt: string | null, deliveredAt: string | null): string | null {
   if (!createdAt || !deliveredAt) return null;
@@ -58,6 +60,8 @@ function OrdersPage() {
   const [pinTarget, setPinTarget]       = useState<DeliveryOrder | null>(null);
   const [pinDeleteTarget, setPinDeleteTarget] = useState<DeliveryOrder | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [bulkResult, setBulkResult]     = useState<string | null>(null);
   const [podPhoto, setPodPhoto] = useState<{ url: string; notes?: string } | null>(null);
 
   const { data: settingsData } = useQuery({
@@ -115,13 +119,40 @@ function OrdersPage() {
     },
   });
 
+  // One request per batch of 50, sent one after another. Firing one request per order
+  // (hundreds in parallel) exhausted the server's process limit and every call failed.
   const bulkStatusMutation = useMutation({
     mutationFn: async ({ ids, status }: { ids: number[]; status: string }) => {
-      await Promise.allSettled(ids.map((id) => ordersApi.updateStatus(id, status)));
+      const totals = { updated: 0, skipped: 0, failed: 0, done: 0, error: null as string | null };
+      setBulkProgress({ done: 0, total: ids.length });
+      for (let i = 0; i < ids.length; i += BULK_STATUS_CHUNK) {
+        const chunk = ids.slice(i, i + BULK_STATUS_CHUNK);
+        try {
+          const { data } = await ordersApi.bulkUpdateStatus(chunk, status);
+          totals.updated += data.data.updated;
+          totals.skipped += data.data.skipped;
+          totals.failed  += data.data.failed.length + data.data.not_found;
+        } catch (e) {
+          totals.error = getErrorMessage(e) ?? 'Request failed';
+          break;
+        }
+        totals.done = Math.min(i + chunk.length, ids.length);
+        setBulkProgress({ done: totals.done, total: ids.length });
+      }
+      return { ...totals, total: ids.length };
     },
-    onSuccess: () => {
+    onSuccess: (t) => {
+      const parts = [`${t.updated} updated`];
+      if (t.skipped) parts.push(`${t.skipped} already had this status`);
+      if (t.failed) parts.push(`${t.failed} could not be changed`);
+      setBulkResult(t.error
+        ? `Stopped after ${t.done} of ${t.total} orders (${parts.join(', ')}): ${t.error}`
+        : parts.join(', '));
+      if (!t.error) setSelectedIds(new Set());
+    },
+    onSettled: () => {
+      setBulkProgress(null);
       qc.invalidateQueries({ queryKey: ['orders'] });
-      setSelectedIds(new Set());
     },
   });
 
@@ -271,13 +302,14 @@ function OrdersPage() {
               <Select
                 onValueChange={(v) => {
                   if (confirm(`Change status to "${v.replace('_', ' ')}" for ${selectedIds.size} order(s)?`)) {
+                    setBulkResult(null);
                     bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status: v });
                   }
                 }}
                 disabled={bulkStatusMutation.isPending}
               >
                 <SelectTrigger className="w-36 h-8 text-xs">
-                  <SelectValue placeholder={bulkStatusMutation.isPending ? 'Updating…' : 'Select…'} />
+                  <SelectValue placeholder={bulkProgress ? `Updating ${bulkProgress.done}/${bulkProgress.total}…` : 'Select…'} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">Pending</SelectItem>
@@ -320,6 +352,14 @@ function OrdersPage() {
           >
             <Trash2 className="h-4 w-4" /> Delete {selectedIds.size}
           </Button>
+        )}
+        {bulkResult && (
+          <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border rounded px-2 py-1">
+            <span>Status change: {bulkResult}</span>
+            <button onClick={() => setBulkResult(null)} className="text-gray-400 hover:text-gray-600" aria-label="Dismiss">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         )}
       </div>
 

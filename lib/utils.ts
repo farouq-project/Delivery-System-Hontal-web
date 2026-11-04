@@ -26,6 +26,30 @@ export function localDateString(date = new Date()): string {
   return date.toLocaleDateString('en-CA'); // en-CA always produces YYYY-MM-DD
 }
 
+// Product lines of an order: structured items ("Galon × 2") when present,
+// otherwise the product_name summary (older orders have no items).
+export function orderProductLines(order: {
+  items?: { name: string; quantity?: number | null }[] | null;
+  product_name?: string | null;
+}): string[] {
+  if (order.items?.length) {
+    return order.items
+      .filter((it) => it.name)
+      .map((it) => (it.quantity ? `${it.name} × ${it.quantity}` : it.name));
+  }
+  return order.product_name ? [order.product_name] : [];
+}
+
+// Value for <input type="date">. The API sends date columns either as 'YYYY-MM-DD' or as an
+// ISO timestamp (Laravel's date cast: 2026-11-04 in Jakarta arrives as 2026-11-03T17:00:00Z).
+// Convert to the calendar date in Asia/Jakarta (the backend's timezone), never by slicing.
+export function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+}
+
 export function formatDate(date: string | null | undefined, fmt = 'dd MMM yyyy'): string {
   if (!date) return '-';
   try { return format(parseISO(date), fmt); } catch { return date; }

@@ -17,7 +17,7 @@ import { ProductSuggestInput } from '@/components/product-suggest-input';
 import { Search, Plus, Trash2, Link } from 'lucide-react';
 import { useCashierStore } from '@/store/cashier';
 import { parseMapsUrl, isShortenedMapsUrl } from '@/lib/maps-parser';
-import { localDateString } from '@/lib/utils';
+import { localDateString, toDateInputValue } from '@/lib/utils';
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -148,11 +148,12 @@ export default function OrderForm({ onClose, order }: Props) {
       ) as { name: string; quantity?: number | null; notes?: string }[],
       order_value:              order.order_value,
       delivery_address:         order.delivery_address,
-      requested_delivery_date:  order.requested_delivery_date,
+      requested_delivery_date:  toDateInputValue(order.requested_delivery_date) || localDateString(),
       // Use || so an empty string (from slicing an HH:MM:SS time) becomes undefined
       requested_delivery_start: order.requested_delivery_start?.slice(0, 5) || undefined,
       requested_delivery_end:   order.requested_delivery_end?.slice(0, 5) || undefined,
-      notes:                    order.notes ?? undefined,
+      // The note is stored as delivery_notes (saved back from this field on submit)
+      notes:                    order.delivery_notes ?? order.notes ?? undefined,
       cashier_name:             order.cashier_name ?? cashierName,
       payment_method:           order.payment_method ?? 'cash',
       driver_id:                order.driver_id ?? null,

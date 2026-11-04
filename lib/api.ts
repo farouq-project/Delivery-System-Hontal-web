@@ -121,7 +121,16 @@ export const ordersApi = {
   productSuggestions: (q: string) => api.get('/orders/product-suggestions', { params: { q } }),
   bulkUpdateCashier: (ids: number[], cashier_name: string) =>
     api.post('/orders/bulk-update-cashier', { order_ids: ids, cashier_name }),
+  bulkUpdateStatus: (ids: number[], status: string, reason?: string) =>
+    api.post<{ data: BulkStatusResult }>('/orders/bulk-status', { order_ids: ids, status, reason }),
 };
+
+export interface BulkStatusResult {
+  updated: number;
+  skipped: number;
+  not_found: number;
+  failed: { id: number; order_number: string; message: string }[];
+}
 
 // Hontal Kirim
 export const kirimApi = {
