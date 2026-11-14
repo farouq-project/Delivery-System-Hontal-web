@@ -211,7 +211,10 @@ export const routesApi = {
   reoptimize: (id: number, orderIds: number[]) =>
     api.post(`/routes/${id}/reoptimize`, { order_ids: orderIds }),
   updateStop: (routeId: number, stopId: number, data: Record<string, unknown>) =>
-    api.put(`/routes/${routeId}/stops/${stopId}`, data),
+    api.patch(`/routes/${routeId}/stops/${stopId}`, data),
+  // Full new order of one driver's stops (every stop of the assignment, once)
+  reorderStops: (routeId: number, assignmentId: number, stopIds: number[]) =>
+    api.post(`/routes/${routeId}/assignments/${assignmentId}/reorder`, { stop_ids: stopIds }),
   removeStop: (routeId: number, stopId: number) =>
     api.delete(`/routes/${routeId}/stops/${stopId}`),
 };
@@ -513,6 +516,12 @@ export const publicApi = {
 // Merchant Subscription (merchant-facing)
 export const subscriptionApi = {
   getOwn: () => api.get('/subscription'),
+};
+
+// CRM — customer buying habits
+export const crmApi = {
+  customerHabits: (refresh = false) =>
+    api.get('/crm/customer-habits', { params: refresh ? { refresh: 1 } : undefined }),
 };
 
 // Business Intelligence (Phase 4.1) — existing endpoints untouched

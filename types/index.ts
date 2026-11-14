@@ -895,3 +895,44 @@ export interface ReportRecommendation {
   category: string;
   text: string;
 }
+
+// CRM — GET /crm/customer-habits
+export type HabitCategory = 'frequent' | 'weekly' | 'biweekly' | 'monthly' | 'occasional' | 'one_time' | 'new';
+export type HabitStatus = 'due' | 'overdue' | 'on_track' | 'scheduled' | 'one_time' | 'lapsed';
+
+export interface CustomerHabit {
+  customer_id: number;
+  customer_name: string;
+  phone: string | null;
+  address: string | null;
+  cluster: string | null;
+  purchase_days: number;
+  total_orders: number;
+  total_value: number;
+  first_purchase_date: string | null;
+  last_purchase_date: string | null;
+  days_since_last: number | null;
+  avg_gap_days: number | null;
+  category: HabitCategory;
+  /** index 0 = Monday … 6 = Sunday */
+  weekday_counts: number[];
+  /** ISO weekdays, 1 = Monday … 7 = Sunday, most frequent first */
+  usual_weekdays: number[];
+  top_products: { name: string; count: number; share: number }[];
+  next_expected_date: string | null;
+  upcoming_order_date: string | null;
+  status: HabitStatus;
+}
+
+export interface CustomerHabitsResponse {
+  today: string;
+  generated_at: string;
+  habit_window: number;
+  summary: {
+    customers: number;
+    by_category: Partial<Record<HabitCategory, number>>;
+    by_status: Partial<Record<HabitStatus, number>>;
+    never_purchased: number;
+  };
+  customers: CustomerHabit[];
+}

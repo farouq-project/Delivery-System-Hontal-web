@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Truck, PackageOpen,
   Map, Route, LogOut, Menu, Layers, UserCog, X, ClipboardList, Settings,
-  BarChart2, Building2, ShoppingCart, Boxes
+  BarChart2, Building2, ShoppingCart, Boxes, HeartHandshake
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -40,11 +40,13 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   });
   const features = (featuresRes?.data?.data ?? {}) as Record<string, boolean>;
   const posRole  = ['merchant_owner', 'kasir', 'developer', 'super_admin'].includes(user?.role ?? '');
+  const crmRole  = ['merchant_owner', 'merchant_ops', 'developer', 'super_admin'].includes(user?.role ?? '');
 
   const navItems = [
     { href: '/dashboard',  label: t.nav.dashboard, icon: LayoutDashboard },
     ...(posRole && features.pos ? [{ href: '/pos', label: t.nav.pos, icon: ShoppingCart }] : []),
     { href: '/customers',  label: t.nav.customers,  icon: Users },
+    ...(crmRole ? [{ href: '/crm', label: t.nav.crm, icon: HeartHandshake }] : []),
     ...(!isOps ? [{ href: '/drivers', label: t.nav.drivers, icon: Truck }] : []),
     { href: '/orders',     label: t.nav.orders,     icon: PackageOpen },
     ...(posRole && features.inventory ? [{ href: '/inventory', label: t.nav.inventory, icon: Boxes }] : []),

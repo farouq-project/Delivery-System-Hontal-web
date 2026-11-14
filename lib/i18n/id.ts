@@ -19,6 +19,7 @@ const id = {
     bi_products: 'Analitik Produk',
     bi_areas: 'Analitik Area',
     business_intelligence: 'Intelijen Bisnis',
+    crm: 'CRM Pelanggan',
     pos: 'Kasir / POS',
     inventory: 'Stok Barang',
     logout: 'Keluar',

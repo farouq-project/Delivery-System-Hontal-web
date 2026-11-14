@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LiveDriver, Route } from '@/types';
 import { DRIVER_STATUS_COLORS, orderProductLines } from '@/lib/utils';
+import { driverColors, NO_ROUTE_COLOR } from './colors';
 
 // Fix leaflet default icon
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
@@ -15,8 +16,31 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// Klotter colors: green, blue, purple, yellow (cycle if >4 drivers)
-const KLOTTER_COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
+// Used only until the depot location from Settings has loaded
+const DEFAULT_CENTER: [number, number] = [-6.8592, 107.4805];
+const DEPOT_ZOOM = 15;
+
+// lucide "warehouse" icon, inlined because divIcon takes an HTML string
+const WAREHOUSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/></svg>`;
+
+const depotIcon = L.divIcon({
+  className: '',
+  html: `<div style="
+    width:38px;height:38px;border-radius:10px;
+    background:#1e293b;border:3px solid white;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    display:flex;align-items:center;justify-content:center;
+  ">${WAREHOUSE_SVG}</div>`,
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -18],
+});
+
+export interface Depot {
+  lat: number;
+  lng: number;
+  address?: string | null;
+}
 
 function createDriverIcon(color: string) {
   return L.divIcon({
@@ -48,6 +72,46 @@ function createStopIcon(color: string, seq: number) {
   });
 }
 
+// Zoom to the depot once, when its location first arrives (it may load after the map)
+function CenterOnDepot({ depot }: { depot: Depot }) {
+  const map = useMap();
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    map.setView([depot.lat, depot.lng], DEPOT_ZOOM);
+  }, [depot, map]);
+  return null;
+}
+
+function DepotButton({ depot }: { depot: Depot }) {
+  const map = useMap();
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (ref.current) L.DomEvent.disableClickPropagation(ref.current);
+  }, []);
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={() => map.flyTo([depot.lat, depot.lng], DEPOT_ZOOM, { duration: 0.8 })}
+      className="absolute top-3 right-3 z-[1000] rounded-md bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-md border hover:bg-slate-50"
+      title="Back to the depot"
+    >
+      🏭 Depot
+    </button>
+  );
+}
+
+// Fly to a stop picked in the driver area
+function FlyToStop({ point }: { point: { lat: number; lng: number; key: number } | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (point) map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 16), { duration: 0.8 });
+  }, [point, map]);
+  return null;
+}
+
 function FlyToDriver({ driver }: { driver: LiveDriver | undefined }) {
   const map = useMap();
   useEffect(() => {
@@ -63,24 +127,25 @@ interface Props {
   selectedDriver: number | null;
   route: Route | null;
   staleDriverIds?: Set<number>;
+  depot?: Depot | null;
+  /** Stop to fly to; `key` changes on every pick so the same stop can be picked twice */
+  focusPoint?: { lat: number; lng: number; key: number } | null;
 }
 
-export default function LiveMap({ drivers, selectedDriver, route, staleDriverIds = new Set() }: Props) {
+export default function LiveMap({ drivers, selectedDriver, route, staleDriverIds = new Set(), depot = null, focusPoint = null }: Props) {
   const selected = drivers.find((d) => d.driver_id === selectedDriver);
 
   // Only real driver assignments (filter out null-driver unassigned group)
   const driverAssignments = (route?.assignments ?? []).filter((a) => !!a.driver);
 
-  // Map driver_id → klotter color (indexed by assignment order)
-  const driverColorMap = new Map<number, string>(
-    driverAssignments.map((a, i) => [a.driver!.id, KLOTTER_COLORS[i % KLOTTER_COLORS.length]])
-  );
+  // Map driver_id → klotter color (indexed by assignment order, same as the driver area)
+  const driverColorMap = driverColors(route);
 
   return (
-    <div className="flex-1 relative">
+    <div className="h-full w-full relative z-0">
       <MapContainer
-        center={[-6.8592, 107.4805]}
-        zoom={12}
+        center={depot ? [depot.lat, depot.lng] : DEFAULT_CENTER}
+        zoom={depot ? DEPOT_ZOOM : 12}
         className="w-full h-full"
         style={{ height: '100%' }}
       >
@@ -89,16 +154,32 @@ export default function LiveMap({ drivers, selectedDriver, route, staleDriverIds
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        {depot && (
+          <>
+            <CenterOnDepot depot={depot} />
+            <DepotButton depot={depot} />
+            <Marker position={[depot.lat, depot.lng]} icon={depotIcon} zIndexOffset={1000}>
+              <Popup>
+                <div className="text-sm">
+                  <p className="font-semibold">🏭 Depot</p>
+                  {depot.address && <p className="text-gray-500">{depot.address}</p>}
+                </div>
+              </Popup>
+            </Marker>
+          </>
+        )}
+
         {selected && <FlyToDriver driver={selected} />}
+        <FlyToStop point={focusPoint} />
 
         {/* Klotter stop markers — one color per driver, delivered stops removed */}
         {driverAssignments.map((assignment) => {
-          const color = driverColorMap.get(assignment.driver!.id) ?? '#6b7280';
+          const color = driverColorMap.get(assignment.driver!.id) ?? NO_ROUTE_COLOR;
 
-          // Only show stops that are not yet delivered or failed
-          const remainingStops = assignment.stops.filter(
-            (s) => !['delivered', 'failed'].includes(s.order?.status ?? '')
-          );
+          // Only show stops that are not yet delivered or failed, in stop-number order
+          const remainingStops = assignment.stops
+            .filter((s) => !['delivered', 'failed'].includes(s.order?.status ?? ''))
+            .sort((a, b) => a.stop_sequence - b.stop_sequence);
 
           const coords = remainingStops
             .filter((s) => s.order?.delivery_latitude)
@@ -113,7 +194,7 @@ export default function LiveMap({ drivers, selectedDriver, route, staleDriverIds
                 if (!stop.order?.delivery_latitude) return null;
                 return (
                   <Marker
-                    key={stop.id ?? Math.random()}
+                    key={stop.id}
                     position={[stop.order.delivery_latitude, stop.order.delivery_longitude!]}
                     icon={createStopIcon(color, stop.stop_sequence)}
                   >
@@ -145,7 +226,7 @@ export default function LiveMap({ drivers, selectedDriver, route, staleDriverIds
         {drivers.map((d) => {
           if (!d.lat) return null;
           const isStale = staleDriverIds.has(d.driver_id);
-          const color = isStale ? '#9ca3af' : (driverColorMap.get(d.driver_id) ?? '#6b7280');
+          const color = isStale ? '#9ca3af' : (driverColorMap.get(d.driver_id) ?? NO_ROUTE_COLOR);
           return (
             <Marker
               key={d.driver_id}

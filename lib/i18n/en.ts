@@ -18,6 +18,7 @@ const en = {
     bi_products: 'Product Analytics',
     bi_areas: 'Area Analytics',
     business_intelligence: 'Business Intelligence',
+    crm: 'CRM',
     pos: 'POS / Cashier',
     inventory: 'Inventory',
     logout: 'Logout',

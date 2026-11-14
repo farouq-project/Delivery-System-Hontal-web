@@ -212,7 +212,7 @@ export default function DispatchPage() {
     );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-full lg:h-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b bg-white">
         <div>
@@ -615,7 +615,10 @@ export default function DispatchPage() {
           </div>
         </div>
       ) : (
-        <DispatchBoard route={todayRoute} />
+        // Fixed height on phones so the driver columns can scroll inside it
+        <div className="h-[75vh] shrink-0 lg:h-auto lg:flex-1 lg:min-h-[24rem]">
+          <DispatchBoard route={todayRoute} />
+        </div>
       )}
 
       <ConfirmDialog
